@@ -43,7 +43,9 @@ export type Facility = {
   code: string;
   facilityType: "Plant" | "Factory" | "Warehouse" | "Distribution Center" | "Facility";
   company: string;
+  managerId: string;
   manager: string;
+  source: "seeded" | "registered";
   status: FacilityStatus;
   location: { city: string; region: string; country: string };
   timezone: string;
@@ -58,6 +60,7 @@ export type Facility = {
 
 export type SiteAccess = {
   id: string;
+  userId?: string;
   userName: string;
   platformRole: string;
   operationalRole: string;
@@ -137,7 +140,9 @@ export const initialFacilities: Facility[] = [
     code: "DET-01",
     facilityType: "Plant",
     company: "DIVU Manufacturing NA",
+    managerId: "staff-carlos-rivera",
     manager: "Carlos Rivera",
+    source: "seeded",
     status: "Active",
     location: { city: "Detroit", region: "North America", country: "USA" },
     timezone: "America/Detroit",
@@ -159,7 +164,9 @@ export const initialFacilities: Facility[] = [
     code: "STU-02",
     facilityType: "Factory",
     company: "DIVU Manufacturing EU",
+    managerId: "staff-anna-muller",
     manager: "Anna Müller",
+    source: "seeded",
     status: "Active",
     location: { city: "Stuttgart", region: "Europe", country: "Germany" },
     timezone: "Europe/Berlin",
@@ -180,7 +187,9 @@ export const initialFacilities: Facility[] = [
     code: "OSA-03",
     facilityType: "Facility",
     company: "DIVU Asia KK",
+    managerId: "staff-hiro-tanaka",
     manager: "Hiro Tanaka",
+    source: "seeded",
     status: "Maintenance",
     location: { city: "Osaka", region: "Asia Pacific", country: "Japan" },
     timezone: "Asia/Tokyo",
@@ -197,10 +206,10 @@ export const initialFacilities: Facility[] = [
 ];
 
 export const initialSiteAccess: SiteAccess[] = [
-  { id: "access-1", userName: "Carlos Rivera", platformRole: "Plant Manager", operationalRole: "Site Administrator", facilityId: "site-detroit", hall: "All Halls", productionLine: "All Lines", accessLevel: "Admin", effectiveDate: "2026-05-14", status: "Active" },
-  { id: "access-2", userName: "Anna Müller", platformRole: "Plant Manager", operationalRole: "Site Administrator", facilityId: "site-stuttgart", hall: "All Halls", productionLine: "All Lines", accessLevel: "Admin", effectiveDate: "2026-05-29", status: "Active" },
-  { id: "access-3", userName: "John Smith", platformRole: "Viewer", operationalRole: "Line Observer", facilityId: "site-detroit", hall: "Hall A — Body Shop", productionLine: "Line A", accessLevel: "View", effectiveDate: "2026-06-13", status: "Active" },
-  { id: "access-4", userName: "Mike Davis", platformRole: "Operator", operationalRole: "Process Operator", facilityId: "site-stuttgart", hall: "Hall 1 — Stamping", productionLine: "Line 1", station: "Station 2", accessLevel: "Operate", effectiveDate: "2026-07-12", status: "Active" },
+  { id: "access-1", userId: "staff-carlos-rivera", userName: "Carlos Rivera", platformRole: "Plant Manager", operationalRole: "Site Administrator", facilityId: "site-detroit", hall: "All Halls", productionLine: "All Lines", accessLevel: "Admin", effectiveDate: "2026-05-14", status: "Active" },
+  { id: "access-2", userId: "staff-anna-muller", userName: "Anna Müller", platformRole: "Plant Manager", operationalRole: "Site Administrator", facilityId: "site-stuttgart", hall: "All Halls", productionLine: "All Lines", accessLevel: "Admin", effectiveDate: "2026-05-29", status: "Active" },
+  { id: "access-3", userId: "staff-john-smith", userName: "John Smith", platformRole: "Viewer", operationalRole: "Line Observer", facilityId: "site-detroit", hall: "Hall A — Body Shop", productionLine: "Line A", accessLevel: "View", effectiveDate: "2026-06-13", status: "Active" },
+  { id: "access-4", userId: "staff-mike-davis", userName: "Mike Davis", platformRole: "Operator", operationalRole: "Process Operator", facilityId: "site-stuttgart", hall: "Hall 1 — Stamping", productionLine: "Line 1", station: "Station 2", accessLevel: "Operate", effectiveDate: "2026-07-12", status: "Active" },
 ];
 
 export const operationalInsights: OperationalInsight[] = [
