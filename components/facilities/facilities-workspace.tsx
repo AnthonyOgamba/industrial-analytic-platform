@@ -31,6 +31,12 @@ export function FacilitiesWorkspace() {
     return { active: facilities.filter((facility) => facility.status === "Active").length, averageOee, compliance, downtime };
   }, [facilities]);
 
+  function deleteFacility(facility: Facility) {
+    if (!window.confirm(`Delete ${facility.name}? Its local access grants will also be removed.`)) return;
+    setFacilities((items) => items.filter((item) => item.id !== facility.id));
+    setAccessRecords((items) => items.filter((item) => item.facilityId !== facility.id));
+  }
+
   return (
     <div className="space-y-5 pb-5">
       <header>
@@ -53,7 +59,7 @@ export function FacilitiesWorkspace() {
 
       <div className="overflow-x-auto border-b"><div className="flex min-w-max" role="tablist" aria-label="Facilities sections">{tabs.map((tab) => { const Icon = tab.icon; const active = tab.key === activeTab; return <button key={tab.key} type="button" role="tab" aria-selected={active} onClick={() => setActiveTab(tab.key)} className={`relative inline-flex h-12 items-center gap-2 px-4 text-xs font-medium transition-colors ${active ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}><Icon className={`size-4 ${active ? "text-primary" : ""}`} />{tab.label}{active && <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-primary" />}</button>; })}</div></div>
 
-      {activeTab === "sites" && <FacilitiesOverview facilities={facilities} onRegister={() => setRegisterOpen(true)} />}
+      {activeTab === "sites" && <FacilitiesOverview facilities={facilities} onRegister={() => setRegisterOpen(true)} onDelete={deleteFacility} />}
       {activeTab === "performance" && <ProductionPerformance facilities={facilities} />}
       {activeTab === "access" && <SiteAccessPanel facilities={facilities} accessRecords={accessRecords} onGrant={() => setGrantOpen(true)} onRevoke={(id) => setAccessRecords((records) => records.filter((record) => record.id !== id))} />}
 
