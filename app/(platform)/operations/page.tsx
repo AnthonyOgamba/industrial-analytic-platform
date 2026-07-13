@@ -1,11 +1,12 @@
-import { PlaceholderPage } from "@/components/layout/placeholder-page";
+import type { Metadata } from "next";
 
-export default function OperationsPage() {
-  return (
-    <PlaceholderPage
-      title="Operations"
-      description="Manage facilities, production lines, stations, access, and site performance."
-      area="Operations"
-    />
-  );
+import { FacilitiesWorkspace } from "@/components/facilities/facilities-workspace";
+
+export const metadata: Metadata = {
+  title: "Facilities",
+  description: "Manage manufacturing facilities, production performance, and operational access.",
+};
+
+export default function FacilitiesPage() {
+  return <FacilitiesWorkspace />;
 }

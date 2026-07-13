@@ -54,7 +54,7 @@ const navigation: NavigationGroup[] = [
   {
     label: "Operations",
     items: [
-      { label: "Operations", href: "/operations", icon: Settings2 },
+      { label: "Facilities", href: "/operations", icon: Settings2 },
       { label: "Assets", href: "/assets", icon: Cpu },
       { label: "Sensors", href: "/sensors", icon: Radio },
       { label: "Downtime", href: "/downtime", icon: FileClock },
