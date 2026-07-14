@@ -1,11 +1,5 @@
-import { PlaceholderPage } from "@/components/layout/placeholder-page";
+import { AuditLogPage } from "@/components/audit-log/audit-log-page";
 
 export default function AuditPage() {
-  return (
-    <PlaceholderPage
-      title="Audit Log"
-      description="Review traceable security, administration, data, and operational events."
-      area="Security Center"
-    />
-  );
+  return <AuditLogPage />;
 }
