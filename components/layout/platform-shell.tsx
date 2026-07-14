@@ -91,6 +91,7 @@ const pageTitles = new Map(
 );
 pageTitles.set("/settings", "Settings");
 pageTitles.set("/profile", "Profile");
+pageTitles.set("/api-security/logs", "API Audit Log");
 
 function isActivePath(pathname: string, href: string) {
   return href === "/"
