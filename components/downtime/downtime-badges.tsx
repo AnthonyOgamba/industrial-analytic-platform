@@ -1,0 +1,6 @@
+import type { DowntimeEventStatus, DowntimeSeverity } from "./downtime-data";
+
+const severityStyles: Record<DowntimeSeverity, string> = { Critical: "bg-[var(--dv-badge-cr-bg)] text-[var(--dv-badge-cr-text)]", High: "bg-[var(--dv-badge-wa-bg)] text-[var(--dv-badge-wa-text)]", Medium: "bg-[var(--dv-badge-in-bg)] text-[var(--dv-badge-in-text)]", Low: "bg-[var(--dv-badge-ok-bg)] text-[var(--dv-badge-ok-text)]" };
+const statusStyles: Record<DowntimeEventStatus, string> = { Active: "bg-[var(--dv-badge-cr-bg)] text-[var(--dv-badge-cr-text)]", Escalated: "bg-[var(--dv-badge-pu-bg)] text-[var(--dv-badge-pu-text)]", Investigating: "bg-[var(--dv-badge-wa-bg)] text-[var(--dv-badge-wa-text)]", Resolved: "bg-[var(--dv-badge-ok-bg)] text-[var(--dv-badge-ok-text)]" };
+export function DowntimeSeverityBadge({ severity }: { severity: DowntimeSeverity }) { return <span className={`rounded-md px-2 py-1 font-mono text-[9px] font-semibold uppercase ${severityStyles[severity]}`}>{severity}</span>; }
+export function DowntimeStatusBadge({ status }: { status: DowntimeEventStatus }) { return <span className={`rounded-md px-2 py-1 font-mono text-[9px] font-semibold uppercase ${statusStyles[status]}`}>{status}</span>; }

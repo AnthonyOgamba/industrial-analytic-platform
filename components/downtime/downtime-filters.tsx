@@ -1,0 +1,8 @@
+"use client";
+
+import { Search } from "lucide-react";
+import { factorCategories, factorSeverities, type DowntimeCategory, type DowntimeSeverity } from "./downtime-data";
+export function DowntimeFilters({ query, onQueryChange, category, onCategoryChange, severity, onSeverityChange }: { query: string; onQueryChange: (value: string) => void; category: "All" | DowntimeCategory; onCategoryChange: (value: "All" | DowntimeCategory) => void; severity: "All" | DowntimeSeverity; onSeverityChange: (value: "All" | DowntimeSeverity) => void }) {
+  const selectClass = "h-10 rounded-lg border bg-background px-3 text-xs outline-none focus:ring-2 focus:ring-ring/30";
+  return <div className="flex flex-col gap-3 rounded-xl border bg-card p-3 shadow-[var(--dv-shadow)] sm:flex-row"><label className="relative min-w-0 flex-1"><span className="sr-only">Search downtime factors</span><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="Search by name, code, or description..." className="h-10 w-full rounded-lg border bg-background pl-9 pr-3 text-xs outline-none focus:ring-2 focus:ring-ring/30" /></label><select value={category} onChange={(event) => onCategoryChange(event.target.value as "All" | DowntimeCategory)} className={selectClass}><option value="All">All Categories</option>{factorCategories.map((item) => <option key={item}>{item}</option>)}</select><select value={severity} onChange={(event) => onSeverityChange(event.target.value as "All" | DowntimeSeverity)} className={selectClass}><option value="All">All Severities</option>{factorSeverities.map((item) => <option key={item}>{item}</option>)}</select></div>;
+}

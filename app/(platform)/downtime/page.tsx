@@ -1,11 +1,11 @@
-import { PlaceholderPage } from "@/components/layout/placeholder-page";
+import type { Metadata } from "next";
+import { DowntimePage } from "@/components/downtime/downtime-page";
 
-export default function DowntimePage() {
-  return (
-    <PlaceholderPage
-      title="Downtime"
-      description="Analyze downtime factors, occurrences, duration, impact, and corrective actions."
-      area="Operations"
-    />
-  );
+export const metadata: Metadata = {
+  title: "Downtime | DIVU Analytics",
+  description: "Downtime factors, active events, operational analytics, and AI insights.",
+};
+
+export default function Page() {
+  return <DowntimePage />;
 }

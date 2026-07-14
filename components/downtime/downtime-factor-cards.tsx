@@ -1,0 +1,3 @@
+import type { DowntimeFactor } from "./downtime-data";
+import { DowntimeFactorCard } from "./downtime-factor-card";
+export function DowntimeFactorCards({ factors, onEdit, onDelete }: { factors: DowntimeFactor[]; onEdit: (factor: DowntimeFactor) => void; onDelete: (factor: DowntimeFactor) => void }) { return <div className="grid gap-4 xl:grid-cols-2">{factors.map((factor) => <DowntimeFactorCard key={factor.id} factor={factor} onEdit={onEdit} onDelete={onDelete} />)}{!factors.length && <div className="col-span-full rounded-xl border bg-card p-12 text-center text-sm text-muted-foreground">No downtime factors match the selected filters.</div>}</div>; }
