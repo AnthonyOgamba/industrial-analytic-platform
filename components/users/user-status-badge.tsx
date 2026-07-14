@@ -1,0 +1,4 @@
+import { CheckCircle2, Clock3, LockKeyhole, XCircle } from "lucide-react";
+import type { UserStatus } from "./users-data";
+const config = { Active: [CheckCircle2, "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"], Locked: [LockKeyhole, "bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-300"], Disabled: [XCircle, "bg-slate-100 text-slate-600 dark:bg-slate-500/15 dark:text-slate-300"], Pending: [Clock3, "bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300"] } as const;
+export function UserStatusBadge({ status }: { status: UserStatus }) { const [Icon, className] = config[status]; return <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${className}`}><Icon className="size-3" />{status}</span>; }
