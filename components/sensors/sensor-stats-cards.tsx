@@ -1,0 +1,7 @@
+import type { IndustrialSensor } from "./sensors-data";
+
+export function SensorStatsCards({ sensors }: { sensors: IndustrialSensor[] }) {
+  const average = sensors.length ? Math.round(sensors.reduce((sum, sensor) => sum + sensor.health, 0) / sensors.length) : 0;
+  const stats = [{ label: "Total", value: sensors.length, style: "bg-muted/45 text-foreground" }, { label: "Active", value: sensors.filter((sensor) => sensor.status === "Active").length, style: "bg-[var(--dv-badge-ok-bg)] text-[var(--dv-badge-ok-text)]" }, { label: "Warning", value: sensors.filter((sensor) => sensor.status === "Warning").length, style: "bg-[var(--dv-badge-wa-bg)] text-[var(--dv-badge-wa-text)]" }, { label: "Critical", value: sensors.filter((sensor) => sensor.status === "Critical").length, style: "bg-[var(--dv-badge-cr-bg)] text-[var(--dv-badge-cr-text)]" }, { label: "Offline/Maint", value: sensors.filter((sensor) => sensor.status === "Offline" || sensor.status === "Maintenance").length, style: "bg-[var(--dv-badge-gy-bg)] text-[var(--dv-badge-gy-text)]" }, { label: "Avg Health", value: `${average}%`, style: "bg-card text-primary" }];
+  return <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">{stats.map((stat) => <article key={stat.label} className={`rounded-xl border border-current/10 p-3 shadow-[var(--dv-shadow)] ${stat.style}`}><p className="flex items-center gap-1.5 text-[10px] opacity-75"><span className="size-1.5 rounded-full bg-current" />{stat.label}</p><p className="mt-1 text-xl font-bold">{stat.value}</p></article>)}</div>;
+}

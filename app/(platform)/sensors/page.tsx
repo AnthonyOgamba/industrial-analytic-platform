@@ -1,11 +1,12 @@
-import { PlaceholderPage } from "@/components/layout/placeholder-page";
+import type { Metadata } from "next";
 
-export default function SensorsPage() {
-  return (
-    <PlaceholderPage
-      title="Sensors"
-      description="Monitor connected sensors, telemetry health, thresholds, and calibration status."
-      area="Operations"
-    />
-  );
+import { SensorsPage } from "@/components/sensors/sensors-page";
+
+export const metadata: Metadata = {
+  title: "Sensors",
+  description: "Real-time industrial sensor intelligence, health, thresholds, and secure telemetry monitoring.",
+};
+
+export default function SensorsRoute() {
+  return <SensorsPage />;
 }
