@@ -1,11 +1,11 @@
-import { PlaceholderPage } from "@/components/layout/placeholder-page";
+import type { Metadata } from "next";
+import { DataInputPage } from "@/components/data-input/data-input-page";
 
-export default function DataInputPage() {
-  return (
-    <PlaceholderPage
-      title="Data Input"
-      description="Prepare secure industrial data ingestion, validation, processing, and storage workflows."
-      area="Operations"
-    />
-  );
+export const metadata: Metadata = {
+  title: "Data Input | DIVU Analytics",
+  description: "Secure industrial telemetry ingestion, validation, data quality, and source management.",
+};
+
+export default function Page() {
+  return <DataInputPage />;
 }

@@ -1,0 +1,9 @@
+"use client";
+
+import { AlertCircle, RotateCcw, Trash2 } from "lucide-react";
+import type { FailedImport } from "./data-input-data";
+
+export function FailedImportsList({ failed, onRetry, onDismiss }: { failed: FailedImport[]; onRetry: (id: string) => void; onDismiss: (id: string) => void }) {
+  if (!failed.length) return null;
+  return <section><h2 className="mb-3 flex items-center gap-2 text-sm font-semibold"><AlertCircle className="size-4 text-destructive" />Failed Imports</h2><div className="space-y-3">{failed.map((item) => <article key={item.id} className="flex flex-col gap-4 rounded-xl border bg-card p-4 shadow-[var(--dv-shadow)] sm:flex-row sm:items-start"><div className="grid size-9 shrink-0 place-items-center rounded-lg bg-[var(--dv-badge-cr-bg)] text-[var(--dv-badge-cr-text)]"><AlertCircle className="size-4" /></div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><span className="font-mono text-[10px] text-destructive">{item.id}</span><span className="rounded bg-[var(--dv-badge-cr-bg)] px-2 py-0.5 font-mono text-[8px] uppercase text-[var(--dv-badge-cr-text)]">Failed</span><p className="text-xs font-semibold">{item.source}</p></div><p className="mt-2 text-xs leading-5 text-muted-foreground">{item.reason}</p><p className="mt-2 font-mono text-[9px] text-muted-foreground">{item.timestamp} · {item.auditReference}</p></div><div className="flex shrink-0 gap-2"><button type="button" onClick={() => onRetry(item.id)} className="inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-xs font-semibold hover:bg-muted"><RotateCcw className="size-3.5" />Retry</button><button type="button" onClick={() => onDismiss(item.id)} className="inline-flex h-9 items-center gap-2 rounded-lg border border-destructive/30 px-3 text-xs font-semibold text-destructive hover:bg-destructive/10"><Trash2 className="size-3.5" />Dismiss</button></div></article>)}</div></section>;
+}

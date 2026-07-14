@@ -48,6 +48,12 @@ const navigation: NavigationGroup[] = [
     label: "Workspace",
     items: [
       { label: "Dashboard", href: "/", icon: LayoutDashboard },
+    ],
+  },
+  {
+    label: "Data",
+    items: [
+      { label: "Data Input", href: "/data-input", icon: Database },
       { label: "Data Governance", href: "/governance", icon: ShieldCheck },
     ],
   },
@@ -58,7 +64,6 @@ const navigation: NavigationGroup[] = [
       { label: "Assets", href: "/assets", icon: Cpu },
       { label: "Sensors", href: "/sensors", icon: Radio },
       { label: "Downtime", href: "/downtime", icon: FileClock },
-      { label: "Data Input", href: "/data-input", icon: Database },
     ],
   },
   {
@@ -151,9 +156,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         <div className="space-y-5">
           {navigation.map((group) => (
             <div key={group.label}>
-              <p className="mb-1.5 px-3 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                {group.label}
-              </p>
+              <p className="mb-1.5 px-3 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{group.label}</p>
               <div className="space-y-1">
                 {group.items.map((item) => {
                   const Icon = item.icon;

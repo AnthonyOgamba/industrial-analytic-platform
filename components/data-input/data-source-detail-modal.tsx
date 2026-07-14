@@ -1,0 +1,12 @@
+"use client";
+
+import { Lock, Pencil, PlugZap, ShieldCheck } from "lucide-react";
+import type { IndustrialDataSource } from "./data-input-data";
+import { DataInputModalShell } from "./data-input-modal-shell";
+import { DataInputStatusBadge } from "./data-input-status-badge";
+
+export function DataSourceDetailModal({ source, onClose, onEdit, onTest }: { source: IndustrialDataSource; onClose: () => void; onEdit: () => void; onTest: () => void }) {
+  const rows = [["Description", source.description], ["Dataset Produced", source.dataset], ["Facility", source.facility], ["Sync Frequency", source.syncFrequency], ["Authentication", source.authenticationMethod], ["Total Records", source.totalRecords.toLocaleString()], ["Endpoint", source.endpoint]];
+  const footer = <><button type="button" onClick={onTest} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border px-4 text-sm font-semibold hover:bg-muted"><PlugZap className="size-4" />Test Connection</button><button type="button" onClick={onEdit} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"><Pencil className="size-4" />Edit</button></>;
+  return <DataInputModalShell title={source.name} subtitle={`${source.type} · ${source.facility}`} onClose={onClose} footer={footer} width="max-w-xl"><div className="flex items-center justify-between rounded-xl border bg-muted/30 p-4"><DataInputStatusBadge status={source.status} /><p className="font-mono text-[10px] text-muted-foreground">Last sync: {source.lastSync}</p></div><dl className="mt-4 divide-y rounded-xl border px-4">{rows.map(([label, value]) => <div key={label} className="grid gap-1 py-3 sm:grid-cols-[9rem_1fr]"><dt className="font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground">{label}</dt><dd className={`text-xs leading-5 ${label === "Endpoint" ? "break-all font-mono" : ""}`}>{value}</dd></div>)}</dl><div className="mt-4 flex flex-wrap gap-2">{source.encryption && <span className="inline-flex items-center gap-1 rounded bg-[var(--dv-badge-ok-bg)] px-2 py-1 text-[10px] text-[var(--dv-badge-ok-text)]"><Lock className="size-3" />Encrypted</span>}{source.validation && <span className="inline-flex items-center gap-1 rounded bg-primary/10 px-2 py-1 text-[10px] text-primary"><ShieldCheck className="size-3" />Pre-import validation</span>}</div></DataInputModalShell>;
+}
