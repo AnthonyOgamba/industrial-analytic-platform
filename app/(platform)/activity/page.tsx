@@ -1,11 +1,7 @@
-import { PlaceholderPage } from "@/components/layout/placeholder-page";
+import ActivityPage from "@/components/activity/ActivityPage";
 
-export default function ActivityPage() {
-  return (
-    <PlaceholderPage
-      title="Activity"
-      description="Track approval requests, administrative actions, and recent platform changes."
-      area="Administration"
-    />
-  );
+export default function ActivityRoute() {
+  return <ActivityPage />;
 }
+
+
