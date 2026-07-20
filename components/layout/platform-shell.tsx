@@ -32,7 +32,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { NotificationDrawer } from "@/components/notifications/notification-drawer";
-import { initialNotifications } from "@/components/notifications/notification-data";
+import { usePlatformWorkflowStore } from "@/lib/platform-workflow-store";
 
 type NavigationItem = {
   label: string;
@@ -146,7 +146,25 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <div className="flex h-full min-h-0 flex-col bg-sidebar text-sidebar-foreground">
       <div className="flex h-16 shrink-0 items-center gap-3 border-b border-sidebar-border px-5">
-        <Image src="/assets/divu-logo.png" alt="DIVU" width={38} height={31} priority />
+        <div className="relative h-11 w-14 shrink-0 overflow-hidden" aria-label="DIVU">
+          <Image
+            src="/assets/divu-auth-logo.png"
+            alt="DIVU"
+            width={128}
+            height={72}
+            priority
+            className="absolute -left-9 -top-3 h-[68px] w-32 object-contain dark:hidden"
+          />
+          <Image
+            src="/assets/divu-auth-logo-white.png"
+            alt=""
+            width={128}
+            height={72}
+            priority
+            aria-hidden="true"
+            className="absolute -left-9 -top-3 hidden h-[68px] w-32 object-contain dark:block"
+          />
+        </div>
         <div className="min-w-0">
           <p className="truncate text-sm font-bold tracking-tight">DIVU Analytics</p>
           <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
@@ -227,7 +245,8 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [notifications, setNotifications] = useState(initialNotifications);
+  const notifications = usePlatformWorkflowStore((state) => state.notifications);
+  const setNotifications = usePlatformWorkflowStore((state) => state.setNotifications);
   const pageTitle = pageTitles.get(pathname) ?? "DIVU Analytics";
   const unreadCount = notifications.filter((item) => !item.read).length;
 

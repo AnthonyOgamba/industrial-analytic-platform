@@ -1,19 +1,20 @@
 import {
   AlertTriangle,
-  ChevronRight,
   Database,
   LockKeyhole,
   ShieldCheck,
   UserRoundCheck,
+  type LucideIcon,
 } from "lucide-react";
 
 import type { GovernanceSection } from "./governance-data";
+import { SummaryMetricCard } from "../ui/summary-metric-card";
 
 const summaryItems: Array<{
   label: string;
   value: string;
   detail: string;
-  icon: React.ElementType;
+  icon: LucideIcon;
   target: GovernanceSection;
   tone?: "good" | "bad";
 }> = [
@@ -29,26 +30,15 @@ export function GovernanceSummary({ onSelect }: { onSelect: (section: Governance
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
       {summaryItems.map((item) => {
-        const Icon = item.icon;
         return (
-          <button
-            type="button"
+          <SummaryMetricCard
             key={item.label}
+            label={item.label}
+            value={item.value}
+            note={item.detail}
+            icon={item.icon}
             onClick={() => onSelect(item.target)}
-            className="group rounded-xl border bg-card p-4 text-left shadow-[var(--dv-shadow)] transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[var(--dv-shadow-m)]"
-          >
-            <div className="flex items-start justify-between">
-              <span className="grid size-9 place-items-center rounded-lg bg-muted text-primary">
-                <Icon className="size-4" />
-              </span>
-              <ChevronRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
-            </div>
-            <p className="mt-4 text-2xl font-bold tracking-tight">{item.value}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{item.label}</p>
-            <p className={`mt-2 text-[11px] ${item.tone === "good" ? "text-[var(--dv-badge-ok-text)]" : item.tone === "bad" ? "text-[var(--dv-badge-cr-text)]" : "text-muted-foreground"}`}>
-              {item.detail}
-            </p>
-          </button>
+          />
         );
       })}
     </div>

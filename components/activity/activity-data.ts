@@ -21,6 +21,7 @@ export type ActivityRequestStatus = "pending" | "approved" | "declined";
 export type ActivityType =
   | "delete_product"
   | "delete_sensor"
+  | "delete_user"
   | "edit_role"
   | "delete_downtime_factor"
   | "edit_metric";
@@ -53,7 +54,7 @@ export type ActivityRequest = {
   decisionHistory: ActivityDecisionHistoryItem[];
 };
 
-export const activityManagers: ManagerUser[] = [
+const legacyActivityManagers: ManagerUser[] = [
   { id: "u-admin", name: "Admin User", role: "Administrator" },
   { id: "u-carlos", name: "Carlos Rivera", role: "Plant Manager" },
   { id: "u-sarah", name: "Sarah Johnson", role: "Plant Manager" },
@@ -63,16 +64,21 @@ export const activityManagers: ManagerUser[] = [
   { id: "u-james", name: "James Okafor", role: "Plant Manager" },
 ];
 
+export const activityManagers: ManagerUser[] = initialUsers
+  .filter((user) => user.status === "Active" && (user.role === "Administrator" || user.role === "Plant Manager"))
+  .map((user) => ({ id: user.id, name: user.name, role: user.role }));
+void legacyActivityManagers;
+
 const iso = (s: string) => new Date(s).toISOString();
 
-export const mockActivityRequests: ActivityRequest[] = [
+export const initialActivityRequests: ActivityRequest[] = [
   {
     id: "ar-001",
     activityType: "delete_product",
     title: "Delete Product",
     requestedByName: "Carlos Rivera",
     requestedByRole: "Plant Manager",
-    assignedManagerId: "u-admin",
+    assignedManagerId: "u01",
     assignedManagerName: "Admin User",
     requestedAt: iso("2026-07-10T10:05:00Z"),
     lastUpdatedAt: iso("2026-07-10T10:05:00Z"),
@@ -102,7 +108,7 @@ export const mockActivityRequests: ActivityRequest[] = [
     title: "Delete Sensor",
     requestedByName: "Sarah Johnson",
     requestedByRole: "Plant Manager",
-    assignedManagerId: "u-carlos",
+    assignedManagerId: "u02",
     assignedManagerName: "Carlos Rivera",
     requestedAt: iso("2026-07-12T14:20:00Z"),
     lastUpdatedAt: iso("2026-07-12T14:20:00Z"),
@@ -132,8 +138,8 @@ export const mockActivityRequests: ActivityRequest[] = [
     title: "Edit Role",
     requestedByName: "Marcus Lee",
     requestedByRole: "Plant Manager",
-    assignedManagerId: "u-sarah",
-    assignedManagerName: "Sarah Johnson",
+    assignedManagerId: "u03",
+    assignedManagerName: "Anna Müller",
     requestedAt: iso("2026-07-14T08:10:00Z"),
     lastUpdatedAt: iso("2026-07-14T08:10:00Z"),
     status: "pending",
@@ -148,7 +154,7 @@ export const mockActivityRequests: ActivityRequest[] = [
       {
         id: "dh-003",
         type: "assign",
-        actorName: "Sarah Johnson",
+        actorName: "Anna Müller",
         actorRole: "Plant Manager",
         timestamp: iso("2026-07-14T08:10:00Z"),
         note: "Permission review in progress",
@@ -161,7 +167,7 @@ export const mockActivityRequests: ActivityRequest[] = [
     title: "Delete Downtime Factor",
     requestedByName: "Carlos Rivera",
     requestedByRole: "Plant Manager",
-    assignedManagerId: "u-admin",
+    assignedManagerId: "u01",
     assignedManagerName: "Admin User",
     requestedAt: iso("2026-07-08T11:30:00Z"),
     lastUpdatedAt: iso("2026-07-09T09:00:00Z"),
@@ -197,7 +203,7 @@ export const mockActivityRequests: ActivityRequest[] = [
     title: "Edit Metric",
     requestedByName: "Sarah Johnson",
     requestedByRole: "Plant Manager",
-    assignedManagerId: "u-admin",
+    assignedManagerId: "u01",
     assignedManagerName: "Admin User",
     requestedAt: iso("2026-07-05T16:40:00Z"),
     lastUpdatedAt: iso("2026-07-06T12:15:00Z"),
@@ -228,3 +234,4 @@ export const mockActivityRequests: ActivityRequest[] = [
   },
 ];
 
+import { initialUsers } from "../users/users-data";

@@ -21,7 +21,7 @@ export function PlaceholderPage({ title, description, area }: PlaceholderPagePro
         </div>
         <span className="inline-flex w-fit items-center gap-2 rounded-full border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-[var(--dv-shadow)]">
           <Construction className="size-3.5 text-primary" />
-          Phase 1 foundation
+          Platform module
         </span>
       </div>
 

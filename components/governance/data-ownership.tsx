@@ -1,4 +1,5 @@
-import { Database, Pencil } from "lucide-react";
+import Link from "next/link";
+import { Database, Users } from "lucide-react";
 
 import { datasets } from "./governance-data";
 import { GovernanceCard } from "./governance-card";
@@ -32,7 +33,7 @@ export function DataOwnership() {
                 <td className="px-4 py-4 text-xs font-medium">{dataset.technicalOwner}</td>
                 <td className="px-4 py-4 text-xs font-medium">{dataset.steward}</td>
                 <td className="px-4 py-4 font-mono text-[11px] text-muted-foreground">{dataset.nextReview}</td>
-                <td className="px-4 py-4 text-right"><button type="button" className="inline-flex h-8 items-center gap-1.5 rounded-lg border bg-card px-3 text-xs font-medium hover:bg-muted"><Pencil className="size-3.5" />Edit</button></td>
+                <td className="px-4 py-4 text-right"><Link href="/users" className="inline-flex h-9 items-center gap-1.5 rounded-lg border bg-card px-3 text-xs font-medium hover:bg-muted"><Users className="size-3.5" />Administration</Link></td>
               </tr>
             ))}
           </tbody>

@@ -2,17 +2,18 @@
 
 import { useMemo, useState } from "react";
 import type {
-  ActivityRequest,
   ActivityRequestStatus,
   ManagerUser,
 } from "./activity-data";
-import { mockActivityRequests, activityManagers } from "./activity-data";
+import { activityManagers } from "./activity-data";
 import { ActivityStatsCards } from "./components/ActivityStatsCards";
 import { ActivityTabs } from "./components/ActivityTabs";
 import { ActivityRequestList } from "./components/ActivityRequestList";
+import { usePlatformWorkflowStore } from "@/lib/platform-workflow-store";
 
 export default function ActivityPage() {
-  const [requests, setRequests] = useState<ActivityRequest[]>(mockActivityRequests);
+  const requests = usePlatformWorkflowStore((state) => state.activityRequests);
+  const setRequests = usePlatformWorkflowStore((state) => state.setActivityRequests);
 
   const [activeTab, setActiveTab] = useState<"all" | ActivityRequestStatus>("all");
 
@@ -41,11 +42,12 @@ export default function ActivityPage() {
 
   return (
     <div className="space-y-4">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+      <header>
+        <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">Administration</p>
+        <h1 className="mt-1 text-2xl font-bold tracking-tight">
           Activity Management
         </h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="mt-1 text-sm text-muted-foreground">
           Monitor user actions and approve or decline requests.
         </p>
       </header>

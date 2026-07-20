@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import { AlertTriangle, FileCheck2, Trash2, X } from "lucide-react";
 
 import type { GovernancePolicy } from "./governance-data";
+import { initialUsers } from "../users/users-data";
 
-const owners = ["Admin User", "Governance Team", "Security Team", "Operations Team", "Quality Team", "Finance Team", "Compliance Team"];
+const ownerTeams = ["Governance Team", "Security Team", "Operations Team", "Quality Team", "Finance Team", "Compliance Team", "Data Engineering"];
+const ownerStaff = initialUsers.filter((user) => user.status === "Active").map((user) => user.name);
 const scopes = ["All Manufacturing Data", "Sensor Telemetry", "Asset Registry", "Downtime Events", "Financial Analytics", "API Clients", "Audit Logs", "User Activity", "Reports", "Production Data"];
 const retentionPeriods = ["30 Days", "90 Days", "1 Year", "3 Years", "5 Years", "7 Years", "Indefinite"];
 const reviewFrequencies = ["Monthly", "Quarterly", "Semi-Annual", "Annual"];
@@ -65,7 +67,7 @@ export function PolicyFormModal({ policy, onClose, onSave }: { policy?: Governan
           {attempted && !valid && <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">Complete Policy Name, Owner / Team, Applies To, and Retention Period.</p>}
           <Section title="Basic Policy Information"><div className="grid gap-3 sm:grid-cols-2">
             <label className={labelClass}>Policy Name *<input value={draft.name} onChange={(e) => set("name", e.target.value)} className={inputClass} placeholder="Production data lifecycle" aria-invalid={attempted && !draft.name.trim()} /></label>
-            <label className={labelClass}>Owner / Team *<select value={draft.owner} onChange={(e) => set("owner", e.target.value)} className={inputClass}><option value="">Select owner or team</option>{owners.map((x) => <option key={x}>{x}</option>)}</select></label>
+            <label className={labelClass}>Owner / Team *<select value={draft.owner} onChange={(e) => set("owner", e.target.value)} className={inputClass}><option value="">Select owner or team</option><optgroup label="Administrative teams">{ownerTeams.map((x) => <option key={x}>{x}</option>)}</optgroup><optgroup label="Active staff">{ownerStaff.map((x) => <option key={x}>{x}</option>)}</optgroup></select></label>
             <label className={labelClass}>Applies To *<select value={draft.appliesTo} onChange={(e) => set("appliesTo", e.target.value)} className={inputClass}><option value="">Select data scope</option>{scopes.map((x) => <option key={x}>{x}</option>)}</select></label>
             <label className={labelClass}>Status<select value={draft.status} onChange={(e) => set("status", e.target.value as PolicyDraft["status"])} className={inputClass}>{["Draft", "Active", "Under Review", "Archived"].map((x) => <option key={x}>{x}</option>)}</select></label>
             <label className={`${labelClass} sm:col-span-2`}>Description<textarea value={draft.description} onChange={(e) => set("description", e.target.value)} className={`${inputClass} min-h-20 resize-y py-2.5`} placeholder="Purpose, coverage, and policy intent" /></label>

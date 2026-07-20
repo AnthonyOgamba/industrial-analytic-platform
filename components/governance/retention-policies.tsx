@@ -1,4 +1,4 @@
-import { Clock3, FileText, Pencil } from "lucide-react";
+import { Clock3, FileText } from "lucide-react";
 
 import { datasets } from "./governance-data";
 import { governancePolicies } from "./policy-data";
@@ -25,9 +25,6 @@ export function RetentionPolicies() {
               </div>
               <div className="flex items-center gap-3">
                 <StatusBadge status={policy.status} />
-                <button type="button" aria-label={`Edit ${policy.name}`} className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground">
-                  <Pencil className="size-4" />
-                </button>
               </div>
             </div>
 

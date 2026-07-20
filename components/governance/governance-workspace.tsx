@@ -4,7 +4,6 @@ import { useState } from "react";
 import {
   AlertTriangle,
   Clock3,
-  Database,
   FileCheck2,
   UserRoundCog,
   ShieldCheck,
@@ -40,7 +39,6 @@ export function GovernanceWorkspace() {
           <h1 className="mt-1.5 text-2xl font-bold tracking-tight">Data Governance</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">Managed by <span className="font-medium text-foreground">Admin User</span> · Policies, classification, retention, ownership, compliance, and governance alerts.</p>
         </div>
-        <div className="flex w-fit items-center gap-2 rounded-full border bg-card px-3 py-1.5 shadow-[var(--dv-shadow)]"><Database className="size-3.5 text-primary" /><span className="font-mono text-[10px] uppercase tracking-[0.08em] text-muted-foreground">Static registry · Phase 3</span></div>
       </div>
 
       <div className="flex flex-col justify-between gap-3 rounded-xl border border-[var(--dv-badge-cr-text)]/35 bg-[var(--dv-badge-cr-bg)] px-4 py-3 text-[var(--dv-badge-cr-text)] sm:flex-row sm:items-center">

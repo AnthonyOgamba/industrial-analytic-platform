@@ -29,7 +29,7 @@ export function NotificationDrawer({ open, notifications, onClose, onChange }: {
     if (label === "Mark Read" || label === "Acknowledge") return markRead(notification.id);
     if (label === "Restore Action") { setMessage("Action restored to pending review."); markRead(notification.id); return; }
     if (label === "Assign Manager") { setAssigning(notification.id); return; }
-    if (label === "Download") { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["Mock DIVU report"])); a.download = "scrap-analysis.pdf"; a.click(); URL.revokeObjectURL(a.href); return; }
+    if (label === "Download") { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["DIVU Analytics report export"])); a.download = "scrap-analysis.pdf"; a.click(); URL.revokeObjectURL(a.href); return; }
     router.push(notification.route); onClose();
   }
   if (!open) return null;

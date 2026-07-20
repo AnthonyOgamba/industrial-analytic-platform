@@ -1,5 +1,5 @@
-import { ApiAuditLogPage } from "@/components/api-security/logs/api-audit-log-page";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <ApiAuditLogPage />;
+  redirect("/audit");
 }

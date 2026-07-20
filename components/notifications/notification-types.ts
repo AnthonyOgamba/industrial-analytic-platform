@@ -12,4 +12,5 @@ export type DivuNotification = {
   source: string;
   route: string;
   actions: string[];
+  recipient?: string;
 };

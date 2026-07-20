@@ -1,2 +1,16 @@
+import { KeyRound, LockKeyhole, ShieldOff, UserCheck, UserPlus, Users } from "lucide-react";
+
+import { SummaryMetricCard } from "../ui/summary-metric-card";
 import type { PlatformUser } from "./users-data";
-export function UserStatsCards({ users }: { users: PlatformUser[] }) { const cards = [["Total Users",users.length,"bg-card","bg-slate-400"],["Active",users.filter(u=>u.status==="Active").length,"bg-emerald-50/70 dark:bg-emerald-500/10","bg-emerald-500"],["Locked",users.filter(u=>u.status==="Locked").length,"bg-red-50/70 dark:bg-red-500/10","bg-red-500"],["Disabled",users.filter(u=>u.status==="Disabled").length,"bg-slate-100/70 dark:bg-slate-500/10","bg-slate-400"],["Pending",users.filter(u=>u.status==="Pending").length,"bg-amber-50/70 dark:bg-amber-500/10","bg-amber-500"],["No MFA",users.filter(u=>u.mfa==="Disabled").length,"bg-orange-50/70 dark:bg-orange-500/10","bg-orange-500"]] as const; return <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">{cards.map(([label,value,bg,dot])=><div key={label} className={`flex items-center gap-2.5 rounded-xl border border-border/70 px-3 py-3 ${bg}`}><span className={`size-2 rounded-full ${dot}`} /><div><p className="text-lg font-bold leading-none">{value}</p><p className="mt-1 text-[11px] text-muted-foreground">{label}</p></div></div>)}</div>; }
+
+export function UserStatsCards({ users }: { users: PlatformUser[] }) {
+  const cards = [
+    { label: "Total Users", value: users.length, note: "Administrative identities", icon: Users },
+    { label: "Active Users", value: users.filter((user) => user.status === "Active").length, note: "Enabled platform access", icon: UserCheck },
+    { label: "Locked Users", value: users.filter((user) => user.status === "Locked").length, note: "Security review required", icon: LockKeyhole },
+    { label: "Disabled Users", value: users.filter((user) => user.status === "Disabled").length, note: "Access currently removed", icon: ShieldOff },
+    { label: "Pending Users", value: users.filter((user) => user.status === "Pending").length, note: "Invitation not completed", icon: UserPlus },
+    { label: "Without MFA", value: users.filter((user) => user.mfa === "Disabled").length, note: "Enrollment follow-up", icon: KeyRound },
+  ];
+  return <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">{cards.map((card) => <SummaryMetricCard key={card.label} {...card} />)}</section>;
+}
