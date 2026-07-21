@@ -65,7 +65,7 @@ export function PoliciesStandards() {
           </tr>)}</tbody>
         </table>{!filtered.length && <p className="p-10 text-center text-sm text-muted-foreground">No governance policies match this search.</p>}</div>
       </GovernanceCard>
-      {activity.length > 0 && <GovernanceCard title="Session Activity" subtitle="Mock audit entries for governance changes"><div className="divide-y">{activity.slice(0, 4).map((entry) => <div key={entry.id} className="flex flex-col gap-1 px-5 py-3 sm:flex-row sm:justify-between"><p className="text-xs">{entry.message}</p><time className="font-mono text-[9px] text-muted-foreground">{entry.timestamp}</time></div>)}</div></GovernanceCard>}
+      {activity.length > 0 && <GovernanceCard title="Session Activity" subtitle="Governance changes in this session"><div className="divide-y">{activity.slice(0, 4).map((entry) => <div key={entry.id} className="flex flex-col gap-1 px-5 py-3 sm:flex-row sm:justify-between"><p className="text-xs">{entry.message}</p><time className="font-mono text-[9px] text-muted-foreground">{entry.timestamp}</time></div>)}</div></GovernanceCard>}
       {editing && <PolicyFormModal policy={editing === "create" ? undefined : editing} onClose={() => setEditing(null)} onSave={save} />}
       {deleting && <DeletePolicyModal policy={deleting} onClose={() => setDeleting(null)} onConfirm={remove} />}
     </div>

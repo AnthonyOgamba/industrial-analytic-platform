@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { FacilitiesWorkspace } from "@/components/facilities/facilities-workspace";
+import { BackendFacilitiesWorkspace } from "@/components/facilities/backend-facilities-workspace";
 
 export const metadata: Metadata = {
   title: "Facilities",
@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function FacilitiesPage() {
-  return <FacilitiesWorkspace />;
+  return <BackendFacilitiesWorkspace />;
 }

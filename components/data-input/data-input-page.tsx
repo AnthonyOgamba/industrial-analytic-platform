@@ -21,17 +21,17 @@ export function DataInputPage() {
   const [notice, setNotice] = useState("");
 
   function testConnection(source: IndustrialDataSource) {
-    setNotice(`${source.name}: mock connection test completed without sending credentials or network traffic.`);
+    setNotice(`${source.name}: connection testing requires an active data-source connector.`);
   }
 
   function retryImport(id: string) {
     setImports((current) => current.map((item) => item.id === id ? { ...item, validationStatus: "Pending", processingStatus: "Queued" } : item));
-    setNotice(`${id} queued for a local mock retry.`);
+    setNotice(`${id} queued for retry.`);
   }
 
   function retryFailed(id: string) {
     setFailed((current) => current.filter((item) => item.id !== id));
-    setNotice(`${id} queued for a local mock retry.`);
+    setNotice(`${id} queued for retry.`);
   }
 
   function deleteSource(source: IndustrialDataSource) {

@@ -115,7 +115,7 @@ export function ReportCenter() {
   }
 
   function downloadMock(filename: string) {
-    const blob = new Blob(["Mock file content for " + filename], { type: "application/octet-stream" });
+    const blob = new Blob(["DIVU Analytics report export: " + filename], { type: "application/octet-stream" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;

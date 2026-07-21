@@ -20,8 +20,7 @@ export function LoginForm() {
     if (!username.trim() || !password) { setError("Enter your username and password."); return; }
     setPending(true); setError("");
     try {
-      const session = await apiRequest<{ token: string }>("/api/auth/login", { method: "POST", body: JSON.stringify({ username: username.trim(), password }) });
-      sessionStorage.setItem("divu-access-token", session.token);
+      await apiRequest<{ username: string; role: string; uid: number }>("/api/auth/login", { method: "POST", body: JSON.stringify({ username: username.trim(), password }) });
       setPassword("");
       router.replace("/");
       router.refresh();

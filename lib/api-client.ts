@@ -8,13 +8,11 @@ export class ApiError extends Error {
 
 export async function apiRequest<T>(url: string, init: RequestInit = {}): Promise<T> {
   try {
-    const token = sessionStorage.getItem("divu-access-token");
     const response = await fetch(url, {
       ...init,
       credentials: "same-origin",
       headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(init.body !== undefined ? { "Content-Type": "application/json" } : {}),
         ...init.headers,
       },
     });
@@ -29,8 +27,8 @@ export async function apiRequest<T>(url: string, init: RequestInit = {}): Promis
             ? "The server could not complete the request."
             : "The request could not be completed.");
       if (response.status === 401 && url !== "/api/auth/login") {
-        sessionStorage.removeItem("divu-access-token");
         window.dispatchEvent(new Event("divu-session-expired"));
+        window.location.assign("/login?reason=session-expired");
       }
       throw new ApiError(message, response.status);
     }

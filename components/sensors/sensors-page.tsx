@@ -14,6 +14,7 @@ import { SensorListView } from "./sensor-list-view";
 import { SensorStatsCards } from "./sensor-stats-cards";
 import { SensorTypeSummary } from "./sensor-type-summary";
 import { initialSensors, sensorAlerts, type IndustrialSensor, type SensorStatus, type SensorType } from "./sensors-data";
+import { LiveSensorStreams } from "./live-sensor-streams";
 
 function nextSensorId(sensors: IndustrialSensor[]) {
   const maximum = sensors.reduce((highest, sensor) => Math.max(highest, Number(sensor.sensorId.replace(/\D/g, "")) || 0), 0);
@@ -30,7 +31,8 @@ export function SensorsPage() {
   const filteredSensors = useMemo(() => { const search = query.trim().toLowerCase(); return sensors.filter((sensor) => { const text = [sensor.sensorId, sensor.name, sensor.type, sensor.location.assetName, sensor.location.siteName, sensor.location.stationName].join(" ").toLowerCase(); return (!search || text.includes(search)) && (site === "All Sites" || sensor.location.siteName === site) && (line === "All Lines" || sensor.location.lineName === line) && (status === "All" || sensor.status === status) && (type === "All Types" || sensor.type === type); }); }, [line, query, sensors, site, status, type]);
   const visibleAlerts = sensorAlerts.filter((alert) => { const sensor = sensors.find((item) => item.id === alert.sensorId); return sensor && (site === "All Sites" || sensor.location.siteName === site); });
 
-  return <div className="space-y-5 pb-5"><header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><p className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">Sensors</p><h1 className="mt-1.5 text-2xl font-bold tracking-tight">Sensor Intelligence Center</h1><p className="mt-1 text-sm text-muted-foreground">Real-time monitoring — temperature, pressure, vibration, current, humidity, RPM, energy</p></div><button type="button" onClick={() => setRegisterOpen(true)} className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"><Plus className="size-4" />Add Sensor</button></header>
+  return <div className="space-y-5 pb-5"><header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><p className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">Sensors</p><h1 className="mt-1.5 text-2xl font-bold tracking-tight">Sensor Intelligence Center</h1><p className="mt-1 text-sm text-muted-foreground">Real-time monitoring — temperature, pressure, vibration, current, humidity, RPM, energy</p></div><button type="button" disabled title="The detailed sensor form does not match the gateway contract yet." className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground opacity-45"><Plus className="size-4" />Add Sensor · Mapping pending</button></header>
+    <LiveSensorStreams />
     {alertsVisible && <SensorAlertsBanner alerts={visibleAlerts} onDismiss={() => setAlertsVisible(false)} />}
     <SensorStatsCards sensors={sensors} />
     <SensorTypeSummary sensors={sensors} selected={type} onSelect={setType} />

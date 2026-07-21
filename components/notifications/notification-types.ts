@@ -1,4 +1,4 @@
-export type NotificationType = "Security" | "Operations" | "Approval" | "Report" | "Governance";
+export type NotificationType = "Security" | "Operations" | "Approval" | "Report" | "Governance" | "Olive";
 export type NotificationSeverity = "Critical" | "High" | "Medium" | "Low";
 
 export type DivuNotification = {

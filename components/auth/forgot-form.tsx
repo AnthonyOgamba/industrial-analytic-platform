@@ -8,6 +8,7 @@ import { apiRequest } from "@/lib/api-client";
 export function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState("");
+  const [confirmation, setConfirmation] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const normalized = email.trim().toLowerCase();
@@ -17,8 +18,9 @@ export function ForgotPasswordForm() {
     if (pending || !valid) { setError("Enter a valid email address."); return; }
     setPending(true); setError("");
     try {
-      await apiRequest("/api/auth/forgot-password", { method: "POST", body: JSON.stringify({ identifier: normalized }) });
+      const result = await apiRequest<{ message: string }>("/api/auth/forgot-password", { method: "POST", body: JSON.stringify({ identifier: normalized }) });
       setSubmitted(normalized);
+      setConfirmation(result.message);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to send reset instructions."); }
     finally { setPending(false); }
   }
@@ -30,8 +32,8 @@ export function ForgotPasswordForm() {
         {submitted ? (
           <div className="auth-success" role="status" aria-live="polite">
             <CheckCircle2 aria-hidden="true" /><h2>Check your inbox</h2>
-            <p>If an account exists for {submitted}, password reset instructions have been sent.</p>
-            <button type="button" className="auth-text-button" onClick={() => { setSubmitted(""); setEmail(""); }}>Use a different email</button>
+            <p>{confirmation}</p><p className="mt-2 font-mono text-[10px]">Request identifier: {submitted}</p>
+            <button type="button" className="auth-text-button" onClick={() => { setSubmitted(""); setEmail(""); setConfirmation(""); }}>Use a different email</button>
           </div>
         ) : (
           <form onSubmit={submit} noValidate>

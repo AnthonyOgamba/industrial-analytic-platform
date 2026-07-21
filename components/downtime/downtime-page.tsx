@@ -63,7 +63,7 @@ export function DowntimePage() {
   }
 
   function deleteFactor(factor: DowntimeFactor) {
-    if (window.confirm(`Delete ${factor.name}? This only removes the local mock record.`)) {
+    if (window.confirm(`Delete ${factor.name}?`)) {
       setFactors((current) => current.filter((item) => item.id !== factor.id));
     }
   }

@@ -1,23 +1,24 @@
-import { jwtVerify } from "jose";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
 const publicPages = ["/login", "/signin", "/forgot-password", "/reset-password"];
 
-async function authenticated(request: NextRequest) {
+async function authenticated(request: NextRequest): Promise<boolean | null> {
   const token = request.cookies.get("divu_access_token")?.value;
   if (!token) return false;
   try {
-    const configuredKey = process.env.JWT_SIGNING_KEY;
-    if (!configuredKey && process.env.NODE_ENV === "production") return false;
-    const key = new TextEncoder().encode(configuredKey || "development-only-divu-signing-key-change-me");
-    await jwtVerify(token, key, {
-      issuer: process.env.JWT_ISSUER || "divu-analytics",
-      audience: process.env.JWT_AUDIENCE || "divu-web",
+    const base = (process.env.BACKEND_API_URL || (process.env.NODE_ENV === "development" ? "http://localhost:8080" : "")).replace(/\/+$/, "");
+    if (!base) return false;
+    const response = await fetch(`${base}/api/dashboard`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+      signal: AbortSignal.timeout(5000),
     });
-    return true;
+    if (response.ok) return true;
+    if (response.status === 401) return false;
+    return null;
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -25,10 +26,12 @@ export async function proxy(request: NextRequest) {
   const isPublic = publicPages.includes(request.nextUrl.pathname);
   const isAuthenticated = await authenticated(request);
   if (isPublic && isAuthenticated) return NextResponse.redirect(new URL("/", request.url));
-  if (!isPublic && !isAuthenticated) {
+  if (!isPublic && isAuthenticated === false) {
     const login = new URL("/login", request.url);
     login.searchParams.set("reason", "authentication-required");
-    return NextResponse.redirect(login);
+    const response = NextResponse.redirect(login);
+    response.cookies.delete("divu_access_token");
+    return response;
   }
   return NextResponse.next();
 }

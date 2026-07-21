@@ -9,6 +9,7 @@ import { PasswordField } from "./password-field";
 
 export function ResetPasswordForm({ token }: { token: string }) {
   const [validToken, setValidToken] = useState<boolean | null>(token ? null : false);
+  const [availabilityError, setAvailabilityError] = useState(token ? "" : "A password reset token is required.");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [pending, setPending] = useState(false);
@@ -17,7 +18,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
   useEffect(() => {
     if (!token) return;
     apiRequest(`/api/auth/reset-password?token=${encodeURIComponent(token)}`)
-      .then(() => setValidToken(true)).catch(() => setValidToken(false));
+      .then(() => setValidToken(true)).catch((cause) => { setAvailabilityError(cause instanceof Error ? cause.message : "Password reset is unavailable."); setValidToken(false); });
   }, [token]);
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -37,7 +38,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
       <h1>Choose a new password</h1>
       <div className="auth-card">
         {validToken === null ? <div className="auth-loading" role="status">Checking reset link...</div> :
-          !validToken ? <div className="auth-alert auth-alert-error" role="alert">This password reset link is invalid or has expired.</div> :
+          !validToken ? <div className="auth-alert auth-alert-error" role="alert">{availabilityError || "Password reset completion is unavailable."}</div> :
           success ? <div className="auth-success" role="status" aria-live="polite"><CheckCircle2 aria-hidden="true" /><h2>Password reset</h2><p>Your password has been reset successfully.</p></div> :
           <form onSubmit={submit} noValidate>
             {error && <div className="auth-alert auth-alert-error" role="alert">{error}</div>}

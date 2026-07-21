@@ -19,6 +19,7 @@ import {
   LayoutDashboard,
   Menu,
   Moon,
+  Bot,
   Radio,
   Settings,
   Settings2,
@@ -86,6 +87,7 @@ const navigation: NavigationGroup[] = [
   {
     label: "Security Center",
     items: [
+      { label: "Olive", href: "/local-ai", icon: Bot },
       { label: "Security Operations", href: "/security-ops", icon: ShieldEllipsis },
       { label: "API Security", href: "/api-security", icon: BarChart3 },
       { label: "Audit Log", href: "/audit", icon: ClipboardList },
@@ -249,6 +251,12 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
   const setNotifications = usePlatformWorkflowStore((state) => state.setNotifications);
   const pageTitle = pageTitles.get(pathname) ?? "DIVU Analytics";
   const unreadCount = notifications.filter((item) => !item.read).length;
+
+  useEffect(() => {
+    const openNotifications = () => setNotificationsOpen(true);
+    window.addEventListener("divu-open-notifications", openNotifications);
+    return () => window.removeEventListener("divu-open-notifications", openNotifications);
+  }, []);
 
   return (
     <div className="flex h-dvh min-h-[36rem] overflow-hidden bg-background">
