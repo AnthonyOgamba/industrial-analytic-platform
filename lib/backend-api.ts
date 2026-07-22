@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { AUTH_COOKIE } from "@/lib/auth/constants";
 
 const DEVELOPMENT_BACKEND_URL = "http://localhost:8080";
+const DEVELOPMENT_AI_AGENT_URL = "http://localhost:8000";
 const REQUEST_TIMEOUT_MS = 10_000;
 
 export function backendBaseUrl() {
@@ -16,6 +17,22 @@ export function backendBaseUrl() {
 
 export function backendUrl(path: string) {
   return `${backendBaseUrl()}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
+export function aiAgentBaseUrl() {
+  const configured = process.env.AI_AGENT_API_URL?.trim();
+  if (!configured && process.env.NODE_ENV === "production") {
+    throw new Error("AI_AGENT_API_URL is required in production.");
+  }
+  return (configured || DEVELOPMENT_AI_AGENT_URL).replace(/\/+$/, "");
+}
+
+export function aiAgentUrl(path: string) {
+  return `${aiAgentBaseUrl()}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
+function upstreamUrl(path: string) {
+  return path.startsWith("/api/ai/") ? aiAgentUrl(path) : backendUrl(path);
 }
 
 export type BackendResult<T> = {
@@ -52,7 +69,7 @@ export async function requestBackend<T>(
   const headers = new Headers();
   if (options.token) headers.set("Authorization", `Bearer ${options.token}`);
   if (options.body !== undefined) headers.set("Content-Type", "application/json");
-  const response = await fetch(backendUrl(path), {
+  const response = await fetch(upstreamUrl(path), {
     method: options.method || "GET",
     headers,
     body: options.body,

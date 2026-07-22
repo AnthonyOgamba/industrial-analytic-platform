@@ -13,9 +13,10 @@ Set these server environment values in `.env.local`:
 ```dotenv
 BACKEND_API_URL=http://localhost:8080
 NEXT_PUBLIC_API_URL=http://localhost:8080
+AI_AGENT_API_URL=http://localhost:8000
 ```
 
-`BACKEND_API_URL` is the value used by the server-only gateway helper. The development default is `http://localhost:8080`; production deliberately fails configuration when it is missing. `NEXT_PUBLIC_API_URL` documents the public gateway origin but authenticated browser code must call the same-origin BFF routes, not the gateway directly.
+`BACKEND_API_URL` is used for authentication and core platform APIs. `AI_AGENT_API_URL` is used for `/api/ai/*`, including Olive chat, alerts, rules, predictions, data generation, settings, and live events. Production fails configuration when the required upstream value is missing. Public URL variables document the upstream origins, but authenticated browser code must call the same-origin BFF routes rather than either service directly.
 
 Run the backend gateway separately, then run the frontend:
 
