@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { AUTH_COOKIE } from "@/lib/auth/constants";
 
 const DEVELOPMENT_BACKEND_URL = "http://localhost:8080";
-const REQUEST_TIMEOUT_MS = 10_000;
+const REQUEST_TIMEOUT_MS = 45_000;
 
 export function backendBaseUrl() {
   const configured = process.env.BACKEND_API_URL?.trim();

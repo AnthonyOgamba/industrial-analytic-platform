@@ -23,7 +23,7 @@ export function Dashboard() {
     try {
       const [nextSummary, nextAnalytics] = await Promise.all([
         apiRequest<DashboardSummaryDto>("/api/backend/dashboard"),
-        apiRequest<AnalyticsMetricDto[]>("/api/backend/dashboard/analytics"),
+        apiRequest<AnalyticsMetricDto[]>("/api/backend/runs/analytics"),
       ]);
       setSummary(nextSummary); setAnalytics(nextAnalytics);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Dashboard data could not be loaded."); }
