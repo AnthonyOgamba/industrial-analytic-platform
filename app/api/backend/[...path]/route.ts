@@ -1,17 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { AUTH_COOKIE } from "@/lib/auth/constants";
-import { expireAuthentication, gatewayFailure, publicBackendResponse, requestBackend } from "@/lib/backend-api";
+import { backendUrl, expireAuthentication, gatewayFailure, publicBackendResponse, requestBackend } from "@/lib/backend-api";
 
 type Context = { params: Promise<{ path: string[] }> };
 
 const allowed = [
+  { pattern: /^auth\/me$/, methods: ["GET"] },
+  { pattern: /^profile$/, methods: ["GET", "PATCH"] },
+  { pattern: /^settings\/organization$/, methods: ["GET", "PATCH"] },
+  { pattern: /^users$/, methods: ["GET", "POST"] },
+  { pattern: /^users\/\d+$/, methods: ["PATCH"] },
+  { pattern: /^users\/\d+\/status$/, methods: ["PATCH"] },
+  { pattern: /^users\/\d+\/invitation$/, methods: ["POST"] },
+  { pattern: /^roles$/, methods: ["GET", "POST"] },
+  { pattern: /^roles\/[^/]+$/, methods: ["PATCH", "DELETE"] },
   { pattern: /^dashboard(?:\/analytics)?$/, methods: ["GET"] },
   { pattern: /^runs$/, methods: ["GET", "POST"] },
   { pattern: /^runs\/(?:active|stations)$/, methods: ["GET"] },
   { pattern: /^runs\/(?:dashboard-summary|analytics)$/, methods: ["GET"] },
+  { pattern: /^runs\/dashboard-workspace$/, methods: ["GET"] },
   { pattern: /^runs\/\d+\/close$/, methods: ["PATCH"] },
   { pattern: /^runs\/\d+\/(?:start|pause|fail)$/, methods: ["PATCH"] },
   { pattern: /^facilities$/, methods: ["GET", "POST"] },
+  { pattern: /^facilities\/workspace$/, methods: ["GET"] },
   { pattern: /^facilities\/\d+\/halls$/, methods: ["GET", "POST"] },
   { pattern: /^halls\/\d+\/lines$/, methods: ["GET", "POST"] },
   { pattern: /^lines\/\d+\/stations$/, methods: ["GET", "POST"] },
@@ -28,6 +39,19 @@ const allowed = [
   { pattern: /^sensors\/runs\/\d+\/readings$/, methods: ["GET"] },
   { pattern: /^sensors\/analytics$/, methods: ["GET"] },
   { pattern: /^audit$/, methods: ["GET"] },
+  { pattern: /^reports$/, methods: ["GET"] },
+  { pattern: /^reports\/export\.xlsx$/, methods: ["GET"] },
+  { pattern: /^downtime(?:\/\d+)?$/, methods: ["GET"] },
+  { pattern: /^financial$/, methods: ["GET"] },
+  { pattern: /^security-events(?:\/\d+)?$/, methods: ["GET"] },
+  { pattern: /^activity$/, methods: ["GET"] },
+  { pattern: /^data-governance$/, methods: ["GET", "POST"] },
+  { pattern: /^data-governance\/[0-9a-fA-F-]+$/, methods: ["PATCH"] },
+  { pattern: /^data-input\/batches$/, methods: ["GET"] },
+  { pattern: /^data-input\/batches\/[0-9a-fA-F-]+$/, methods: ["GET"] },
+  { pattern: /^data-input\/import$/, methods: ["POST"] },
+  { pattern: /^generation-batches$/, methods: ["GET"] },
+  { pattern: /^generation-batches\/[0-9a-fA-F-]+$/, methods: ["GET"] },
   { pattern: /^ai\/alerts$/, methods: ["GET"] },
   { pattern: /^ai\/alerts\/summary$/, methods: ["GET"] },
   { pattern: /^ai\/assets\/failure-probabilities$/, methods: ["GET"] },
@@ -57,10 +81,45 @@ async function handler(request: NextRequest, context: Context) {
     return NextResponse.json({ error: "This backend operation is not available." }, { status: 404 });
   }
   const query = request.nextUrl.search;
-  const requestBody = method === "GET" || method === "DELETE" ? "" : await request.text();
-  const body = requestBody || undefined;
   try {
-    const result = await requestBackend(`/api/${path}${query}`, { method, token, body });
+    if (path === "reports/export.xlsx") {
+      const upstream = await fetch(backendUrl(`/api/${path}${query}`), {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        },
+        cache: "no-store",
+        signal: request.signal,
+      });
+      if (upstream.status === 401) {
+        return expireAuthentication(NextResponse.json({ error: "Your session has expired." }, { status: 401 }));
+      }
+      if (!upstream.ok) {
+        const errorBody = upstream.headers.get("content-type")?.includes("application/json")
+          ? await upstream.json().catch(() => null)
+          : null;
+        return publicBackendResponse(errorBody, upstream.status);
+      }
+      const headers = new Headers({
+        "Content-Type": upstream.headers.get("content-type") || "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const disposition = upstream.headers.get("content-disposition");
+      if (disposition) headers.set("Content-Disposition", disposition);
+      return new NextResponse(upstream.body, { status: upstream.status, headers });
+    }
+    const contentType = request.headers.get("content-type") || "";
+    const hasBody = method !== "GET" && method !== "DELETE";
+    const body = hasBody
+      ? contentType.startsWith("multipart/form-data")
+        ? await request.arrayBuffer()
+        : await request.text()
+      : undefined;
+    const result = await requestBackend(`/api/${path}${query}`, {
+      method,
+      token,
+      body: body || undefined,
+      contentType: contentType.startsWith("multipart/form-data") ? contentType : undefined,
+    });
     const response = publicBackendResponse(result.body, result.response.status);
     return result.response.status === 401 ? expireAuthentication(response) : response;
   } catch (error) {

@@ -46,13 +46,14 @@ export function backendError(body: unknown, fallback: string) {
 
 export async function requestBackend<T>(
   path: string,
-  options: { method?: string; token?: string; body?: string; signal?: AbortSignal } = {},
+  options: { method?: string; token?: string; body?: BodyInit; contentType?: string; signal?: AbortSignal } = {},
 ): Promise<BackendResult<T>> {
   const timeoutSignal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
   const signal = options.signal ? AbortSignal.any([options.signal, timeoutSignal]) : timeoutSignal;
   const headers = new Headers();
   if (options.token) headers.set("Authorization", `Bearer ${options.token}`);
-  if (options.body !== undefined) headers.set("Content-Type", "application/json");
+  if (options.body !== undefined && options.contentType) headers.set("Content-Type", options.contentType);
+  else if (options.body !== undefined && typeof options.body === "string") headers.set("Content-Type", "application/json");
   const response = await fetch(backendUrl(path), {
     method: options.method || "GET",
     headers,

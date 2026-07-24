@@ -1,5 +1,33 @@
 export type LoginResponseDto = { token: string; username: string; role: string; uid: number };
 export type PublicSessionDto = { username: string; role: string; uid: number };
+export type CurrentUserDto = {
+  uid: number;
+  username: string;
+  email: string;
+  role: string;
+  capabilities: string[];
+  facilityIds: number[];
+  mustChangePassword: boolean;
+};
+export type ProfileDto = CurrentUserDto & {
+  displayName: string;
+  theme: string;
+  language: string;
+  timeZone: string;
+  notificationPreferences: Record<string, boolean>;
+  defaultFacilityId: number | null;
+  lastLoginAtUtc: string | null;
+};
+export type ProfileUpdateDto = Pick<ProfileDto, "displayName" | "email" | "theme" | "language" | "timeZone" | "notificationPreferences" | "defaultFacilityId"> & {
+  currentPassword: string | null;
+  newPassword: string | null;
+};
+export type OrganizationSettingDto = { key: string; value: unknown; category: string; updatedAtUtc?: string };
+export type UserDto = { uid: number; username: string; email: string; role: string; status: string; mustChangePassword: boolean; lastLoginAtUtc: string | null; createdAt: string };
+export type CreateUserDto = { username: string; email: string; role: string; facilityIds: number[] };
+export type CreatedUserDto = CreateUserDto & { uid: number; temporaryPassword: string; mustChangePassword: true };
+export type InvitationDto = { invitationUrl: string; expiresAtUtc: string };
+export type RoleDto = { role: string; capabilities: string[] };
 
 export type ProductionRunDto = {
   rid: number;

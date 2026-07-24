@@ -3,11 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AlertTriangle, Bell, Bot, CheckCircle2, DatabaseZap, MessageSquare, Play, RefreshCw, Save, Settings2, ShieldAlert, Sparkles, Trash2, Wifi, WifiOff, Wrench } from "lucide-react";
 import { apiRequest } from "@/lib/api-client";
-import type { AiAlert, AiChatResponse, AiFailureProbability, AiNotification, AiRule, AiRuleParameters, AiRuleType, AiScanResult, AiSettings } from "@/lib/backend-dtos";
+import type { AiAlert, AiChatResponse, AiFailureProbability, AiNotification, AiRule, AiRuleParameters, AiRuleType, AiScanResult, AiSettings, CurrentUserDto } from "@/lib/backend-dtos";
 import { DataGenerationPanel } from "./data-generation-panel";
 
 type Tab = "chat" | "risk" | "alerts" | "notifications" | "rules" | "generation" | "settings";
-type Session = { user: { role: string } };
 type ChatMessage = { role: "user" | "assistant"; text: string; author?: string; sources?: AiChatResponse["sources"] };
 const suggestions = ["Which station is most likely to fail?", "How many alerts are currently open?", "Which stations have the most downtime?", "Are any production runs still active?", "Is sensor data stale?", "What can Olive analyze?"];
 const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [{id:"chat",label:"Olive",icon:MessageSquare},{id:"risk",label:"Station Risk",icon:AlertTriangle},{id:"alerts",label:"Olive Alerts",icon:ShieldAlert},{id:"notifications",label:"Notifications",icon:Bell},{id:"rules",label:"Olive Rules",icon:Wrench},{id:"generation",label:"Olive Data Generation",icon:DatabaseZap},{id:"settings",label:"Olive Settings",icon:Settings2}];
@@ -20,7 +19,7 @@ function Loading() { return <div role="status" aria-label="Loading Olive data" c
 export function LocalAiPage() {
   const [tab,setTab]=useState<Tab>("chat"); const [role,setRole]=useState("viewer"); const [live,setLive]=useState<"connecting"|"live"|"polling">("connecting"); const [version,setVersion]=useState(0); const [readiness,setReadiness]=useState<"checking"|"ready"|"unavailable">("checking"); const [readinessError,setReadinessError]=useState("");
   const manager=["manager","admin","super_admin"].includes(role);
-  useEffect(()=>{apiRequest<Session>("/api/auth/session").then(data=>setRole(data.user.role)).catch(()=>undefined)},[]);
+  useEffect(()=>{apiRequest<CurrentUserDto>("/api/auth/session").then(data=>setRole(data.role)).catch(()=>undefined)},[]);
   const checkReadiness=useCallback(async()=>{setReadiness("checking");setReadinessError("");try{await apiRequest("/api/backend/ai/ready");setReadiness("ready")}catch(cause){setReadiness("unavailable");setReadinessError(cause instanceof Error?cause.message:"Olive is not ready.")}},[]);
   useEffect(()=>{// eslint-disable-next-line react-hooks/set-state-in-effect
     void checkReadiness();

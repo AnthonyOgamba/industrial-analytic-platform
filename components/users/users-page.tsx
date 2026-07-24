@@ -1,15 +1,44 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Check, Plus, ShieldCheck, Trash2, UserRound, X } from "lucide-react";
 
 import { CreateUserModal } from "./create-user-modal";
 import { UserFilters } from "./user-filters";
 import { UserSecurityWarning } from "./user-security-warning";
 import { UserStatsCards } from "./user-stats-cards";
-import { initialUsers, type PlatformUser, type UserRole, type UserStatus } from "./users-data";
+import type { PlatformUser, UserRole, UserStatus } from "./users-data";
 import { UsersTable } from "./users-table";
 import { usePlatformWorkflowStore } from "@/lib/platform-workflow-store";
+import { apiRequest } from "@/lib/api-client";
+import type { CreatedUserDto, UserDto } from "@/lib/backend-dtos";
+
+const roleLabels: Record<string, UserRole> = {
+  super_admin: "Administrator", admin: "Administrator", manager: "Plant Manager",
+  operations_manager: "Plant Manager", plant_manager: "Plant Manager", viewer: "Viewer",
+  finance_viewer: "Finance Analyst", report_viewer: "Audit Viewer", security_analyst: "Audit Viewer",
+  line_supervisor: "Plant Manager", maintenance_technician: "Viewer",
+};
+const backendRoles: Record<UserRole, string> = {
+  Administrator: "admin",
+  "Plant Manager": "plant_manager",
+  Viewer: "viewer",
+  "Quality Inspector": "line_supervisor",
+  "Finance Analyst": "finance_viewer",
+  "Audit Viewer": "report_viewer",
+};
+
+function mapUser(user: UserDto): PlatformUser {
+  const normalizedStatus = user.status.toLowerCase();
+  return {
+    id: String(user.uid), name: user.username, email: user.email,
+    initials: user.username.split(/[._\s-]+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
+    role: roleLabels[user.role.toLowerCase()] ?? "Viewer", department: "Backend identity", sites: [],
+    lastLogin: user.lastLoginAtUtc ? new Date(user.lastLoginAtUtc).toLocaleString() : "Never",
+    status: normalizedStatus === "active" ? "Active" : normalizedStatus === "locked" ? "Locked" : normalizedStatus === "pending" ? "Pending" : "Disabled",
+    mfa: "Disabled", governanceAssignments: [],
+  };
+}
 
 function UserDetailModal({ user, onClose }: { user: PlatformUser; onClose: () => void }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -19,7 +48,7 @@ function UserDetailModal({ user, onClose }: { user: PlatformUser; onClose: () =>
 }
 
 export function UsersPage() {
-  const [users, setUsers] = useState(initialUsers);
+  const [users, setUsers] = useState<PlatformUser[]>([]);
   const [query, setQuery] = useState("");
   const [site, setSite] = useState("All Sites");
   const [role, setRole] = useState<UserRole | "All Roles">("All Roles");
@@ -27,11 +56,26 @@ export function UsersPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [selected, setSelected] = useState<PlatformUser | null>(null);
   const [feedback, setFeedback] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const load = useCallback(async () => {
+    setLoading(true);
+    try { setUsers((await apiRequest<UserDto[]>("/api/backend/users")).map(mapUser)); setError(""); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : "Users could not be loaded."); }
+    finally { setLoading(false); }
+  }, []);
+  useEffect(() => {
+  const timeoutId = window.setTimeout(() => {
+    void load();
+  }, 0);
+
+  return () => window.clearTimeout(timeoutId);
+}, [load]);
   const filteredUsers = useMemo(() => {
     const search = query.trim().toLowerCase();
     return users.filter((user) => (!search || [user.name, user.email, user.role, user.department, ...user.sites, ...user.governanceAssignments.flatMap((item) => [item.responsibility, item.resource])].join(" ").toLowerCase().includes(search)) && (site === "All Sites" || user.sites.includes(site)) && (role === "All Roles" || user.role === role) && (status === "All" || user.status === status));
   }, [query, role, site, status, users]);
   const usersWithoutMfa = users.filter((user) => user.status === "Active" && user.mfa === "Disabled").length;
 
-  return <div className="space-y-4 pb-5"><header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><p className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">Administration</p><h1 className="mt-1 text-2xl font-bold tracking-tight">User Management</h1><p className="mt-1 text-sm text-muted-foreground">Manage staff identities, RBAC access, sites, and governance responsibilities</p></div><button type="button" disabled title="User management is not available through the public gateway." className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground opacity-45"><Plus className="size-4" />Create User · API unavailable</button></header>{feedback && <div role="status" className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-700 dark:text-emerald-300"><Check className="size-4" />{feedback}</div>}<UserSecurityWarning usersWithoutMfa={usersWithoutMfa} /><UserStatsCards users={users} /><UserFilters query={query} site={site} role={role} status={status} resultCount={filteredUsers.length} totalCount={users.length} onQueryChange={setQuery} onSiteChange={setSite} onRoleChange={setRole} onStatusChange={setStatus} /><UsersTable users={filteredUsers} onSelect={setSelected} />{selected && <UserDetailModal user={selected} onClose={() => setSelected(null)} />}{createOpen && <CreateUserModal onClose={() => setCreateOpen(false)} onCreate={(user) => { setUsers((items) => [user, ...items]); setCreateOpen(false); setFeedback(`${user.name} was added to Administration.`); }} />}</div>;
+  return <div className="space-y-4 pb-5"><header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><p className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">Administration</p><h1 className="mt-1 text-2xl font-bold tracking-tight">User Management</h1><p className="mt-1 text-sm text-muted-foreground">Manage staff identities, RBAC access, sites, and governance responsibilities</p></div><button type="button" onClick={() => setCreateOpen(true)} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground"><Plus className="size-4" />Create User</button></header>{error && <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">{error}<button type="button" onClick={() => void load()} className="ml-3 underline">Retry</button></div>}{feedback && <div role="status" className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-700 dark:text-emerald-300"><Check className="size-4" />{feedback}</div>}<UserSecurityWarning usersWithoutMfa={usersWithoutMfa} /><UserStatsCards users={users} /><UserFilters query={query} site={site} role={role} status={status} resultCount={filteredUsers.length} totalCount={users.length} onQueryChange={setQuery} onSiteChange={setSite} onRoleChange={setRole} onStatusChange={setStatus} /><UsersTable users={filteredUsers} onSelect={setSelected} />{loading && !users.length && <p role="status" className="p-4 text-center text-xs text-muted-foreground">Loading users…</p>}{selected && <UserDetailModal user={selected} onClose={() => setSelected(null)} />}{createOpen && <CreateUserModal onClose={() => setCreateOpen(false)} onCreate={(user) => { void (async () => { try { const created = await apiRequest<CreatedUserDto>("/api/backend/users", { method: "POST", body: JSON.stringify({ username: user.email.split("@")[0], email: user.email, role: backendRoles[user.role], facilityIds: [] }) }); setCreateOpen(false); setFeedback(`${created.username} was created. Temporary password: ${created.temporaryPassword}`); await load(); } catch (cause) { setError(cause instanceof Error ? cause.message : "User could not be created."); } })(); }} />}</div>;
 }
