@@ -12,9 +12,14 @@ const allowed = [
   { pattern: /^runs\/\d+\/close$/, methods: ["PATCH"] },
   { pattern: /^runs\/\d+\/(?:start|pause|fail)$/, methods: ["PATCH"] },
   { pattern: /^facilities$/, methods: ["GET", "POST"] },
+  { pattern: /^facilities\/workspace$/, methods: ["GET"] },
+  { pattern: /^facilities\/\d+$/, methods: ["PATCH"] },
   { pattern: /^facilities\/\d+\/halls$/, methods: ["GET", "POST"] },
+  { pattern: /^halls\/\d+$/, methods: ["PATCH"] },
   { pattern: /^halls\/\d+\/lines$/, methods: ["GET", "POST"] },
+  { pattern: /^lines\/\d+$/, methods: ["PATCH"] },
   { pattern: /^lines\/\d+\/stations$/, methods: ["GET", "POST"] },
+  { pattern: /^stations\/\d+$/, methods: ["PATCH"] },
   { pattern: /^site-access$/, methods: ["GET", "POST"] },
   { pattern: /^(?:facilities|halls|lines)\/\d+\/performance$/, methods: ["GET"] },
   { pattern: /^products$/, methods: ["GET", "POST"] },
@@ -28,6 +33,28 @@ const allowed = [
   { pattern: /^sensors\/runs\/\d+\/readings$/, methods: ["GET"] },
   { pattern: /^sensors\/analytics$/, methods: ["GET"] },
   { pattern: /^audit$/, methods: ["GET"] },
+  { pattern: /^reports$/, methods: ["GET"] },
+  { pattern: /^activity$/, methods: ["GET"] },
+  { pattern: /^financial$/, methods: ["GET"] },
+  { pattern: /^financial\/(?:summary|monthly|facilities|lines)$/, methods: ["GET"] },
+  { pattern: /^downtime$/, methods: ["GET"] },
+  { pattern: /^downtime\/\d+$/, methods: ["GET"] },
+  { pattern: /^security-events$/, methods: ["GET"] },
+  { pattern: /^security-events\/\d+$/, methods: ["GET"] },
+  { pattern: /^users$/, methods: ["GET", "POST"] },
+  { pattern: /^users\/\d+$/, methods: ["PATCH"] },
+  { pattern: /^users\/\d+\/(?:status|invitation)$/, methods: ["PATCH", "POST"] },
+  { pattern: /^roles$/, methods: ["GET", "POST"] },
+  { pattern: /^roles\/[^/]+$/, methods: ["PATCH", "DELETE"] },
+  { pattern: /^profile$/, methods: ["GET", "PATCH"] },
+  { pattern: /^settings\/organization$/, methods: ["GET", "PATCH"] },
+  { pattern: /^data-input\/batches$/, methods: ["GET"] },
+  { pattern: /^data-input\/batches\/[0-9a-fA-F-]+$/, methods: ["GET"] },
+  { pattern: /^data-input\/import$/, methods: ["POST"] },
+  { pattern: /^generation-batches$/, methods: ["GET"] },
+  { pattern: /^generation-batches\/[0-9a-fA-F-]+$/, methods: ["GET"] },
+  { pattern: /^data-governance$/, methods: ["GET", "POST"] },
+  { pattern: /^data-governance\/[0-9a-fA-F-]+$/, methods: ["PATCH", "DELETE"] },
   { pattern: /^ai\/alerts$/, methods: ["GET"] },
   { pattern: /^ai\/alerts\/summary$/, methods: ["GET"] },
   { pattern: /^ai\/assets\/failure-probabilities$/, methods: ["GET"] },
@@ -57,7 +84,7 @@ async function handler(request: NextRequest, context: Context) {
     return NextResponse.json({ error: "This backend operation is not available." }, { status: 404 });
   }
   const query = request.nextUrl.search;
-  const requestBody = method === "GET" || method === "DELETE" ? "" : await request.text();
+  const requestBody = method === "GET" ? "" : await request.text();
   const body = requestBody || undefined;
   try {
     const result = await requestBackend(`/api/${path}${query}`, { method, token, body });

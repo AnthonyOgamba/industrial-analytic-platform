@@ -1,60 +1,200 @@
 "use client";
 
-import { useState } from "react";
-import { BarChart3, Boxes, DollarSign, Filter, TrendingDown, TrendingUp, TriangleAlert } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AlertTriangle, BarChart3, Boxes, Filter, RefreshCw, ShieldAlert, TrendingUp } from "lucide-react";
+
+import { apiRequest, ApiError } from "@/lib/api-client";
+import type {
+  FinancialAggregateDto,
+  FinancialAggregateEnvelope,
+  FinancialFacilityDto,
+  FinancialLineDto,
+  FinancialMonthlyDto,
+  FinancialSnapshotDto,
+  FinancialSummaryDto,
+  PagedEnvelope,
+} from "@/lib/backend-dtos";
+import { useFacilityHierarchy } from "@/lib/facility-hierarchy";
+import { useSessionUser } from "@/lib/session-user";
 import { cn } from "@/lib/utils";
-import { lines, monthly, products, siteColor, sites } from "./financial-data";
 
-type Tab = "overview" | "sites" | "products" | "oee" | "costs";
-const tabs: { id: Tab; label: string }[] = [{ id: "overview", label: "Overview" }, { id: "sites", label: "Revenue by Site" }, { id: "products", label: "Margin by Product" }, { id: "oee", label: "OEE vs Profit" }, { id: "costs", label: "Cost Trends" }];
-const fmt = (value: number) => value.toLocaleString("en-US");
+type Tab = "overview" | "sites" | "costs";
+type OriginFilter = "all" | "generated" | "operational";
 
-function Card({ title, subtitle, children, className }: { title: string; subtitle?: string; children: React.ReactNode; className?: string }) {
-  return <section className={cn("overflow-hidden rounded-xl border bg-card shadow-[var(--dv-shadow)]", className)}><header className="px-5 pt-5"><h2 className="text-base font-semibold">{title}</h2>{subtitle && <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>}</header><div className="p-5">{children}</div></section>;
+const tabs: { id: Tab; label: string }[] = [
+  { id: "overview", label: "Overview" },
+  { id: "sites", label: "Revenue by Site" },
+  { id: "costs", label: "Cost Trends" },
+];
+
+function Card({ title, subtitle, children, className }: { title:string; subtitle?:string; children:React.ReactNode; className?:string }) {
+  return <section className={cn("overflow-hidden rounded-xl border bg-card shadow-[var(--dv-shadow)]", className)}><header className="px-5 pt-5"><h2 className="text-base font-semibold">{title}</h2>{subtitle&&<p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>}</header><div className="p-5">{children}</div></section>;
 }
 
-function Kpis() {
-  const data = [
-    { label: "Revenue", value: "$11.8M", change: "+4.4%", note: "YTD 2026 · All Sites", icon: DollarSign, good: true },
-    { label: "COGS", value: "$7.3M", change: "-4.5%", note: "Cost of Goods Sold", icon: BarChart3, good: false },
-    { label: "Gross Margin", value: "38.1%", change: "+4.2%", note: "$4.5M absolute", icon: TrendingUp, good: true },
-    { label: "Downtime Cost", value: "$358K", change: "-23.6%", note: "Est. production loss", icon: TriangleAlert, good: false },
-    { label: "Scrap Cost", value: "$129K", change: "-13.6%", note: "Material waste YTD", icon: Boxes, good: false },
-  ];
-  return <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">{data.map(({ icon: Icon, ...item }) => <article key={item.label} className="rounded-xl border bg-card p-5 shadow-[var(--dv-shadow)]"><div className="flex items-start justify-between"><span className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary"><Icon className="size-[18px]" /></span><span className={cn("flex items-center gap-1 text-xs font-semibold", item.good ? "text-[var(--dv-badge-ok-text)]" : "text-[var(--dv-badge-cr-text)]")}>{item.good ? <TrendingUp className="size-3" /> : <TrendingDown className="size-3" />}{item.change}</span></div><p className="mt-5 text-2xl font-bold tracking-tight">{item.value}</p><p className="mt-1 text-xs font-medium text-muted-foreground">{item.label}</p><p className="mt-2 text-[11px] text-muted-foreground">{item.note}</p></article>)}</div>;
+function EmptyState({ message }: { message:string }) {
+  return <div className="grid min-h-52 place-items-center rounded-lg border border-dashed bg-muted/20 p-8 text-center"><div><BarChart3 className="mx-auto size-8 text-muted-foreground"/><p className="mt-3 max-w-xl text-sm text-muted-foreground">{message}</p></div></div>;
 }
 
-function Bars({ data, max, suffix = "K" }: { data: { label: string; value: number; color?: string }[]; max: number; suffix?: string }) {
-  return <div className="space-y-3">{data.map((item) => <div key={item.label} className="grid grid-cols-[6.5rem_1fr_4rem] items-center gap-3 text-xs"><span className="truncate text-muted-foreground">{item.label}</span><div className="h-7 overflow-hidden rounded bg-muted"><div className="h-full rounded" style={{ width: `${Math.max(2, item.value / max * 100)}%`, background: item.color ?? "var(--chart-1)" }} /></div><span className="font-mono text-[10px] text-muted-foreground">{fmt(item.value)}{suffix}</span></div>)}</div>;
+function money(value:number, currency:string) {
+  return new Intl.NumberFormat(undefined,{style:"currency",currency,notation:Math.abs(value)>=1_000_000?"compact":"standard",maximumFractionDigits:0}).format(value);
 }
 
-function TrendChart({ values, max, color = "var(--chart-1)", target }: { values: number[]; max: number; color?: string; target?: number }) {
-  const pts = values.map((v, i) => `${50 + i * 118},${190 - v / max * 150}`).join(" ");
-  return <svg viewBox="0 0 680 225" className="h-auto w-full min-w-[34rem]" role="img" aria-label="Monthly trend chart"><g className="text-muted-foreground" stroke="currentColor" strokeOpacity=".2">{[40,90,140,190].map(y => <line key={y} x1="50" x2="650" y1={y} y2={y} strokeDasharray="4 4" />)}</g>{target && <line x1="50" x2="650" y1={190-target/max*150} y2={190-target/max*150} stroke="var(--chart-3)" strokeDasharray="6 4" />}<polyline points={pts} fill="none" stroke={color} strokeWidth="3" strokeLinejoin="round" />{values.map((v,i)=><circle key={i} cx={50+i*118} cy={190-v/max*150} r="4" fill={color} />)}{monthly.map((m,i)=><text key={m.month} x={50+i*118} y="215" textAnchor="middle" fill="currentColor" className="text-[11px] text-muted-foreground">{m.month}</text>)}</svg>;
+function rangeForYear(year:number) {
+  const now=new Date();
+  return {
+    fromUtc:new Date(Date.UTC(year,0,1)).toISOString(),
+    toUtc:year===now.getUTCFullYear()?now.toISOString():new Date(Date.UTC(year,11,31,23,59,59,999)).toISOString(),
+  };
 }
 
-const cell = "px-3 py-3 text-right whitespace-nowrap";
-function Overview() {
-  const rows = [
-    ["Revenue ($K)", ...monthly.map(x=>fmt(x.revenue)), "11,840"], ["COGS ($K)", ...monthly.map(x=>fmt(x.cogs)), "7,331"],
-    ["Gross Margin ($K)", ...monthly.map(x=>fmt(x.margin)), "4,509"], ["Downtime Cost ($K)", ...monthly.map(x=>x.downtime), "358"],
-    ["Scrap Cost ($K)", ...monthly.map(x=>x.scrap), "129"], ["Gross Margin %", ...monthly.map(x=>`${x.gm}%`), "38.1%"],
-  ];
-  return <div className="space-y-5"><Card title="P&L Summary — YTD 2026" subtitle="Revenue, COGS, and margin breakdown by month"><div className="overflow-x-auto"><table className="w-full min-w-[46rem] text-xs"><thead className="text-muted-foreground"><tr><th className="px-3 py-3 text-left">Metric</th>{[...monthly.map(x=>x.month),"YTD"].map(x=><th className={cell} key={x}>{x}</th>)}</tr></thead><tbody>{rows.map((r,ri)=><tr key={String(r[0])} className="border-t"><th className={cn("px-3 py-3 text-left", [0,2,5].includes(ri)&&"font-semibold")}>{r[0]}</th>{r.slice(1).map((v,i)=><td key={i} className={cn(cell,ri===0&&"font-semibold text-primary",ri===2&&"font-semibold text-[var(--dv-badge-ok-text)]",ri>=3&&"text-[var(--dv-badge-wa-text)]",i===6&&"bg-muted/70 font-semibold")}>{v}</td>)}</tr>)}</tbody></table></div></Card><Card title="Revenue vs Gross Margin — Monthly" subtitle="6-month trend with gross margin %"><div className="overflow-x-auto"><TrendChart values={monthly.map(x=>x.revenue)} max={2300} /></div><div className="mt-2 flex justify-center gap-5 text-[10px] text-muted-foreground"><span className="text-primary">● Revenue</span><span>● COGS</span><span className="text-[var(--dv-badge-ok-text)]">● Gross Margin</span></div></Card></div>;
+function impact(item:FinancialAggregateDto) {
+  return item.downtimeCost+item.lostProductionValue+item.maintenanceCostEstimate-item.avoidedCost;
 }
 
-function Sites() { const total={site:"Total / Avg",revenue:13420,cogs:8342,margin:5078,gm:38.1,downtime:377,scrap:154,oee:75}; return <div className="space-y-5"><div className="grid gap-5 xl:grid-cols-2"><Card title="Revenue by Site" subtitle="YTD 2026 · $K"><Bars max={10000} data={sites.map(s=>({label:s.site,value:s.revenue,color:s.color}))}/></Card><Card title="Gross Margin by Site" subtitle="% and absolute ($K)"><Bars max={3500} data={sites.map(s=>({label:s.site,value:s.margin,color:s.color}))}/></Card></div><FinancialTable title="Site Financial Summary" headers={["Site","Revenue","COGS","Gross Margin","GM %","Downtime","Scrap","OEE"]} rows={[...sites,total].map(s=>[s.site,`$${fmt(s.revenue)}K`,`$${fmt(s.cogs)}K`,`$${fmt(s.margin)}K`,`${s.gm}%`,`$${s.downtime}K`,`$${s.scrap}K`,`${s.oee}%`])}/></div> }
+function TrendChart({items,value,color="var(--chart-1)"}:{items:FinancialMonthlyDto[];value:(item:FinancialMonthlyDto)=>number;color?:string}) {
+  const year=items[0]?new Date(items[0].periodStartUtc).getUTCFullYear():new Date().getUTCFullYear();
+  const finalMonth=year===new Date().getUTCFullYear()?new Date().getUTCMonth():11;
+  const months=Array.from({length:finalMonth+1},(_,month)=>{
+    const item=items.find(candidate=>{const date=new Date(candidate.periodStartUtc);return date.getUTCFullYear()===year&&date.getUTCMonth()===month});
+    return {label:new Date(Date.UTC(year,month,1)).toLocaleDateString(undefined,{month:"short"}),amount:item?value(item):null};
+  });
+  const values=months.flatMap(item=>item.amount===null?[]:[item.amount]);const max=Math.max(...values,1);const step=months.length>1?600/(months.length-1):0;
+  const points=months.flatMap((item,index)=>item.amount===null?[]:[`${50+index*step},${190-item.amount/max*150}`]).join(" ");
+  return <div className="overflow-x-auto"><svg viewBox="0 0 680 225" className="h-auto w-full min-w-[34rem]" role="img" aria-label="Monthly financial cost-impact trend beginning in January"><g className="text-muted-foreground" stroke="currentColor" strokeOpacity=".2">{[40,90,140,190].map(y=><line key={y} x1="50" x2="650" y1={y} y2={y} strokeDasharray="4 4"/>)}</g>{points&&<polyline points={points} fill="none" stroke={color} strokeWidth="3"/>}{months.map((item,index)=>item.amount===null?null:<circle key={`${item.label}-${index}`} cx={50+index*step} cy={190-item.amount/max*150} r="4" fill={color}/>)}{months.map((item,index)=><text key={`${item.label}-${index}`} x={50+index*step} y="215" textAnchor="middle" fill="currentColor" className="text-[11px] text-muted-foreground">{item.label}</text>)}</svg></div>;
+}
 
-function Products() { return <div className="space-y-5"><div className="grid gap-5 xl:grid-cols-2"><Card title="Gross Margin by Product" subtitle="% margin — higher is better"><Bars max={50} suffix="%" data={products.map((p,i)=>({label:p.product,value:p.gm,color:i===0?"var(--chart-2)":i===5?"var(--chart-5)":"var(--chart-1)"}))}/></Card><Card title="Revenue vs Scrap Rate by Product" subtitle="Bubble = revenue, X-axis = scrap %"><div className="relative h-64 border-b border-l">{products.map((p,i)=><span key={p.product} title={`${p.product}: $${p.revenue}K, ${p.scrap}% scrap`} className="absolute grid place-items-center rounded-full bg-primary/70 text-[8px] text-white" style={{left:`${p.scrap/6*85+3}%`,bottom:`${p.revenue/4000*80+3}%`,width:24+p.revenue/180,height:24+p.revenue/180}}>{i+1}</span>)}</div><p className="mt-3 text-center text-[10px] text-muted-foreground">Scrap rate →</p></Card></div><FinancialTable title="Product Financial Detail" headers={["Product","Revenue $K","COGS $K","Gross Margin","GM %","Units","Scrap Rate"]} rows={products.map(p=>[p.product,`$${fmt(p.revenue)}`,`$${fmt(p.cogs)}`,`$${fmt(p.margin)}`,`${p.gm}%`,fmt(p.units),`${p.scrap}%`])}/></div> }
-
-function Oee() { return <div className="space-y-5"><Card title="OEE vs Profit Margin — Production Lines" subtitle="Each dot = one production line. Size = revenue. Target zone: OEE ≥85%, Margin ≥38%"><div className="overflow-x-auto"><svg viewBox="0 0 800 330" className="min-w-[42rem]" role="img" aria-label="OEE versus profit margin scatter plot"><rect x="80" y="30" width="670" height="250" fill="var(--muted)" opacity=".2"/><g stroke="currentColor" strokeOpacity=".2" strokeDasharray="4 4">{[80,247,415,582,750].map(x=><line key={x} x1={x} x2={x} y1="30" y2="280"/>)}{[30,113,196,280].map(y=><line key={y} x1="80" x2="750" y1={y} y2={y}/>)}</g><line x1="616" x2="616" y1="30" y2="280" stroke="var(--chart-2)" strokeDasharray="6 4"/><line x1="80" x2="750" y1="130" y2="130" stroke="var(--chart-1)" strokeDasharray="6 4"/>{lines.map(l=><circle key={l[0]} cx={80+(l[2]-45)/55*670} cy={280-(l[3]-15)/35*250} r={7+l[4]/250} fill={siteColor(l[1])} fillOpacity=".75" stroke={siteColor(l[1])} strokeWidth="2"/>)}<text x="616" y="20" textAnchor="middle" fill="var(--chart-2)" fontSize="10">OEE 85%</text><text x="754" y="126" fill="var(--chart-1)" fontSize="10">38%</text><text x="415" y="315" textAnchor="middle" fill="currentColor" fontSize="11">OEE %</text></svg></div></Card><FinancialTable title="Line-Level OEE vs Profitability" headers={["Line","Site","OEE %","Profit Margin %","Revenue $K","Assessment"]} rows={lines.map(l=>[l[0],l[1],`${l[2]}%`,`${l[3]}%`,`$${l[4]}K`,<Badge key={l[0]} value={l[5]}/>])}/></div> }
-
-function Badge({value}:{value:string}) { return <span className={cn("rounded-full px-2.5 py-1 text-[10px] font-semibold",value==="On Target"&&"bg-[var(--dv-badge-ok-bg)] text-[var(--dv-badge-ok-text)]",value==="Needs Attention"&&"bg-[var(--dv-badge-wa-bg)] text-[var(--dv-badge-wa-text)]",value==="Critical"&&"bg-[var(--dv-badge-cr-bg)] text-[var(--dv-badge-cr-text)]")}>{value}</span> }
-function Costs() { return <div className="grid gap-5 xl:grid-cols-2"><Card title="Downtime Cost Trend" subtitle="Monthly estimated production loss ($K) — target <$55K/month"><div className="overflow-x-auto"><TrendChart values={monthly.map(x=>x.downtime)} max={85} color="var(--chart-3)" target={55}/></div></Card><Card title="Scrap Cost Trend" subtitle="Monthly material waste ($K) — target <$22K/month"><div className="overflow-x-auto"><TrendChart values={monthly.map(x=>x.scrap)} max={30} color="var(--chart-5)" target={22}/></div></Card><Card title="Combined Cost Impact — Monthly" subtitle="Downtime + scrap cost vs gross margin" className="xl:col-span-2"><div className="overflow-x-auto"><TrendChart values={monthly.map(x=>x.downtime+x.scrap)} max={110} color="var(--chart-5)"/></div></Card><Card title="Cost as % of Revenue — Trend" subtitle="Downtime and scrap as a share of monthly revenue" className="xl:col-span-2"><div className="overflow-x-auto"><TrendChart values={monthly.map(x=>(x.downtime+x.scrap)/x.revenue*100)} max={5} color="var(--chart-5)" target={3}/></div></Card></div> }
-
-function FinancialTable({title,headers,rows}:{title:string;headers:string[];rows:(string|number|React.ReactNode)[][]}) { return <Card title={title} subtitle="YTD 2026 — all values in $K unless stated"><div className="overflow-x-auto"><table className="w-full min-w-[48rem] text-xs"><thead><tr>{headers.map((h,i)=><th key={h} className={cn("px-3 py-3 text-muted-foreground",i?"text-right":"text-left")}>{h}</th>)}</tr></thead><tbody>{rows.map((r,ri)=><tr key={ri} className={cn("border-t",ri===rows.length-1&&"bg-muted/60 font-semibold")}>{r.map((v,i)=><td key={i} className={cn("px-3 py-3 whitespace-nowrap",i?"text-right":"font-medium",(i===1||i===3)&&"text-primary")}>{v}</td>)}</tr>)}</tbody></table></div></Card> }
+function Bars({items}:{items:{label:string;value:number|null;note:string}[]}) {
+  const max=Math.max(...items.flatMap(item=>item.value===null?[]:[item.value]),1);
+  return <div className="space-y-3">{items.map(item=><div key={`${item.label}-${item.note}`} className="grid grid-cols-[7rem_1fr_7rem] items-center gap-3 text-xs"><span className="truncate text-muted-foreground">{item.label}</span><div className="h-7 overflow-hidden rounded bg-muted">{item.value!==null&&<div className="h-full rounded bg-primary" style={{width:`${Math.max(2,item.value/max*100)}%`}}/>}</div><span className="text-right font-mono text-[9px] text-muted-foreground">{item.note}</span></div>)}</div>;
+}
 
 export function FinancialAnalytics() {
+  const hierarchy=useFacilityHierarchy();
+  const session=useSessionUser();
+  const abortRef=useRef<AbortController|null>(null);
+  const loadedRef=useRef(false);
   const [tab,setTab]=useState<Tab>("overview");
-  return <div className="space-y-5 pb-6"><header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><h1 className="text-2xl font-bold tracking-tight">Financial Analytics</h1><p className="mt-1 text-sm text-muted-foreground">Manufacturing P&amp;L, cost intelligence, and profitability analysis</p></div><div className="flex items-center gap-2 rounded-xl border bg-card p-2 shadow-[var(--dv-shadow)]"><Filter className="ml-1 size-4 text-muted-foreground"/><select aria-label="Site" className="h-9 rounded-lg border bg-background px-3 text-xs outline-none" defaultValue="All Sites"><option>All Sites</option>{sites.map(s=><option key={s.site}>{s.site}</option>)}</select><select aria-label="Period" className="h-9 rounded-lg border bg-background px-3 text-xs outline-none" defaultValue="YTD 2026"><option>YTD 2026</option><option>FY 2025</option></select></div></header><Kpis/><nav className="overflow-x-auto border-b" role="tablist" aria-label="Financial analysis views"><div className="flex min-w-max">{tabs.map(t=><button key={t.id} role="tab" aria-selected={tab===t.id} onClick={()=>setTab(t.id)} className={cn("h-12 border-b-2 px-4 text-xs font-medium transition-colors",tab===t.id?"border-primary text-primary":"border-transparent text-muted-foreground hover:text-foreground")}>{t.label}</button>)}</div></nav>{tab==="overview"&&<Overview/>}{tab==="sites"&&<Sites/>}{tab==="products"&&<Products/>}{tab==="oee"&&<Oee/>}{tab==="costs"&&<Costs/>}</div>;
+  const [year,setYear]=useState(new Date().getUTCFullYear());
+  const [facilityId,setFacilityId]=useState("");
+  const [lineId,setLineId]=useState("");
+  const [stationId,setStationId]=useState("");
+  const [origin,setOrigin]=useState<OriginFilter>("all");
+  const [currency,setCurrency]=useState("");
+  const [page,setPage]=useState(1);
+  const [snapshots,setSnapshots]=useState<PagedEnvelope<FinancialSnapshotDto>|null>(null);
+  const [summary,setSummary]=useState<FinancialSummaryDto|null>(null);
+  const [monthly,setMonthly]=useState<FinancialMonthlyDto[]>([]);
+  const [facilities,setFacilities]=useState<FinancialFacilityDto[]>([]);
+  const [financialLines,setFinancialLines]=useState<FinancialLineDto[]>([]);
+  const [loading,setLoading]=useState(true);
+  const [refreshing,setRefreshing]=useState(false);
+  const [error,setError]=useState("");
+  const [errorStatus,setErrorStatus]=useState(0);
+  const capabilities=session.user?.capabilities??[];
+  const canView=capabilities.includes("financial.view");
+  const range=useMemo(()=>rangeForYear(year),[year]);
+  const selectedFacility=hierarchy.data?.facilities.find(item=>String(item.facilityId)===facilityId);
+  const lines=useMemo(()=>selectedFacility?.halls.flatMap(hall=>hall.lines)??[],[selectedFacility]);
+  const stations=useMemo(
+    ()=>lines.find(item=>String(item.productionLineId)===lineId)?.stations??[],
+    [lineId,lines],
+  );
+
+  const resetFilters=useCallback(()=>setPage(1),[]);
+
+  const load=useCallback(async()=>{
+    if(session.loading||!canView){if(!session.loading)setLoading(false);return}
+    abortRef.current?.abort();const controller=new AbortController();abortRef.current=controller;
+    if(loadedRef.current)setRefreshing(true);else setLoading(true);setError("");setErrorStatus(0);
+    try{
+      const shared=new URLSearchParams({fromUtc:range.fromUtc,toUtc:range.toUtc,includeSynthetic:String(origin!=="operational")});
+      if(facilityId)shared.set("facilityId",facilityId);
+      if(lineId)shared.set("lineId",lineId);
+      if(origin==="generated")shared.set("source","ai-generated");
+      if(currency)shared.set("currency",currency);
+      const paged=new URLSearchParams(shared);paged.set("page",String(page));paged.set("pageSize","25");
+      const [nextSnapshots,nextSummary,nextMonthly,nextFacilities,nextLines]=await Promise.allSettled([
+        apiRequest<PagedEnvelope<FinancialSnapshotDto>>(`/api/backend/financial?${paged}`,{signal:controller.signal}),
+        apiRequest<FinancialSummaryDto>(`/api/backend/financial/summary?${shared}`,{signal:controller.signal}),
+        apiRequest<FinancialAggregateEnvelope<FinancialMonthlyDto>>(`/api/backend/financial/monthly?${shared}`,{signal:controller.signal}),
+        apiRequest<FinancialAggregateEnvelope<FinancialFacilityDto>>(`/api/backend/financial/facilities?${shared}`,{signal:controller.signal}),
+        apiRequest<FinancialAggregateEnvelope<FinancialLineDto>>(`/api/backend/financial/lines?${shared}`,{signal:controller.signal}),
+      ]);
+      if(nextSnapshots.status==="rejected")throw nextSnapshots.reason;
+      setSnapshots(nextSnapshots.value);
+      setSummary(nextSummary.status==="fulfilled"?nextSummary.value:null);
+      setMonthly(nextMonthly.status==="fulfilled"?nextMonthly.value.items:[]);
+      setFacilities(nextFacilities.status==="fulfilled"?nextFacilities.value.items:[]);
+      setFinancialLines(nextLines.status==="fulfilled"?nextLines.value.items:[]);
+      const aggregateFailures=[nextSummary,nextMonthly,nextFacilities,nextLines].filter(result=>result.status==="rejected");
+      if(aggregateFailures.length){
+        const first=aggregateFailures[0];
+        setError(first.status==="rejected"&&first.reason instanceof Error?`Some financial summaries are unavailable: ${first.reason.message}`:"Some financial summaries are unavailable.");
+        setErrorStatus(first.status==="rejected"&&first.reason instanceof ApiError?first.reason.status:0);
+      }
+    }catch(cause){
+      if(!controller.signal.aborted){setError(cause instanceof Error?cause.message:"Financial analytics could not be loaded.");setErrorStatus(cause instanceof ApiError?cause.status:0);if(cause instanceof ApiError&&cause.status===409){setLineId("");setStationId("");setPage(1)}}
+    }finally{if(!controller.signal.aborted){loadedRef.current=true;setLoading(false);setRefreshing(false)}}
+  },[canView,currency,facilityId,lineId,origin,page,range.fromUtc,range.toUtc,session.loading]);
+  // Loading is the external synchronization performed by this effect.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(()=>{void load();return()=>abortRef.current?.abort()},[load]);
+
+  const currencies=useMemo(()=>[...new Set([
+    ...(summary?.items.map(item=>item.currency)??[]),
+    ...(snapshots?.items.map(item=>item.currency)??[]),
+    ...monthly.map(item=>item.currency),
+    ...facilities.map(item=>item.currency),
+    ...financialLines.map(item=>item.currency),
+  ])].sort(),[facilities,financialLines,monthly,summary?.items,snapshots?.items]);
+  const monthGroups=useMemo(()=>currencies.map(code=>({currency:code,items:monthly.filter(item=>item.currency===code)})),[currencies,monthly]);
+
+  if(!session.loading&&!canView)return <div role="alert" className="rounded-xl border bg-card p-8 text-center"><ShieldAlert className="mx-auto size-8 text-muted-foreground"/><h1 className="mt-3 font-semibold">Financial access required</h1><p className="mt-1 text-sm text-muted-foreground">Your current role does not include financial analytics.</p></div>;
+  if(loading)return <div className="space-y-5" role="status" aria-label="Loading Financial Analytics"><div className="h-20 animate-pulse rounded-xl bg-muted"/><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{Array.from({length:4},(_,index)=><div key={index} className="h-40 animate-pulse rounded-xl bg-muted"/>)}</div><div className="h-72 animate-pulse rounded-xl bg-muted"/></div>;
+
+  return <div className="space-y-5 pb-6">
+    <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><h1 className="text-2xl font-bold tracking-tight">Financial Analytics</h1><p className="mt-1 text-sm text-muted-foreground">Manufacturing cost intelligence and financial impact analysis</p></div><div className="flex max-w-full flex-wrap items-center gap-2 rounded-xl border bg-card p-2 shadow-[var(--dv-shadow)]"><Filter className="ml-1 size-4 text-muted-foreground"/>
+      <select aria-label="Facility" value={facilityId} onChange={event=>{setFacilityId(event.target.value);setLineId("");setStationId("");resetFilters()}} className="h-9 rounded-lg border bg-background px-3 text-xs"><option value="">All Sites</option>{(hierarchy.data?.facilities??[]).map(item=><option key={item.facilityId} value={item.facilityId}>{item.name}</option>)}</select>
+      <select aria-label="Production line" value={lineId} disabled={!facilityId} onChange={event=>{setLineId(event.target.value);setStationId("");resetFilters()}} className="h-9 rounded-lg border bg-background px-3 text-xs disabled:opacity-50"><option value="">All Lines</option>{lines.map(item=><option key={item.productionLineId} value={item.productionLineId}>{item.name}</option>)}</select>
+      <select aria-label="Station context only" title="Financial snapshots are not station-granular. This selection is not sent to the backend." value={stationId} disabled={!lineId} onChange={event=>setStationId(event.target.value)} className="h-9 rounded-lg border bg-background px-3 text-xs disabled:opacity-50"><option value="">Station context</option>{stations.map(item=><option key={item.stationId} value={item.stationId}>{item.name}</option>)}</select>
+      <select aria-label="Year" value={year} onChange={event=>{setYear(Number(event.target.value));resetFilters()}} className="h-9 rounded-lg border bg-background px-3 text-xs">{[year,new Date().getUTCFullYear()].filter((value,index,values)=>values.indexOf(value)===index).map(value=><option key={value} value={value}>YTD {value}</option>)}</select>
+      <select aria-label="Financial data provenance" value={origin} onChange={event=>{setOrigin(event.target.value as OriginFilter);resetFilters()}} className="h-9 rounded-lg border bg-background px-3 text-xs"><option value="all">Include synthetic data</option><option value="generated">Generated data only</option><option value="operational">Exclude synthetic data</option></select>
+      <select aria-label="Currency" value={currency} onChange={event=>{setCurrency(event.target.value);resetFilters()}} className="h-9 rounded-lg border bg-background px-3 text-xs"><option value="">All currencies</option>{currencies.map(code=><option key={code}>{code}</option>)}</select>
+      <button onClick={()=>void load()} disabled={refreshing} aria-label="Retry or refresh financial analytics" className="grid size-9 place-items-center rounded-lg border"><RefreshCw className={cn("size-4",refreshing&&"animate-spin")}/></button>
+    </div></header>
+
+    {error&&<div role="alert" aria-live="assertive" className="flex items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive"><AlertTriangle className="size-4"/><span className="flex-1">{errorStatus===403?"You do not have permission to view this financial scope.":error}</span><button onClick={()=>void load()} className="rounded-lg border px-3 py-1.5">Retry</button></div>}
+    {stationId&&<p className="rounded-lg border bg-muted/20 p-3 text-xs text-muted-foreground">Station-level financial data is unavailable. The station selection is hierarchy context only and is not sent to the Financial API.</p>}
+
+    {(summary?.items??[]).map(group=><section key={group.currency} aria-label={`${group.currency} financial summary`} className="space-y-2"><div className="flex items-center gap-2"><h2 className="font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{group.currency} cost impact</h2>{group.containsSynthetic&&<span aria-label="Contains synthetic financial data" className="rounded-full bg-primary/10 px-2 py-0.5 font-mono text-[9px] text-primary">Synthetic</span>}</div><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{[
+      {label:"Downtime Cost",value:group.downtimeCost,note:"Persisted downtime impact",icon:BarChart3},
+      {label:"Estimated Lost Production Value",value:group.lostProductionValue,note:"Not revenue",icon:TrendingUp},
+      {label:"Maintenance Cost Estimate",value:group.maintenanceCostEstimate,note:"Estimated maintenance exposure",icon:ShieldAlert},
+      {label:"Avoided Cost",value:group.avoidedCost,note:`${group.snapshotCount} snapshots`,icon:Boxes},
+    ].map(({icon:Icon,...item})=><article key={item.label} className="rounded-xl border bg-card p-5 shadow-[var(--dv-shadow)]"><span className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary"><Icon className="size-[18px]"/></span><p className="mt-5 text-2xl font-bold">{money(item.value,group.currency)}</p><p className="mt-1 text-xs font-medium text-muted-foreground">{item.label}</p><p className="mt-2 text-[11px] text-muted-foreground">{item.note}</p></article>)}</div></section>)}
+    {!summary?.items.length&&<EmptyState message="No financial summary is available for the selected filters."/>}
+
+    <nav className="overflow-x-auto border-b" role="tablist" aria-label="Financial analysis views"><div className="flex min-w-max">{tabs.map(item=><button key={item.id} role="tab" aria-selected={tab===item.id} onClick={()=>setTab(item.id)} className={cn("h-12 border-b-2 px-4 text-xs font-medium",tab===item.id?"border-primary text-primary":"border-transparent text-muted-foreground")}>{item.label}</button>)}</div></nav>
+
+    {tab==="overview"&&<div className="space-y-5">{monthGroups.map(group=><Card key={group.currency} title={`Financial Impact — Monthly (${group.currency})`} subtitle="Persisted cost-impact aggregates from the backend"><TrendChart items={group.items} value={impact}/><div className="mt-2 flex flex-wrap justify-center gap-4 text-[10px] text-muted-foreground"><span>Downtime Cost</span><span>Estimated Lost Production</span><span>Maintenance Estimate</span><span>Avoided Cost</span></div></Card>)}{!monthly.length&&<EmptyState message="No monthly financial aggregates match the selected filters."/>}<SnapshotTable envelope={snapshots} page={page} pending={refreshing} onPage={setPage}/></div>}
+
+    {tab==="sites"&&<div className="space-y-5"><div className="grid gap-5 xl:grid-cols-2"><Card title="Financial Impact by Facility" subtitle="Every created site; unavailable means no persisted financial snapshot"><Bars items={(hierarchy.data?.facilities??[]).flatMap<{label:string;value:number|null;note:string}>(site=>{const rows=facilities.filter(item=>item.facilityId===site.facilityId);return rows.length?rows.map(item=>({label:rows.length>1?`${site.name} (${item.currency})`:site.name,value:impact(item),note:money(impact(item),item.currency)})):[{label:site.name,value:null,note:"Unavailable"}]})}/></Card><Card title="Estimated Lost Production by Facility" subtitle="Every created site; values remain separated by currency"><Bars items={(hierarchy.data?.facilities??[]).flatMap<{label:string;value:number|null;note:string}>(site=>{const rows=facilities.filter(item=>item.facilityId===site.facilityId);return rows.length?rows.map(item=>({label:rows.length>1?`${site.name} (${item.currency})`:site.name,value:item.lostProductionValue,note:money(item.lostProductionValue,item.currency)})):[{label:site.name,value:null,note:"Unavailable"}]})}/></Card></div><AllFacilitiesTable sites={(hierarchy.data?.facilities??[]).map(item=>({facilityId:item.facilityId,name:item.name,status:item.status}))} aggregates={facilities}/></div>}
+
+    {tab==="costs"&&<div className="grid gap-5 xl:grid-cols-2">{monthGroups.flatMap(group=>[
+      <Card key={`${group.currency}-downtime`} title={`Downtime Cost Trend (${group.currency})`}><TrendChart items={group.items} value={item=>item.downtimeCost} color="var(--chart-3)"/></Card>,
+      <Card key={`${group.currency}-lost`} title={`Estimated Lost Production Trend (${group.currency})`}><TrendChart items={group.items} value={item=>item.lostProductionValue} color="var(--chart-5)"/></Card>,
+      <Card key={`${group.currency}-maintenance`} title={`Maintenance Estimate Trend (${group.currency})`}><TrendChart items={group.items} value={item=>item.maintenanceCostEstimate} color="var(--chart-1)"/></Card>,
+      <Card key={`${group.currency}-avoided`} title={`Avoided Cost Trend (${group.currency})`}><TrendChart items={group.items} value={item=>item.avoidedCost} color="var(--chart-2)"/></Card>,
+    ])}{!monthly.length&&<div className="xl:col-span-2"><EmptyState message="No monthly cost trends match the selected filters."/></div>}</div>}
+  </div>;
+}
+
+function AllFacilitiesTable({sites,aggregates}:{sites:{facilityId:number;name:string;status:string}[];aggregates:FinancialFacilityDto[]}) {
+  const rows=sites.flatMap<{site:{facilityId:number;name:string;status:string};item:FinancialFacilityDto|null}>(site=>{const matches=aggregates.filter(item=>item.facilityId===site.facilityId);return matches.length?matches.map(item=>({site,item})):[{site,item:null}]});
+  return <Card title="Facility Cost-Impact Summary" subtitle="All created sites from the shared Facilities workspace"><div className="overflow-x-auto"><table className="w-full min-w-[68rem] text-xs"><thead><tr>{["Facility","Status","Downtime Cost","Lost Production","Maintenance Estimate","Avoided Cost","Snapshots","Currency","Provenance"].map((header,index)=><th key={header} className={cn("px-3 py-3 text-muted-foreground",index>1?"text-right":"text-left")}>{header}</th>)}</tr></thead><tbody>{rows.map(({site,item},index)=><tr key={`${site.facilityId}-${item?.currency??"none"}-${index}`} className="border-t"><td className="px-3 py-3 font-medium">{site.name}</td><td className="px-3 py-3">{site.status}</td>{item?<><td className="px-3 py-3 text-right">{money(item.downtimeCost,item.currency)}</td><td className="px-3 py-3 text-right">{money(item.lostProductionValue,item.currency)}</td><td className="px-3 py-3 text-right">{money(item.maintenanceCostEstimate,item.currency)}</td><td className="px-3 py-3 text-right">{money(item.avoidedCost,item.currency)}</td><td className="px-3 py-3 text-right">{item.snapshotCount}</td><td className="px-3 py-3 text-right">{item.currency}</td><td className="px-3 py-3 text-right">{item.containsSynthetic?<span aria-label="Contains synthetic data" className="rounded-full bg-primary/10 px-2 py-1 text-primary">Synthetic</span>:"Operational"}</td></>:<td colSpan={7} className="px-3 py-3 text-right text-muted-foreground">No persisted financial data</td>}</tr>)}</tbody></table></div></Card>;
+}
+
+function SnapshotTable({envelope,page,pending,onPage}:{envelope:PagedEnvelope<FinancialSnapshotDto>|null;page:number;pending:boolean;onPage:(page:number)=>void}) {
+  const items=envelope?.items??[];
+  return <Card title="Financial Snapshots" subtitle={`${envelope?.total??0} persisted records · page ${envelope?.page??page} of ${envelope?.totalPages??0}`}><div className="overflow-x-auto"><table className="w-full min-w-[80rem] text-xs"><thead><tr>{["Snapshot","Facility","Line","Downtime","Lost Production","Maintenance","Avoided","Currency","Source","Generated Batch","Timestamp"].map(header=><th key={header} className="px-3 py-3 text-left text-muted-foreground">{header}</th>)}</tr></thead><tbody>{items.map(item=><tr key={item.financialSnapshotId} className="border-t"><td className="px-3 py-3 font-mono text-[9px]">{item.financialSnapshotId}</td><td className="px-3 py-3">{item.facilityId}</td><td className="px-3 py-3">{item.productionLineId??"—"}</td><td className="px-3 py-3">{money(item.downtimeCost,item.currency)}</td><td className="px-3 py-3">{money(item.lostProductionValue,item.currency)}</td><td className="px-3 py-3">{money(item.maintenanceCostEstimate,item.currency)}</td><td className="px-3 py-3">{money(item.avoidedCost,item.currency)}</td><td className="px-3 py-3">{item.currency}</td><td className="px-3 py-3">{item.source} {item.isSynthetic&&<span aria-label="Synthetic financial snapshot" className="ml-1 rounded-full bg-primary/10 px-2 py-1 text-primary">Synthetic</span>}</td><td className="max-w-40 truncate px-3 py-3 font-mono text-[9px]" title={item.generationBatchId??undefined}>{item.generationBatchId??"—"}</td><td className="px-3 py-3">{new Date(item.snapshotAtUtc).toLocaleString()}</td></tr>)}{!items.length&&<tr><td colSpan={11} className="p-10 text-center text-muted-foreground">No financial snapshots match the selected filters.</td></tr>}</tbody></table></div><div className="mt-4 flex items-center justify-end gap-2"><button disabled={pending||page<=1} onClick={()=>onPage(page-1)} className="h-9 rounded-lg border px-3 text-xs disabled:opacity-40">Previous</button><button disabled={pending||page>=(envelope?.totalPages??0)} onClick={()=>onPage(page+1)} className="h-9 rounded-lg border px-3 text-xs disabled:opacity-40">Next</button></div></Card>;
 }

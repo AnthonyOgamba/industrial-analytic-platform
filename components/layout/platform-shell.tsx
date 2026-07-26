@@ -33,12 +33,12 @@ import {
 
 import { cn } from "@/lib/utils";
 import { NotificationDrawer } from "@/components/notifications/notification-drawer";
-import { usePlatformWorkflowStore } from "@/lib/platform-workflow-store";
 
 type NavigationItem = {
   label: string;
   href: string;
   icon: React.ElementType;
+  capability: string;
 };
 
 type NavigationGroup = {
@@ -50,47 +50,47 @@ const navigation: NavigationGroup[] = [
   {
     label: "Workspace",
     items: [
-      { label: "Dashboard", href: "/", icon: LayoutDashboard },
+      { label: "Dashboard", href: "/", icon: LayoutDashboard, capability: "dashboard.view" },
     ],
   },
   {
     label: "Data",
     items: [
-      { label: "Data Input", href: "/data-input", icon: Database },
-      { label: "Data Governance", href: "/governance", icon: ShieldCheck },
+      { label: "Data Input", href: "/data-input", icon: Database, capability: "assets.manage" },
+      { label: "Data Governance", href: "/governance", icon: ShieldCheck, capability: "settings.organization" },
     ],
   },
   {
     label: "Operations",
     items: [
-      { label: "Facilities", href: "/operations", icon: Settings2 },
-      { label: "Assets", href: "/assets", icon: Cpu },
-      { label: "Sensors", href: "/sensors", icon: Radio },
-      { label: "Downtime", href: "/downtime", icon: FileClock },
+      { label: "Facilities", href: "/operations", icon: Settings2, capability: "facilities.view" },
+      { label: "Assets", href: "/assets", icon: Cpu, capability: "assets.view" },
+      { label: "Sensors", href: "/sensors", icon: Radio, capability: "sensors.view" },
+      { label: "Downtime", href: "/downtime", icon: FileClock, capability: "downtime.view" },
     ],
   },
   {
     label: "Analytics",
     items: [
-      { label: "Financial", href: "/financial", icon: DollarSign },
-      { label: "Reports", href: "/reports", icon: FileText },
+      { label: "Financial", href: "/financial", icon: DollarSign, capability: "financial.view" },
+      { label: "Reports", href: "/reports", icon: FileText, capability: "reports.view" },
     ],
   },
   {
     label: "Administration",
     items: [
-      { label: "Users", href: "/users", icon: Users },
-      { label: "Roles", href: "/roles", icon: ShieldUser },
-      { label: "Activity", href: "/activity", icon: Activity },
+      { label: "Users", href: "/users", icon: Users, capability: "users.view" },
+      { label: "Roles", href: "/roles", icon: ShieldUser, capability: "roles.view" },
+      { label: "Activity", href: "/activity", icon: Activity, capability: "dashboard.view" },
     ],
   },
   {
     label: "Security Center",
     items: [
-      { label: "Olive", href: "/local-ai", icon: Bot },
-      { label: "Security Operations", href: "/security-ops", icon: ShieldEllipsis },
-      { label: "API Security", href: "/api-security", icon: BarChart3 },
-      { label: "Audit Log", href: "/audit", icon: ClipboardList },
+      { label: "Olive", href: "/local-ai", icon: Bot, capability: "olive.use" },
+      { label: "Security Operations", href: "/security-ops", icon: ShieldEllipsis, capability: "security.view" },
+      { label: "API Security", href: "/api-security", icon: BarChart3, capability: "security.view" },
+      { label: "Audit Log", href: "/audit", icon: ClipboardList, capability: "audit.view" },
     ],
   },
 ];
@@ -142,8 +142,12 @@ function ThemeToggle() {
   );
 }
 
-function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+function SidebarContent({ onNavigate, user }: { onNavigate?: () => void; user?:{username:string;displayRole:string;capabilities:string[]} }) {
   const pathname = usePathname();
+  const capabilities = new Set(user?.capabilities ?? []);
+  const visibleNavigation = navigation
+    .map(group => ({ ...group, items: group.items.filter(item => capabilities.has(item.capability)) }))
+    .filter(group => group.items.length);
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-sidebar text-sidebar-foreground">
@@ -177,7 +181,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
       <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-4" aria-label="Platform navigation">
         <div className="space-y-5">
-          {navigation.map((group) => (
+          {visibleNavigation.map((group) => (
             <div key={group.label}>
               <p className="mb-1.5 px-3 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{group.label}</p>
               <div className="space-y-1">
@@ -210,7 +214,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       </nav>
 
       <div className="shrink-0 border-t border-sidebar-border p-3">
-        <Link
+        {capabilities.has("settings.personal") && <Link
           href="/settings"
           onClick={onNavigate}
           className={cn(
@@ -222,7 +226,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         >
           <Settings className="size-4" />
           Settings
-        </Link>
+        </Link>}
 
         <Link
           href="/profile"
@@ -230,11 +234,11 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           className="flex items-center gap-3 rounded-lg border border-sidebar-border bg-background/60 p-3 transition-colors hover:bg-muted"
         >
           <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary/10 text-sm font-bold text-primary">
-            A
+            {user?.username?.[0]?.toUpperCase()??"?"}
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-[13px] font-semibold">Admin User</span>
-            <span className="block truncate text-[11px] text-muted-foreground">Super Admin</span>
+            <span className="block truncate text-[13px] font-semibold">{user?.username??"Loading…"}</span>
+            <span className="block truncate text-[11px] text-muted-foreground">{user?.displayRole??"Authenticated user"}</span>
           </span>
           <ChevronDown className="size-4 text-muted-foreground" />
         </Link>
@@ -247,21 +251,21 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const notifications = usePlatformWorkflowStore((state) => state.notifications);
-  const setNotifications = usePlatformWorkflowStore((state) => state.setNotifications);
+  const [sessionUser,setSessionUser]=useState<{username:string;displayRole:string;capabilities:string[]}>();
   const pageTitle = pageTitles.get(pathname) ?? "DIVU Analytics";
-  const unreadCount = notifications.filter((item) => !item.read).length;
+  const unreadCount = 0;
 
   useEffect(() => {
     const openNotifications = () => setNotificationsOpen(true);
     window.addEventListener("divu-open-notifications", openNotifications);
     return () => window.removeEventListener("divu-open-notifications", openNotifications);
   }, []);
+  useEffect(()=>{fetch("/api/auth/session",{credentials:"same-origin"}).then(response=>response.ok?response.json():null).then(data=>setSessionUser(data?.user)).catch(()=>undefined)},[]);
 
   return (
     <div className="flex h-dvh min-h-[36rem] overflow-hidden bg-background">
       <aside className="hidden w-64 shrink-0 border-r border-sidebar-border lg:block">
-        <SidebarContent />
+        <SidebarContent user={sessionUser}/>
       </aside>
 
       {mobileOpen && (
@@ -273,7 +277,7 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
             onClick={() => setMobileOpen(false)}
           />
           <aside className="relative h-full w-[min(20rem,88vw)] border-r border-sidebar-border shadow-2xl">
-            <SidebarContent onNavigate={() => setMobileOpen(false)} />
+            <SidebarContent user={sessionUser} onNavigate={() => setMobileOpen(false)} />
             <button
               type="button"
               onClick={() => setMobileOpen(false)}
@@ -330,7 +334,7 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
           <div className="mx-auto w-full max-w-[96rem]">{children}</div>
         </main>
       </div>
-      <NotificationDrawer open={notificationsOpen} notifications={notifications} onClose={() => setNotificationsOpen(false)} onChange={setNotifications} />
+      <NotificationDrawer open={notificationsOpen} onClose={() => setNotificationsOpen(false)} />
     </div>
   );
 }

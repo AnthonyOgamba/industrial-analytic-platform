@@ -4,6 +4,7 @@ export type AccessLevel = "View" | "Operate" | "Manage" | "Admin";
 export type Station = {
   id: string;
   name: string;
+  code?: string;
   status: FacilityStatus;
   oee: number;
   availability: number;

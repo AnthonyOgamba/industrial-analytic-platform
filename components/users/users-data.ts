@@ -1,6 +1,6 @@
 export type UserStatus = "Active" | "Locked" | "Disabled" | "Pending";
-export type MfaStatus = "Enforced" | "Enabled" | "Disabled";
-export type UserRole = "Administrator" | "Plant Manager" | "Viewer" | "Quality Inspector" | "Finance Analyst" | "Audit Viewer";
+export type MfaStatus = "Enforced" | "Enabled" | "Disabled" | "Unavailable";
+export type UserRole = string;
 export type GovernanceResponsibility = "Business Owner" | "Technical Owner" | "Data Steward" | "Policy Owner" | "Compliance Owner";
 
 export type GovernanceAssignment = {

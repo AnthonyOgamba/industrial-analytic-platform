@@ -16,11 +16,11 @@ function ViewAllLink({ href }: { href: string }) {
   );
 }
 
-export function SensorStatus({ sensors }: { sensors: SensorGroup[] }) {
+export function SensorStatus({ sensors, total, active }: { sensors: SensorGroup[]; total: number; active: number }) {
   return (
     <SectionCard
       title="Sensor Status"
-      subtitle="147 of 152 sensors online"
+      subtitle={`${active} of ${total} sensors active`}
       action={<ViewAllLink href="/sensors" />}
     >
       <div className="divide-y">
@@ -34,6 +34,7 @@ export function SensorStatus({ sensors }: { sensors: SensorGroup[] }) {
             <span className="font-mono text-xs font-semibold">{sensor.value}</span>
           </div>
         ))}
+        {!sensors.length && <p className="p-8 text-center text-xs text-muted-foreground">No sensor-health data is available.</p>}
       </div>
     </SectionCard>
   );
@@ -48,7 +49,7 @@ export function RecentActivity({ events }: { events: ActivityEvent[] }) {
     >
       <div className="divide-y">
         {events.map((event) => (
-          <div key={`${event.title}-${event.time}`} className="flex min-h-[4.15rem] items-center gap-3 px-5 py-3">
+          <div key={event.id} className="flex min-h-[4.15rem] items-center gap-3 px-5 py-3">
             <span className={cn("size-2 shrink-0 rounded-full", severityStyles[event.severity].dot)} />
             <div className="min-w-0 flex-1">
               <p className="truncate text-[13px] font-medium">{event.title}</p>
@@ -66,6 +67,7 @@ export function RecentActivity({ events }: { events: ActivityEvent[] }) {
             </span>
           </div>
         ))}
+        {!events.length && <p className="p-8 text-center text-xs text-muted-foreground">No recent activity is available.</p>}
       </div>
     </SectionCard>
   );

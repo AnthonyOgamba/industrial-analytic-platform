@@ -1,22 +1,46 @@
 export type LoginResponseDto = { token: string; username: string; role: string; uid: number };
 export type PublicSessionDto = { username: string; role: string; uid: number };
 
-export type ProductionRunDto = {
-  rid: number;
+export type DashboardProductionRunDto = {
+  runId: number;
+  facilityId: number;
+  facility: string;
+  stationId: number;
+  station: string;
   status: string;
   startTime: string;
-  endTime?: string | null;
-  station: string;
-  shiftLead: string;
+  endTime: string | null;
+  source: string;
+  isSynthetic: boolean;
 };
 
 export type StationDto = { stid: number; name: string; stationCode: string; status: string };
-export type DashboardSummaryDto = {
-  activeRuns: number;
-  totalStations: number;
-  openIncidents: number;
-  totalUsers: number;
-  recentRuns: ProductionRunDto[];
+export type DashboardWorkspaceDto = {
+  summary: {
+    activeRuns: number;
+    totalStations: number;
+    activeFacilities: number;
+    averageOee: number;
+    openDowntimeEvents: number;
+    openAlerts: number;
+    estimatedDowntimeCost: number;
+  };
+  productionTrend: Array<{
+    timestamp: string;
+    produced: number;
+    good: number;
+    scrap: number;
+    isSynthetic: boolean;
+  }>;
+  oeeByFacility: Array<{ facilityId:number; facility:string; oee:number; availability:number; performance:number; quality:number }>;
+  downtimeTrend: Array<{ timestamp:string; incidents:number; hours:number }>;
+  financialImpact: Array<{ facilityId:number; facility:string; downtimeCost:number; lostProductionValue:number; currency:string }>;
+  sensorHealth: { total:number; active:number; fresh:number; stale:number; latestReadingAtUtc:string|null };
+  securitySummary: { failedAuthentication:number; authorizationFailures:number; generatorAdministrationActions:number; integrityAnomalies:number };
+  recentRuns: DashboardProductionRunDto[];
+  recentAlerts: Array<{ alertId:number; title:string; severity:string; status:string; resource:string; createdAt:string }>;
+  recentActivity: Array<{ auditId:number; userId:number|null; action:string; resource:string; loggedAt:string }>;
+  generatedAtUtc: string;
 };
 export type MetricPointDto = { id: string; metricId: string; value: number; timestamp: string; label: string };
 export type AnalyticsMetricDto = {
@@ -35,12 +59,59 @@ export type GatewaySensorDto = { sid: number; name: string; sensorType: string; 
 export type AuditRecordDto = {
   auditId: number;
   action: string;
-  tableAffected: string;
+  tableAffected?: string;
+  resource?: string;
   username: string;
-  loggedAt: string;
-  oldValues: string | null;
-  newValues: string | null;
+  loggedAt?: string;
+  occurredAtUtc?: string;
+  oldValues: unknown | null;
+  newValues: unknown | null;
+  facilityId?: number | null;
+  facility?: string | null;
 };
+export type PagedEnvelope<T> = { items: T[]; page: number; pageSize: number; total: number; totalPages: number };
+export type BackendUserDto = { uid:number; username:string; email:string; role:string; status:string; mustChangePassword:boolean; lastLoginAtUtc:string|null; createdAt:string };
+export type BackendRoleDto = { role:string; displayName:string; description:string; isSystem:boolean; capabilities:string[] };
+export type CreateBackendUserResponse = { uid:number; username:string; email:string; role:string; facilityIds:number[]; temporaryPassword:string; mustChangePassword:boolean };
+export type FinancialSnapshotDto = { financialSnapshotId:string; facilityId:number; productionLineId:number|null; stationId:number|null; downtimeCost:number; lostProductionValue:number; maintenanceCostEstimate:number; avoidedCost:number; currency:string; source:string; isSynthetic:boolean; generationBatchId:string|null; snapshotAtUtc:string };
+export type FinancialAggregateDto = {
+  currency:string;
+  downtimeCost:number;
+  lostProductionValue:number;
+  maintenanceCostEstimate:number;
+  avoidedCost:number;
+  snapshotCount:number;
+  containsSynthetic:boolean;
+  containsOperational:boolean;
+  sources:string[];
+  generationBatchIds:string[];
+  firstSnapshotAtUtc:string|null;
+  lastSnapshotAtUtc:string|null;
+};
+export type FinancialSummaryDto = { items:FinancialAggregateDto[]; generatedAtUtc:string };
+export type FinancialMonthlyDto = FinancialAggregateDto & { periodStartUtc:string };
+export type FinancialFacilityDto = FinancialAggregateDto & { facilityId:number; facility:string };
+export type FinancialLineDto = FinancialAggregateDto & { facilityId:number; productionLineId:number; productionLine:string };
+export type FinancialAggregateEnvelope<T extends FinancialAggregateDto> = { items:T[]; generatedAtUtc:string };
+export type DowntimeIncidentDto = { incidentId:number; runId:number|null; facilityId:number; hallId:number; productionLineId:number; stationId:number; station:string; facility:string; startTime:string; endTime:string|null; durationMinutes:number; reason:string; category:string; severity:string; description:string; planned:boolean; estimatedProductionLoss:number; source:string; isSynthetic:boolean; generationBatchId:string|null; generatedAtUtc:string|null };
+export type SecurityEventDto = { securityEventId:number; eventType:string; severity:string; userId:number|null; facilityId:number|null; source:string; description:string; status:string; metadata:unknown; occurredAtUtc:string; resolvedAtUtc:string|null };
+export type ImportBatchDto = { importBatchId:string; fileName:string; contentType:string; facilityId:number|null; status:string; source:string; isSynthetic:boolean; rowCount:number; acceptedCount:number; rejectedCount:number; error:string|null; metadata:unknown; requestedBy:number; createdAtUtc:string; completedAtUtc:string|null };
+export type GovernanceRecordDto = {
+  governanceId:string;
+  name:string;
+  description:string;
+  facilityId:number|null;
+  domain:string;
+  classification:string;
+  retentionDays:number;
+  status:string;
+  source:string;
+  isSynthetic:boolean;
+  createdBy:number;
+  createdAtUtc:string;
+  updatedAtUtc:string;
+};
+export type GovernanceRetirementDto = { governanceId:string; status:"retired"; retiredAtUtc:string; retiredBy:number };
 export type ProductDto = { pid: number; name: string; sku: string; targetUph: number; status: string; createdBy: string };
 
 export type AiChatSource = { type: string; id: string };
@@ -68,3 +139,14 @@ export type SiteAccessAssignment = { siteAccessAssignmentId: number; userId: num
 export interface PerformanceSummary { totalRuns:number; activeRuns:number; pausedRuns:number; failedRuns:number; closedRuns:number; totalRuntimeMinutes:number; availability:number|null; performance:number|null; quality:number|null; oee:number|null; isSynthetic:boolean; source:"ai-generated"|null; lastGeneratedAt:string|null }
 export interface StationOee { stationId:number; stationName:string; stationCode:string|null; productionLineId:number; hallId:number; facilityId:number; availability:number; performance:number; quality:number; oee:number; producedCount:number; goodCount:number; scrapCount:number; cycleTimeSeconds:number; throughputPerHour:number; lastGeneratedAt:string; source:"ai-generated"; isSynthetic:true }
 export interface HierarchyPerformanceResponse { scope:"facilities"|"halls"|"lines"; id:number; summary:PerformanceSummary; stations:StationOee[] }
+export type FacilityWorkspaceStation = { stationId:number; name:string; code:string|null; status:string; performance: { oee:number; availability:number; performance:number; quality:number; downtimeHours:number } };
+export type FacilityWorkspaceLine = { productionLineId:number; name:string; code?:string|null; status:string; performance: { oee:number; availability:number; performance:number; quality:number; downtimeHours:number }; stations:FacilityWorkspaceStation[] };
+export type FacilityWorkspaceHall = { hallId:number; name:string; code?:string|null; status:string; performance: { oee:number; availability:number; performance:number; quality:number; downtimeHours:number }; lines:FacilityWorkspaceLine[] };
+export type FacilityWorkspaceFacility = { facilityId:number; name:string; location:string; code?:string|null; status:string; complianceCoverage:number; performance: { oee:number; availability:number; performance:number; quality:number; downtimeHours:number }; halls:FacilityWorkspaceHall[] };
+export type FacilityWorkspace = {
+  summary:{ activeFacilities:number; totalFacilities:number; averageOee:number; complianceCoverage:number; recentDowntimeHours:number };
+  facilities:FacilityWorkspaceFacility[];
+  siteAccess:SiteAccessAssignment[];
+  aiInsights:Array<{ alertId:number; title:string; severity:string; resource:string; createdAt:string }>;
+  generatedAtUtc:string;
+};

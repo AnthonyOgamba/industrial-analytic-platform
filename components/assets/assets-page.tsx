@@ -1,54 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus } from "lucide-react";
+import { Cpu, Search } from "lucide-react";
+import { useFacilityHierarchy } from "@/lib/facility-hierarchy";
 
-import { initialFacilities } from "@/components/facilities/facilities-data";
-
-import { AssetFilters, type AssetViewMode } from "./asset-filters";
-import { AssetDetailModal } from "./asset-detail-modal";
-import { AssetGrid } from "./asset-grid";
-import { AssetListView } from "./asset-list-view";
-import { AssetStatsCards } from "./asset-stats-cards";
-import { assetMaintenanceRecords, assetSensors, initialAssets, type AssetStatus, type IndustrialAsset } from "./assets-data";
-import { RegisterAssetModal } from "./register-asset-modal";
-
-function nextAssetId(assets: IndustrialAsset[]) {
-  const maximum = assets.reduce((highest, asset) => Math.max(highest, Number(asset.assetId.replace(/\D/g, "")) || 0), 0);
-  return `AST-${String(maximum + 1).padStart(4, "0")}`;
-}
-
-export function AssetsPage() {
-  const [assets, setAssets] = useState<IndustrialAsset[]>(initialAssets);
-  const [query, setQuery] = useState("");
-  const [site, setSite] = useState("All Sites");
-  const [type, setType] = useState("All Types");
-  const [status, setStatus] = useState<"All" | AssetStatus>("All");
-  const [viewMode, setViewMode] = useState<AssetViewMode>("grid");
-  const [registerOpen, setRegisterOpen] = useState(false);
-  const [selectedAsset, setSelectedAsset] = useState<IndustrialAsset | null>(null);
-
-  const sites = useMemo(() => [...new Set(assets.map((asset) => asset.location.siteName))].sort(), [assets]);
-  const types = useMemo(() => [...new Set(assets.map((asset) => asset.machineType))].sort(), [assets]);
-  const filteredAssets = useMemo(() => {
-    const search = query.trim().toLowerCase();
-    return assets.filter((asset) => {
-      const searchable = [asset.assetId, asset.name, asset.machineType, asset.manufacturer, asset.location.siteName, asset.location.hallName, asset.location.lineName, asset.location.stationName].join(" ").toLowerCase();
-      return (!search || searchable.includes(search)) && (site === "All Sites" || asset.location.siteName === site) && (type === "All Types" || asset.machineType === type) && (status === "All" || asset.lifecycle.status === status);
-    });
-  }, [assets, query, site, status, type]);
-
-  return (
-    <div className="space-y-5 pb-5">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><p className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">Assets</p><h1 className="mt-1.5 text-2xl font-bold tracking-tight">Asset Registry</h1><p className="mt-1 text-sm text-muted-foreground">Industrial asset inventory — machines, controllers, and production equipment</p></div><button type="button" onClick={() => setRegisterOpen(true)} className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"><Plus className="size-4" />Register Asset</button></header>
-
-      <AssetStatsCards assets={assets} />
-      <AssetFilters query={query} onQueryChange={setQuery} site={site} onSiteChange={setSite} sites={sites} type={type} onTypeChange={setType} types={types} status={status} onStatusChange={setStatus} viewMode={viewMode} onViewModeChange={setViewMode} />
-      <p className="font-mono text-[10px] text-muted-foreground">{filteredAssets.length} asset{filteredAssets.length === 1 ? "" : "s"} found</p>
-      {viewMode === "grid" ? <AssetGrid assets={filteredAssets} onSelect={setSelectedAsset} /> : <AssetListView assets={filteredAssets} onSelect={setSelectedAsset} />}
-
-      {registerOpen && <RegisterAssetModal facilities={initialFacilities} nextAssetId={nextAssetId(assets)} onClose={() => setRegisterOpen(false)} onSave={(asset) => { setAssets((items) => [asset, ...items]); setRegisterOpen(false); }} />}
-      {selectedAsset && <AssetDetailModal key={selectedAsset.id} asset={selectedAsset} maintenance={assetMaintenanceRecords.filter((record) => record.assetId === selectedAsset.id)} sensors={assetSensors.filter((sensor) => sensor.assetId === selectedAsset.id)} onClose={() => setSelectedAsset(null)} />}
-    </div>
-  );
+export function AssetsPage(){
+  const hierarchy=useFacilityHierarchy();const[query,setQuery]=useState("");const[facilityId,setFacilityId]=useState("");
+  const stations=useMemo(()=>{const result:Array<{stationId:number;name:string;code:string|null;status:string;facilityId:number;facility:string;hall:string;line:string;oee:number;availability:number;quality:number;downtime:number}>=[];for(const facility of hierarchy.data?.facilities??[]){for(const hall of facility.halls){for(const line of hall.lines){for(const station of line.stations){result.push({stationId:station.stationId,name:station.name,code:station.code,status:station.status,facilityId:facility.facilityId,facility:facility.name,hall:hall.name,line:line.name,oee:station.performance.oee,availability:station.performance.availability,quality:station.performance.quality,downtime:station.performance.downtimeHours})}}}}return result},[hierarchy.data]);
+  const visible=stations.filter(item=>(!facilityId||item.facilityId===Number(facilityId))&&`${item.name} ${item.code??""} ${item.facility} ${item.hall} ${item.line}`.toLowerCase().includes(query.toLowerCase()));
+  return <div className="space-y-5 pb-5"><header><p className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">Assets</p><h1 className="mt-1.5 text-2xl font-bold tracking-tight">Asset Registry</h1><p className="mt-1 text-sm text-muted-foreground">Stations are the backend representation of industrial assets</p></header>{hierarchy.error&&<p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">{hierarchy.error}</p>}<div className="grid gap-3 sm:grid-cols-3">{[{label:"Stations",value:stations.length},{label:"Active",value:stations.filter(item=>item.status==="active").length},{label:"Facilities",value:new Set(stations.map(item=>item.facilityId)).size}].map(item=><article key={item.label} className="rounded-xl border bg-card p-4"><Cpu className="size-4 text-primary"/><p className="mt-3 text-xl font-bold">{item.value}</p><p className="text-[10px] text-muted-foreground">{item.label}</p></article>)}</div><section className="flex flex-col gap-2 rounded-xl border bg-card p-3 sm:flex-row"><label className="relative flex-1"><Search className="absolute left-3 top-3 size-4 text-muted-foreground"/><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Search station assets…" className="h-10 w-full rounded-lg border bg-background pl-9 pr-3 text-xs"/></label><select value={facilityId} onChange={event=>setFacilityId(event.target.value)} className="h-10 rounded-lg border bg-background px-3 text-xs"><option value="">All Facilities</option>{(hierarchy.data?.facilities??[]).map(item=><option key={item.facilityId} value={item.facilityId}>{item.name}</option>)}</select></section>{hierarchy.loading?<div className="h-64 animate-pulse rounded-xl bg-muted"/>:<div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">{visible.map(item=><article key={item.stationId} className="rounded-xl border bg-card p-4 shadow-[var(--dv-shadow)]"><div className="flex items-start justify-between gap-3"><div><h2 className="font-semibold">{item.name}</h2><p className="mt-1 font-mono text-[9px] text-muted-foreground">{item.code??`Station ${item.stationId}`}</p></div><span className="rounded-full bg-muted px-2 py-1 text-[9px] uppercase">{item.status}</span></div><p className="mt-3 text-xs text-muted-foreground">{item.facility} · {item.hall} · {item.line}</p><div className="mt-4 grid grid-cols-4 gap-2 text-center">{[["OEE",item.oee],["Availability",item.availability],["Quality",item.quality]].map(([label,value])=><div key={String(label)} className="rounded-lg bg-muted/40 p-2"><strong className="text-xs">{Number(value).toFixed(1)}%</strong><p className="text-[8px] text-muted-foreground">{label}</p></div>)}<div className="rounded-lg bg-muted/40 p-2"><strong className="text-xs">{item.downtime.toFixed(1)}h</strong><p className="text-[8px] text-muted-foreground">Downtime</p></div></div></article>)}{!visible.length&&<p className="col-span-full rounded-xl border p-12 text-center text-sm text-muted-foreground">No station assets match the current filters.</p>}</div>}<p className="rounded-lg border border-dashed bg-muted/20 p-3 text-xs text-muted-foreground">Manufacturer, model, serial number, firmware, installation date and maintenance schedule are not persisted by the backend, so they are not displayed.</p></div>
 }

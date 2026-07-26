@@ -6,17 +6,21 @@ const padding = { top: 20, right: 20, bottom: 38, left: 52 };
 
 function chartCoordinates(data: TrendPoint[]) {
   const values = data.map((point) => point.value);
-  const min = Math.floor((Math.min(...values) - 40) / 100) * 100;
-  const max = Math.ceil((Math.max(...values) + 40) / 100) * 100;
+  const rawMin = Math.min(...values);
+  const rawMax = Math.max(...values);
+  const margin = Math.max(1, Math.ceil((rawMax - rawMin || Math.abs(rawMax) || 1) * 0.1));
+  const min = rawMin - margin;
+  const max = rawMax + margin;
   const plotWidth = width - padding.left - padding.right;
   const plotHeight = height - padding.top - padding.bottom;
+  const horizontalDivisor = Math.max(1, data.length - 1);
 
   return {
     min,
     max,
     points: data.map((point, index) => ({
       ...point,
-      x: padding.left + (index / (data.length - 1)) * plotWidth,
+      x: data.length === 1 ? padding.left + plotWidth / 2 : padding.left + (index / horizontalDivisor) * plotWidth,
       y: padding.top + ((max - point.value) / (max - min)) * plotHeight,
     })),
   };
@@ -38,7 +42,7 @@ export function ProductionChart({ data }: { data: TrendPoint[] }) {
       >
         <title id="production-chart-title">Production output trend</title>
         <desc id="production-chart-description">
-          Production output rises from 1,180 units per hour at 06:00 to 1,410 units per hour at 18:00.
+          Production output contains {data.length} gateway data {data.length === 1 ? "point" : "points"}, from {min.toLocaleString()} to {max.toLocaleString()} units.
         </desc>
         <defs>
           <linearGradient id="dashboard-production-fill" x1="0" y1="0" x2="0" y2="1">
@@ -69,19 +73,22 @@ export function ProductionChart({ data }: { data: TrendPoint[] }) {
         <path d={areaPath} fill="url(#dashboard-production-fill)" />
         <path d={linePath} fill="none" stroke="var(--dv-accent)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
 
-        {points.map((point) => (
-          <g key={point.label}>
+        {points.map((point, index) => {
+          const labelEvery = Math.max(1, Math.ceil(points.length / 6));
+          const showLabel = index === 0 || index === points.length - 1 || index % labelEvery === 0;
+          return (
+          <g key={`${point.label}-${index}`}>
             <circle cx={point.x} cy={point.y} r="4" fill="var(--dv-card)" stroke="var(--dv-accent)" strokeWidth="2.5" />
-            <text
+            {showLabel && <text
               x={point.x}
               y={height - 13}
               textAnchor="middle"
               className="fill-[var(--dv-muted)] font-mono text-[10px]"
             >
               {point.label}
-            </text>
+            </text>}
           </g>
-        ))}
+        )})}
       </svg>
     </div>
   );

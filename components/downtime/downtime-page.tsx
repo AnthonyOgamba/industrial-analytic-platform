@@ -1,133 +1,19 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Plus } from "lucide-react";
-import { initialAssets } from "@/components/assets/assets-data";
-import { initialFacilities } from "@/components/facilities/facilities-data";
-import { ActiveEventsTable } from "./active-events-table";
-import { DowntimeAnalytics } from "./downtime-analytics";
-import {
-  downtimeEvents,
-  initialDowntimeFactors,
-  type DowntimeCategory,
-  type DowntimeFactor,
-  type DowntimeSeverity,
-} from "./downtime-data";
-import { DowntimeFactorCards } from "./downtime-factor-cards";
-import { DowntimeFactorModal } from "./downtime-factor-modal";
-import { DowntimeFilters } from "./downtime-filters";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { AlertTriangle, Clock3, DollarSign, Filter, RefreshCw, Timer } from "lucide-react";
+import { apiRequest } from "@/lib/api-client";
+import type { DowntimeIncidentDto, PagedEnvelope } from "@/lib/backend-dtos";
+import { useFacilityHierarchy } from "@/lib/facility-hierarchy";
 import { DowntimeTabs, type DowntimeTab } from "./downtime-tabs";
 
-type ModalState =
-  | { mode: "add" }
-  | { mode: "edit"; factor: DowntimeFactor }
-  | null;
-
-export function DowntimePage() {
-  const [activeTab, setActiveTab] = useState<DowntimeTab>("factors");
-  const [factors, setFactors] = useState(initialDowntimeFactors);
-  const [query, setQuery] = useState("");
-  const [category, setCategory] = useState<"All" | DowntimeCategory>("All");
-  const [severity, setSeverity] = useState<"All" | DowntimeSeverity>("All");
-  const [modal, setModal] = useState<ModalState>(null);
-
-  const filteredFactors = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-
-    return factors.filter((factor) => {
-      const matchesQuery =
-        !normalizedQuery ||
-        [factor.name, factor.code, factor.description, factor.category]
-          .join(" ")
-          .toLowerCase()
-          .includes(normalizedQuery);
-      const matchesCategory = category === "All" || factor.category === category;
-      const matchesSeverity = severity === "All" || factor.severity === severity;
-
-      return matchesQuery && matchesCategory && matchesSeverity;
-    });
-  }, [category, factors, query, severity]);
-
-  const activeEventCount = downtimeEvents.filter((event) =>
-    ["Active", "Escalated", "Investigating"].includes(event.status),
-  ).length;
-
-  function saveFactor(nextFactor: DowntimeFactor) {
-    setFactors((current) => {
-      const exists = current.some((factor) => factor.id === nextFactor.id);
-      return exists
-        ? current.map((factor) => (factor.id === nextFactor.id ? nextFactor : factor))
-        : [nextFactor, ...current];
-    });
-    setModal(null);
-  }
-
-  function deleteFactor(factor: DowntimeFactor) {
-    if (window.confirm(`Delete ${factor.name}?`)) {
-      setFactors((current) => current.filter((item) => item.id !== factor.id));
-    }
-  }
-
-  return (
-    <div className="space-y-5 pb-8">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-primary">
-            Operations intelligence
-          </p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight">Downtime Management</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Downtime factors, live events, and analytics across all sites
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setModal({ mode: "add" })}
-          className="inline-flex h-10 items-center justify-center gap-2 self-start rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
-        >
-          <Plus className="size-4" />
-          Add Factor
-        </button>
-      </header>
-
-      <DowntimeTabs
-        active={activeTab}
-        factorCount={factors.length}
-        activeEventCount={activeEventCount}
-        onChange={setActiveTab}
-      />
-
-      {activeTab === "factors" && (
-        <section className="space-y-4" aria-label="Downtime factors">
-          <DowntimeFilters
-            query={query}
-            onQueryChange={setQuery}
-            category={category}
-            onCategoryChange={setCategory}
-            severity={severity}
-            onSeverityChange={setSeverity}
-          />
-          <DowntimeFactorCards
-            factors={filteredFactors}
-            onEdit={(factor) => setModal({ mode: "edit", factor })}
-            onDelete={deleteFactor}
-          />
-        </section>
-      )}
-
-      {activeTab === "events" && <ActiveEventsTable events={downtimeEvents} />}
-      {activeTab === "analytics" && <DowntimeAnalytics />}
-
-      {modal && (
-        <DowntimeFactorModal
-          key={modal.mode === "edit" ? modal.factor.id : "new-factor"}
-          factor={modal.mode === "edit" ? modal.factor : null}
-          facilities={initialFacilities}
-          assets={initialAssets}
-          onClose={() => setModal(null)}
-          onSave={saveFactor}
-        />
-      )}
-    </div>
-  );
+export function DowntimePage(){
+  const hierarchy=useFacilityHierarchy();const[activeTab,setActiveTab]=useState<DowntimeTab>("events");const[facilityId,setFacilityId]=useState("");const[severity,setSeverity]=useState("");const[status,setStatus]=useState("");const[data,setData]=useState<PagedEnvelope<DowntimeIncidentDto>>({items:[],page:1,pageSize:200,total:0,totalPages:0});const[loading,setLoading]=useState(true);const[error,setError]=useState("");
+  const load=useCallback(async()=>{setLoading(true);try{const query=new URLSearchParams({page:"1",pageSize:"200",includeSynthetic:"true"});if(facilityId)query.set("facilityId",facilityId);if(severity)query.set("severity",severity);if(status)query.set("status",status);setData(await apiRequest(`/api/backend/downtime?${query}`));setError("")}catch(cause){setError(cause instanceof Error?cause.message:"Downtime records could not be loaded.")}finally{setLoading(false)}},[facilityId,severity,status]);
+  useEffect(()=>{// eslint-disable-next-line react-hooks/set-state-in-effect
+    void load()
+  },[load]);
+  const open=data.items.filter(item=>!item.endTime);const totalHours=data.items.reduce((sum,item)=>sum+item.durationMinutes/60,0);const loss=data.items.reduce((sum,item)=>sum+item.estimatedProductionLoss,0);const average=data.items.length?data.items.reduce((sum,item)=>sum+item.durationMinutes,0)/data.items.length:0;
+  const byDay=useMemo(()=>{const values=new Map<string,number>();for(const item of data.items){const key=new Date(item.startTime).toLocaleDateString([], {month:"short",day:"numeric"});values.set(key,(values.get(key)??0)+item.durationMinutes/60)}return [...values].slice(-12)},[data.items]);const max=Math.max(1,...byDay.map(([,value])=>value));
+  return <div className="space-y-5 pb-8"><header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-primary">Operations intelligence</p><h1 className="mt-1 text-2xl font-bold tracking-tight">Downtime Management</h1><p className="mt-1 text-sm text-muted-foreground">Facility-scoped persisted downtime incidents and analytics</p></div><button onClick={()=>void load()} className="inline-flex h-10 items-center gap-2 rounded-lg border px-4 text-xs font-semibold"><RefreshCw className="size-4"/>Refresh</button></header><DowntimeTabs active={activeTab} factorCount={0} activeEventCount={open.length} onChange={setActiveTab}/>{error&&<p role="alert" className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive"><AlertTriangle className="size-4"/>{error}</p>}{activeTab==="factors"&&<section className="rounded-xl border border-dashed bg-muted/20 p-10 text-center"><h2 className="font-semibold">Downtime factor management is unavailable</h2><p className="mt-2 text-sm text-muted-foreground">The confirmed backend exposes downtime incidents and analytics, but no downtime-factor CRUD contract. No sample factors are displayed.</p></section>}{activeTab==="events"&&<><section className="flex flex-wrap items-center gap-2 rounded-xl border bg-card p-3"><Filter className="size-4 text-muted-foreground"/><select value={facilityId} onChange={event=>setFacilityId(event.target.value)} className="h-9 rounded-lg border bg-background px-3 text-xs"><option value="">All Facilities</option>{(hierarchy.data?.facilities??[]).map(item=><option key={item.facilityId} value={item.facilityId}>{item.name}</option>)}</select><select value={severity} onChange={event=>setSeverity(event.target.value)} className="h-9 rounded-lg border bg-background px-3 text-xs"><option value="">All Severities</option>{["critical","high","medium","low"].map(item=><option key={item}>{item}</option>)}</select><select value={status} onChange={event=>setStatus(event.target.value)} className="h-9 rounded-lg border bg-background px-3 text-xs"><option value="">All Statuses</option><option value="open">Open</option><option value="closed">Closed</option></select><span className="ml-auto text-xs text-muted-foreground">{data.total} server records</span></section>{loading?<div className="h-64 animate-pulse rounded-xl bg-muted"/>:<div className="overflow-hidden rounded-xl border bg-card"><div className="overflow-x-auto"><table className="w-full min-w-[70rem] text-left text-xs"><thead className="bg-muted/40 font-mono text-[9px] uppercase text-muted-foreground"><tr>{["Incident","Facility / Station","Start","Duration","Reason","Severity","Status","Production Loss","Source"].map(item=><th key={item} className="px-3 py-3">{item}</th>)}</tr></thead><tbody>{data.items.map(item=><tr key={item.incidentId} className="border-t"><td className="px-3 py-3 font-mono">#{item.incidentId}</td><td className="px-3 py-3"><strong>{item.facility}</strong><p className="text-[10px] text-muted-foreground">{item.station}</p></td><td className="px-3 py-3">{new Date(item.startTime).toLocaleString()}</td><td className="px-3 py-3">{item.durationMinutes.toFixed(1)}m</td><td className="px-3 py-3">{item.reason}</td><td className="px-3 py-3 uppercase">{item.severity}</td><td className="px-3 py-3">{item.endTime?"Closed":"Open"}</td><td className="px-3 py-3">{item.estimatedProductionLoss.toLocaleString()}</td><td className="px-3 py-3">{item.source}{item.isSynthetic?" · synthetic":""}</td></tr>)}{!data.items.length&&<tr><td colSpan={9} className="p-12 text-center text-muted-foreground">No downtime incidents match these filters.</td></tr>}</tbody></table></div></div>}</>}{activeTab==="analytics"&&<div className="space-y-4"><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{[{label:"Total Downtime",value:`${totalHours.toFixed(1)}h`,icon:Clock3},{label:"Open Incidents",value:String(open.length),icon:AlertTriangle},{label:"Average Duration",value:`${average.toFixed(1)}m`,icon:Timer},{label:"Estimated Production Loss",value:loss.toLocaleString(),icon:DollarSign}].map(({icon:Icon,...item})=><article key={item.label} className="rounded-xl border bg-card p-4"><Icon className="size-4 text-primary"/><p className="mt-3 text-xl font-bold">{item.value}</p><p className="mt-1 text-[10px] text-muted-foreground">{item.label}</p></article>)}</div><section className="rounded-xl border bg-card p-5"><h2 className="text-sm font-semibold">Downtime Hours by Day</h2><div className="mt-5 flex h-56 items-end gap-2 border-b">{byDay.map(([label,value])=><div key={label} className="flex h-full flex-1 flex-col justify-end text-center"><span className="rounded-t bg-primary/50" style={{height:`${value/max*85}%`}}/><span className="mt-2 truncate text-[9px] text-muted-foreground">{label}</span></div>)}</div>{!byDay.length&&<p className="py-10 text-center text-sm text-muted-foreground">No downtime trend data is available.</p>}</section></div>}</div>
 }

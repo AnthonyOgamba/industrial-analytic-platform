@@ -1,44 +1,18 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Plus } from "lucide-react";
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { AlertTriangle, Radio, RefreshCw, Search } from "lucide-react";
+import { apiRequest } from "@/lib/api-client";
+import type { GatewaySensorDto, SensorStreamDto } from "@/lib/backend-dtos";
 
-import { initialAssets } from "@/components/assets/assets-data";
-import { initialFacilities } from "@/components/facilities/facilities-data";
-
-import { RegisterSensorModal } from "./register-sensor-modal";
-import { SensorAlertsBanner } from "./sensor-alerts-banner";
-import { SensorFilters, type SensorViewMode } from "./sensor-filters";
-import { SensorGrid } from "./sensor-grid";
-import { SensorListView } from "./sensor-list-view";
-import { SensorStatsCards } from "./sensor-stats-cards";
-import { SensorTypeSummary } from "./sensor-type-summary";
-import { initialSensors, sensorAlerts, type IndustrialSensor, type SensorStatus, type SensorType } from "./sensors-data";
-import { LiveSensorStreams } from "./live-sensor-streams";
-
-function nextSensorId(sensors: IndustrialSensor[]) {
-  const maximum = sensors.reduce((highest, sensor) => Math.max(highest, Number(sensor.sensorId.replace(/\D/g, "")) || 0), 0);
-  return `SNS-${String(maximum + 1).padStart(4, "0")}`;
-}
-
-export function SensorsPage() {
-  const [sensors, setSensors] = useState<IndustrialSensor[]>(initialSensors);
-  const [query, setQuery] = useState(""); const [site, setSite] = useState("All Sites"); const [line, setLine] = useState("All Lines");
-  const [status, setStatus] = useState<"All" | SensorStatus>("All"); const [type, setType] = useState<"All Types" | SensorType>("All Types");
-  const [viewMode, setViewMode] = useState<SensorViewMode>("grid"); const [registerOpen, setRegisterOpen] = useState(false); const [alertsVisible, setAlertsVisible] = useState(true);
-  const sites = useMemo(() => [...new Set(sensors.map((sensor) => sensor.location.siteName))].sort(), [sensors]);
-  const lines = useMemo(() => [...new Set(sensors.filter((sensor) => site === "All Sites" || sensor.location.siteName === site).map((sensor) => sensor.location.lineName))].sort(), [sensors, site]);
-  const filteredSensors = useMemo(() => { const search = query.trim().toLowerCase(); return sensors.filter((sensor) => { const text = [sensor.sensorId, sensor.name, sensor.type, sensor.location.assetName, sensor.location.siteName, sensor.location.stationName].join(" ").toLowerCase(); return (!search || text.includes(search)) && (site === "All Sites" || sensor.location.siteName === site) && (line === "All Lines" || sensor.location.lineName === line) && (status === "All" || sensor.status === status) && (type === "All Types" || sensor.type === type); }); }, [line, query, sensors, site, status, type]);
-  const visibleAlerts = sensorAlerts.filter((alert) => { const sensor = sensors.find((item) => item.id === alert.sensorId); return sensor && (site === "All Sites" || sensor.location.siteName === site); });
-
-  return <div className="space-y-5 pb-5"><header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><p className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">Sensors</p><h1 className="mt-1.5 text-2xl font-bold tracking-tight">Sensor Intelligence Center</h1><p className="mt-1 text-sm text-muted-foreground">Real-time monitoring — temperature, pressure, vibration, current, humidity, RPM, energy</p></div><button type="button" disabled title="The detailed sensor form does not match the gateway contract yet." className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground opacity-45"><Plus className="size-4" />Add Sensor · Mapping pending</button></header>
-    <LiveSensorStreams />
-    {alertsVisible && <SensorAlertsBanner alerts={visibleAlerts} onDismiss={() => setAlertsVisible(false)} />}
-    <SensorStatsCards sensors={sensors} />
-    <SensorTypeSummary sensors={sensors} selected={type} onSelect={setType} />
-    <SensorFilters query={query} onQueryChange={setQuery} site={site} onSiteChange={(value) => { setSite(value); setLine("All Lines"); }} sites={sites} line={line} onLineChange={setLine} lines={lines} status={status} onStatusChange={setStatus} viewMode={viewMode} onViewModeChange={setViewMode} />
-    <p className="font-mono text-[10px] text-muted-foreground">{filteredSensors.length} sensor{filteredSensors.length === 1 ? "" : "s"} shown</p>
-    {viewMode === "grid" ? <SensorGrid sensors={filteredSensors} /> : <SensorListView sensors={filteredSensors} />}
-    {registerOpen && <RegisterSensorModal facilities={initialFacilities} assets={initialAssets} nextSensorId={nextSensorId(sensors)} onClose={() => setRegisterOpen(false)} onSave={(sensor) => { setSensors((items) => [sensor, ...items]); setRegisterOpen(false); }} />}
-  </div>;
+type StreamDetail=SensorStreamDto&{sensors:GatewaySensorDto[]};
+export function SensorsPage(){
+  const[streams,setStreams]=useState<StreamDetail[]>([]);const[query,setQuery]=useState("");const[loading,setLoading]=useState(true);const[error,setError]=useState("");
+  const load=useCallback(async()=>{setLoading(true);try{const list=await apiRequest<SensorStreamDto[]>("/api/backend/sensors/streams");const details=await Promise.all(list.map(item=>apiRequest<StreamDetail>(`/api/backend/sensors/streams/${item.strid}`)));setStreams(details);setError("")}catch(cause){setError(cause instanceof Error?cause.message:"Sensors could not be loaded.")}finally{setLoading(false)}},[]);
+  useEffect(()=>{// eslint-disable-next-line react-hooks/set-state-in-effect
+    void load()
+  },[load]);
+  const sensors=useMemo(()=>streams.flatMap(stream=>stream.sensors.map(sensor=>({...sensor,streamId:stream.strid,streamName:stream.name,protocol:stream.protocol,station:stream.station}))),[streams]);const filtered=sensors.filter(item=>`${item.name} ${item.sensorType} ${item.status} ${item.streamName} ${item.station??""}`.toLowerCase().includes(query.toLowerCase()));const active=sensors.filter(item=>item.status.toLowerCase()==="active").length;
+  return <div className="space-y-5 pb-5"><header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><p className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">Sensors</p><h1 className="mt-1.5 text-2xl font-bold tracking-tight">Sensor Intelligence Center</h1><p className="mt-1 text-sm text-muted-foreground">Backend sensor inventory, protocol, stream and latest status</p></div><div className="flex gap-2"><Link href="/local-ai" className="inline-flex h-10 items-center rounded-lg border px-4 text-xs font-semibold">Open Olive Live Data</Link><button onClick={()=>void load()} className="inline-flex h-10 items-center gap-2 rounded-lg border px-4 text-xs"><RefreshCw className="size-4"/>Refresh</button></div></header>{error&&<p role="alert" className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive"><AlertTriangle className="size-4"/>{error}</p>}<div className="grid gap-3 sm:grid-cols-3">{[{label:"Sensor Streams",value:streams.length},{label:"Sensors",value:sensors.length},{label:"Active Sensors",value:active}].map(item=><article key={item.label} className="rounded-xl border bg-card p-4"><Radio className="size-4 text-primary"/><p className="mt-3 text-xl font-bold">{item.value}</p><p className="text-[10px] text-muted-foreground">{item.label}</p></article>)}</div><label className="relative block"><Search className="absolute left-3 top-3 size-4 text-muted-foreground"/><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Search sensors, types, streams or stations…" className="h-10 w-full rounded-lg border bg-background pl-9 pr-3 text-xs"/></label>{loading?<div className="h-64 animate-pulse rounded-xl bg-muted"/>:<div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">{filtered.map(item=><article key={item.sid} className="rounded-xl border bg-card p-4 shadow-[var(--dv-shadow)]"><div className="flex items-start justify-between gap-3"><div><h2 className="font-semibold">{item.name}</h2><p className="mt-1 font-mono text-[9px] text-muted-foreground">Sensor #{item.sid} · {item.sensorType}</p></div><span className="rounded-full bg-muted px-2 py-1 text-[9px] uppercase">{item.status}</span></div><dl className="mt-4 space-y-2 text-xs"><div className="flex justify-between gap-3"><dt className="text-muted-foreground">Stream</dt><dd>{item.streamName}</dd></div><div className="flex justify-between gap-3"><dt className="text-muted-foreground">Protocol</dt><dd>{item.protocol}</dd></div><div className="flex justify-between gap-3"><dt className="text-muted-foreground">Station</dt><dd className="text-right">{item.station??"Unavailable"}</dd></div></dl></article>)}{!filtered.length&&<p className="col-span-full rounded-xl border p-12 text-center text-sm text-muted-foreground">No sensors match the current search.</p>}</div>}</div>
 }
