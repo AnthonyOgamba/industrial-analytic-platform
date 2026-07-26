@@ -35,7 +35,7 @@ export function MetricCard(metric: DashboardMetric) {
   const content = (
     <article
       className={cn(
-        "group flex h-full min-h-48 flex-col rounded-xl border bg-card p-5 shadow-[var(--dv-shadow)] transition-all",
+        "group flex h-full min-h-40 flex-col rounded-xl border bg-card p-4 shadow-[var(--dv-shadow)] transition-all",
         metric.href && "hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[var(--dv-shadow-m)]",
       )}
     >
@@ -55,7 +55,7 @@ export function MetricCard(metric: DashboardMetric) {
         )}
       </div>
 
-      <div className="mt-6">
+      <div className="mt-4">
         <div className="flex flex-wrap items-baseline gap-x-1.5">
           <span className="text-[1.7rem] font-bold leading-none tracking-tight text-card-foreground">
             {metric.value}
@@ -65,7 +65,7 @@ export function MetricCard(metric: DashboardMetric) {
         <p className="mt-2 text-[13px] text-muted-foreground">{metric.label}</p>
       </div>
 
-      <div className="mt-auto flex items-end justify-between gap-3 pt-5">
+      <div className="mt-auto flex items-end justify-between gap-3 pt-4">
         <span
           className={cn(
             "flex min-w-0 items-center gap-1 text-[11px]",
