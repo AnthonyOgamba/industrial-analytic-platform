@@ -1,7 +1,7 @@
-import ActivityPage from "@/components/activity/ActivityPage";
+import { redirect } from "next/navigation";
 
 export default function ActivityRoute() {
-  return <ActivityPage />;
+  redirect("/audit");
 }
 
 

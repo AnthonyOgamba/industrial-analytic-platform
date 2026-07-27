@@ -37,7 +37,7 @@ export default function RootLayout({
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('divu-theme');var d=t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.classList.toggle('dark',d)}catch(e){}})()`,
+            __html: `(function(){try{var e=document.documentElement,t=localStorage.getItem('divu-theme'),d=t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches;e.classList.toggle('dark',d);e.classList.toggle('reduce-motion',localStorage.getItem('divu-reduced-motion')==='true');e.classList.toggle('increase-contrast',localStorage.getItem('divu-increased-contrast')==='true');e.classList.toggle('large-interface-text',localStorage.getItem('divu-large-text')==='true');e.lang=localStorage.getItem('divu-language')||'en'}catch(e){}})()`,
           }}
         />
       </head>

@@ -6,18 +6,20 @@ import { LogIn, User } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { apiRequest } from "@/lib/api-client";
 import { PasswordField } from "./password-field";
+import { useAuthLanguage } from "./auth-language";
 
 export function LoginForm() {
+  const {t}=useAuthLanguage();
   const router = useRouter();
   const search = useSearchParams();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState(search.get("reason") === "session-expired" ? "Your session expired. Please sign in again." : "");
+  const [error, setError] = useState(search.get("reason") === "session-expired" ? t("sessionExpired") : "");
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (pending) return;
-    if (!username.trim() || !password) { setError("Enter your username and password."); return; }
+    if (!username.trim() || !password) { setError(t("required")); return; }
     setPending(true); setError("");
     try {
       await apiRequest<{ username: string; role: string; uid: number }>("/api/auth/login", { method: "POST", body: JSON.stringify({ username: username.trim(), password }) });
@@ -25,23 +27,23 @@ export function LoginForm() {
       router.replace("/");
       router.refresh();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Sign in failed.");
+      setError(cause instanceof Error ? cause.message : t("failed"));
     } finally { setPending(false); }
   }
   return (
     <div className="auth-form-shell">
-      <h1>Login</h1>
+      <h1>{t("login")}</h1>
       <form className="auth-card" onSubmit={submit} noValidate>
         {error && <div className="auth-alert auth-alert-error" role="alert">{error}</div>}
-        <label htmlFor="username">USERNAME</label>
+        <label htmlFor="username">{t("username")}</label>
         <div className="auth-input-wrap">
           <User aria-hidden="true" className="auth-input-icon" />
-          <input id="username" name="username" autoComplete="username" required maxLength={100} placeholder="Enter your username" value={username} onChange={(e) => setUsername(e.target.value)} />
+          <input id="username" name="username" autoComplete="username" required maxLength={100} placeholder={t("usernamePlaceholder")} value={username} onChange={(e) => setUsername(e.target.value)} />
         </div>
-        <div className="auth-label-row"><label htmlFor="password">PASSWORD</label><Link href="/forgot-password">Forgot?</Link></div>
-        <PasswordField id="password" name="password" autoComplete="current-password" required maxLength={256} placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        <div className="auth-label-row"><label htmlFor="password">{t("password")}</label><Link href="/forgot-password">{t("forgot")}</Link></div>
+        <PasswordField id="password" name="password" autoComplete="current-password" required maxLength={256} placeholder={t("passwordPlaceholder")} value={password} onChange={(e) => setPassword(e.target.value)} />
         <button className="auth-submit" disabled={pending} aria-busy={pending} type="submit">
-          {pending ? "Signing in..." : <><span>Sign In</span><LogIn aria-hidden="true" /></>}
+          {pending ? t("signingIn") : <><span>{t("signIn")}</span><LogIn aria-hidden="true" /></>}
         </button>
       </form>
     </div>
