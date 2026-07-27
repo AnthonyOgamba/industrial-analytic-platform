@@ -15,13 +15,26 @@ export async function POST(request: NextRequest) {
   const parsed = schema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Username and password are required." }, { status: 400 });
   try {
+    if (process.env.NODE_ENV !== "production") {
+      console.info("[auth/login] Frontend route called; forwarding to /api/auth/login");
+    }
     const { response: backendResponse, body } = await requestBackend<LoginResponseDto>("/api/auth/login", {
       method: "POST",
       body: JSON.stringify(parsed.data),
     });
+    if (process.env.NODE_ENV !== "production") {
+      console.info(
+        `[auth/login] Upstream status ${backendResponse.status}; token returned: ${Boolean(body?.token)}`,
+      );
+    }
     if (!backendResponse.ok) {
+      const fallback = backendResponse.status === 401
+        ? "Invalid credentials"
+        : backendResponse.status === 404
+          ? "The configured backend gateway does not expose POST /api/auth/login."
+          : "Sign in could not be completed.";
       return NextResponse.json(
-        { error: backendError(body, backendResponse.status === 401 ? "Invalid credentials" : "Sign in could not be completed.") },
+        { error: backendError(body, fallback) },
         { status: backendResponse.status },
       );
     }
@@ -39,6 +52,14 @@ export async function POST(request: NextRequest) {
     });
     return response;
   } catch (error) {
+    if (error instanceof Error && error.message === "BACKEND_API_URL is required in production.") {
+      console.error("[auth/login] BACKEND_API_URL is not configured.");
+      return NextResponse.json(
+        { error: "The frontend authentication gateway is not configured." },
+        { status: 500 },
+      );
+    }
+    console.error("[auth/login] Backend authentication request failed.");
     return gatewayFailure(error);
   }
 }
