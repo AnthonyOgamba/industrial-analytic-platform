@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { apiRequest } from "@/lib/api-client";
 import { passwordRequirements, validatePassword } from "@/lib/auth/password-policy";
 import { PasswordField } from "./password-field";
 
 export function ResetPasswordForm({ token }: { token: string }) {
+  const router=useRouter();
   const [validToken, setValidToken] = useState<boolean | null>(token ? null : false);
   const [availabilityError, setAvailabilityError] = useState(token ? "" : "A password reset token is required.");
   const [password, setPassword] = useState("");
@@ -24,12 +26,13 @@ export function ResetPasswordForm({ token }: { token: string }) {
     event.preventDefault();
     if (pending) return;
     const policyError = validatePassword(password);
+    if(password.length<12){setError("Password must be at least 12 characters.");return}
     if (policyError) { setError(policyError); return; }
     if (password !== confirm) { setError("Passwords do not match."); return; }
     setPending(true); setError("");
     try {
       await apiRequest("/api/auth/reset-password", { method: "POST", body: JSON.stringify({ token, newPassword: password }) });
-      setPassword(""); setConfirm(""); setSuccess(true);
+      setPassword(""); setConfirm(""); setSuccess(true);window.setTimeout(()=>router.replace("/login?reason=password-reset"),1200);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to reset password."); }
     finally { setPending(false); }
   }

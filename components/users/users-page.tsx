@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Check, Pencil, Plus, UserRound, X } from "lucide-react";
 import { apiRequest } from "@/lib/api-client";
+import { normalizeArrayResponse, normalizeUsers } from "@/lib/api-normalizers";
 import type { BackendRoleDto, BackendUserDto, CreateBackendUserResponse } from "@/lib/backend-dtos";
 import { useFacilityHierarchy } from "@/lib/facility-hierarchy";
 import { CreateUserModal, type CreateUserInput } from "./create-user-modal";
@@ -47,7 +48,7 @@ export function UsersPage(){
   const [mutationPending,setMutationPending]=useState(false);
   const [mutationError,setMutationError]=useState("");
   const [feedback,setFeedback]=useState("");
-  const load=useCallback(async()=>{setLoading(true);try{const[nextUsers,nextRoles]=await Promise.all([apiRequest<BackendUserDto[]>("/api/backend/users"),apiRequest<BackendRoleDto[]>("/api/backend/roles")]);setSource(nextUsers);setRoles(nextRoles);setError("")}catch(cause){setError(cause instanceof Error?cause.message:"Users could not be loaded.")}finally{setLoading(false)}},[]);
+  const load=useCallback(async()=>{setLoading(true);try{const[nextUsers,nextRoles]=await Promise.all([apiRequest<unknown>("/api/backend/users"),apiRequest<unknown>("/api/backend/roles")]);setSource(normalizeUsers(nextUsers));setRoles(normalizeArrayResponse<BackendRoleDto>(nextRoles,["roles"],"roles"));setError("")}catch(cause){setSource([]);setRoles([]);setError(cause instanceof Error?cause.message:"Users could not be loaded.")}finally{setLoading(false)}},[]);
   useEffect(()=>{// eslint-disable-next-line react-hooks/set-state-in-effect
     void load()
   },[load]);

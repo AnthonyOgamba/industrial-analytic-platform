@@ -150,3 +150,64 @@ export type FacilityWorkspace = {
   aiInsights:Array<{ alertId:number; title:string; severity:string; resource:string; createdAt:string }>;
   generatedAtUtc:string;
 };
+
+export type CanonicalAssetDto = {
+  asset_id:number; asset_name:string; station_id:number; machine_type:string;
+  manufacturer:string|null; model:string|null; serial_number:string|null;
+  firmware_version:string|null; installation_date:string|null; criticality:string;
+  status:string; description:string|null; ai_monitoring_enabled:boolean;
+  source:string; is_synthetic:boolean; generator:string|null; generated_at_utc:string|null;
+  station_name:string; StationCode?:string|null; productionlineid?:number;
+  line_name:string; hallid?:number; hall_name:string; facilityid?:number; facility_name:string;
+};
+export type AssetWriteDto = {
+  stationId:number; assetName:string; machineType:string; manufacturer?:string|null;
+  model?:string|null; serialNumber?:string|null; firmwareVersion?:string|null;
+  installationDate?:string|null; criticality:string; status:string; description?:string|null;
+  aiMonitoringEnabled:boolean; source?:string; isSynthetic?:boolean;
+  generator?:string|null; generatedAtUtc?:string|null;
+};
+export type CanonicalSensorDto = {
+  sensor_id:number; sensor_name:string; asset_id:number; station_id:number;
+  sensor_type:string; legacy_name:string; measurement_unit:string|null; protocol:string;
+  thresholds:Record<string,number>; sampling_interval_seconds:number;
+  calibrated_at_utc:string|null; calibration_due_at_utc:string|null; status:string;
+  ai_anomaly_detection_enabled:boolean; synthetic_generation_enabled:boolean;
+  source:string; generator:string|null; generated_at_utc:string|null;
+  asset_name:string; station_name:string; facilityid?:number; facility_name:string;
+};
+export type SensorWriteDto = {
+  assetId:number; stationId?:number|null; sensorName:string; sensorType:string;
+  measurementUnit?:string|null; protocol:string; thresholds:Record<string,number>;
+  samplingIntervalSeconds:number; calibratedAtUtc?:string|null; calibrationDueAtUtc?:string|null;
+  status:string; aiAnomalyDetectionEnabled:boolean; syntheticGenerationEnabled:boolean;
+  source?:string; generator?:string|null; generatedAtUtc?:string|null;
+};
+export type CanonicalDowntimeDto = {
+  event_id:number; asset_id:number; sensor_id:number|null; production_id:number;
+  station_id:number; productionlineid?:number; hallid?:number; facilityid?:number;
+  start_utc:string; end_utc:string|null; planned_type:string; reason_code:string|null;
+  severity:string; detection_source:string; production_loss:number; repair_cost:number;
+  corrective_action:string|null; status:string; approval_state:string; Description?:string|null;
+  source:string; is_synthetic:boolean; generator:string|null; generated_at_utc:string|null;
+  asset_name:string;
+};
+export type DowntimeWriteDto = {
+  assetId:number; sensorId?:number|null; productionId:number; startUtc:string; endUtc?:string|null;
+  plannedType:string; reasonCode?:string|null; severity:string; detectionSource:string;
+  productionLoss:number; repairCost:number; correctiveAction?:string|null; status:string;
+  description?:string|null; source?:string; isSynthetic?:boolean;
+  generator?:string|null; generatedAtUtc?:string|null;
+};
+export type CanonicalNotificationDto = {
+  notification_id:number; notification_type:string; title:string; message:string;
+  resource_type:string|null; resource_id:string|null; created_at_utc:string; read_at_utc:string|null;
+};
+export type ApprovalDto = {
+  request_id:string; action:string; requester_user_id:number; requester_username:string;
+  target_type:string; target_id:string; old_values:unknown; proposed_values:unknown;
+  reason:string; risk_level:string; status:string; approver_user_id:number|null;
+  approver_username:string|null; requested_at_utc:string; decided_at_utc:string|null;
+  executed_at_utc:string|null; comments:string|null; correlation_id:string;
+};
+export type TemporaryPasscodeResponse = { userId:number;temporaryPasscode:string;mustChangePassword:true };

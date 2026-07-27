@@ -5,18 +5,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
-  Activity,
   BarChart3,
+  Accessibility,
   Bell,
   ChevronDown,
   CircleUserRound,
   ClipboardList,
   Cpu,
-  Database,
   DollarSign,
   FileClock,
   FileText,
   LayoutDashboard,
+  Languages,
   Menu,
   Moon,
   Bot,
@@ -33,6 +33,18 @@ import {
 
 import { cn } from "@/lib/utils";
 import { NotificationDrawer } from "@/components/notifications/notification-drawer";
+import { apiRequest } from "@/lib/api-client";
+import type { CanonicalNotificationDto } from "@/lib/backend-dtos";
+import { normalizeNotifications } from "@/lib/normalize-notifications";
+
+type Language = "en"|"fr"|"es"|"pa";
+const languageNames:Record<Language,string>={en:"English",fr:"Français",es:"Español",pa:"ਪੰਜਾਬੀ"};
+const translations:Record<Language,Record<string,string>>={
+  en:{Dashboard:"Dashboard",Operations:"Operations",Facilities:"Facilities",Assets:"Assets",Sensors:"Sensors",Downtime:"Downtime",Analytics:"Analytics",Financial:"Financial",Reports:"Reports",AI:"AI","Olive AI":"Olive AI","Governance & Security":"Governance & Security","Data Governance":"Data Governance","Security Operations":"Security Operations","API Security":"API Security","Audit Log":"Audit Log",Administration:"Administration",Users:"Users","Roles & Permissions":"Roles & Permissions",Settings:"Settings",Notifications:"Notifications",Profile:"Profile",Accessibility:"Accessibility"},
+  fr:{Dashboard:"Tableau de bord",Operations:"Opérations",Facilities:"Installations",Assets:"Actifs",Sensors:"Capteurs",Downtime:"Temps d’arrêt",Analytics:"Analytique",Financial:"Finances",Reports:"Rapports",AI:"IA","Olive AI":"IA Olive","Governance & Security":"Gouvernance et sécurité","Data Governance":"Gouvernance des données","Security Operations":"Opérations de sécurité","API Security":"Sécurité API","Audit Log":"Journal d’audit",Administration:"Administration",Users:"Utilisateurs","Roles & Permissions":"Rôles et autorisations",Settings:"Paramètres",Notifications:"Notifications",Profile:"Profil",Accessibility:"Accessibilité"},
+  es:{Dashboard:"Panel",Operations:"Operaciones",Facilities:"Instalaciones",Assets:"Activos",Sensors:"Sensores",Downtime:"Tiempo de inactividad",Analytics:"Analítica",Financial:"Finanzas",Reports:"Informes",AI:"IA","Olive AI":"IA Olive","Governance & Security":"Gobernanza y seguridad","Data Governance":"Gobernanza de datos","Security Operations":"Operaciones de seguridad","API Security":"Seguridad API","Audit Log":"Registro de auditoría",Administration:"Administración",Users:"Usuarios","Roles & Permissions":"Roles y permisos",Settings:"Configuración",Notifications:"Notificaciones",Profile:"Perfil",Accessibility:"Accesibilidad"},
+  pa:{Dashboard:"ਡੈਸ਼ਬੋਰਡ",Operations:"ਕਾਰਜ",Facilities:"ਸਹੂਲਤਾਂ",Assets:"ਸੰਪਤੀਆਂ",Sensors:"ਸੈਂਸਰ",Downtime:"ਬੰਦ ਸਮਾਂ",Analytics:"ਵਿਸ਼ਲੇਸ਼ਣ",Financial:"ਵਿੱਤੀ",Reports:"ਰਿਪੋਰਟਾਂ",AI:"ਏਆਈ","Olive AI":"Olive ਏਆਈ","Governance & Security":"ਸ਼ਾਸਨ ਅਤੇ ਸੁਰੱਖਿਆ","Data Governance":"ਡਾਟਾ ਸ਼ਾਸਨ","Security Operations":"ਸੁਰੱਖਿਆ ਕਾਰਜ","API Security":"API ਸੁਰੱਖਿਆ","Audit Log":"ਆਡਿਟ ਲੌਗ",Administration:"ਪ੍ਰਸ਼ਾਸਨ",Users:"ਉਪਭੋਗਤਾ","Roles & Permissions":"ਭੂਮਿਕਾਵਾਂ ਅਤੇ ਅਨੁਮਤੀਆਂ",Settings:"ਸੈਟਿੰਗਾਂ",Notifications:"ਸੂਚਨਾਵਾਂ",Profile:"ਪ੍ਰੋਫਾਈਲ",Accessibility:"ਪਹੁੰਚਯੋਗਤਾ"},
+};
 
 type NavigationItem = {
   label: string;
@@ -48,16 +60,9 @@ type NavigationGroup = {
 
 const navigation: NavigationGroup[] = [
   {
-    label: "Workspace",
+    label: "",
     items: [
       { label: "Dashboard", href: "/", icon: LayoutDashboard, capability: "dashboard.view" },
-    ],
-  },
-  {
-    label: "Data",
-    items: [
-      { label: "Data Input", href: "/data-input", icon: Database, capability: "assets.manage" },
-      { label: "Data Governance", href: "/governance", icon: ShieldCheck, capability: "settings.organization" },
     ],
   },
   {
@@ -77,20 +82,26 @@ const navigation: NavigationGroup[] = [
     ],
   },
   {
-    label: "Administration",
+    label: "AI",
     items: [
-      { label: "Users", href: "/users", icon: Users, capability: "users.view" },
-      { label: "Roles", href: "/roles", icon: ShieldUser, capability: "roles.view" },
-      { label: "Activity", href: "/activity", icon: Activity, capability: "dashboard.view" },
+      { label: "Olive AI", href: "/local-ai", icon: Bot, capability: "olive.use" },
     ],
   },
   {
-    label: "Security Center",
+    label: "Governance & Security",
     items: [
-      { label: "Olive", href: "/local-ai", icon: Bot, capability: "olive.use" },
+      { label: "Data Governance", href: "/governance", icon: ShieldCheck, capability: "settings.organization" },
       { label: "Security Operations", href: "/security-ops", icon: ShieldEllipsis, capability: "security.view" },
       { label: "API Security", href: "/api-security", icon: BarChart3, capability: "security.view" },
       { label: "Audit Log", href: "/audit", icon: ClipboardList, capability: "audit.view" },
+    ],
+  },
+  {
+    label: "Administration",
+    items: [
+      { label: "Users", href: "/users", icon: Users, capability: "users.view" },
+      { label: "Roles & Permissions", href: "/roles", icon: ShieldUser, capability: "roles.view" },
+      { label: "Settings", href: "/settings", icon: Settings, capability: "settings.personal" },
     ],
   },
 ];
@@ -142,7 +153,7 @@ function ThemeToggle() {
   );
 }
 
-function SidebarContent({ onNavigate, user }: { onNavigate?: () => void; user?:{username:string;displayRole:string;capabilities:string[]} }) {
+function SidebarContent({ onNavigate, user, language }: { onNavigate?: () => void; user?:{username:string;displayRole:string;capabilities:string[]};language:Language }) {
   const pathname = usePathname();
   const capabilities = new Set(user?.capabilities ?? []);
   const visibleNavigation = navigation
@@ -182,8 +193,8 @@ function SidebarContent({ onNavigate, user }: { onNavigate?: () => void; user?:{
       <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-4" aria-label="Platform navigation">
         <div className="space-y-5">
           {visibleNavigation.map((group) => (
-            <div key={group.label}>
-              <p className="mb-1.5 px-3 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{group.label}</p>
+            <div key={group.label || "dashboard"}>
+              {group.label && <p className="mb-1.5 px-3 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{translations[language][group.label]??group.label}</p>}
               <div className="space-y-1">
                 {group.items.map((item) => {
                   const Icon = item.icon;
@@ -203,7 +214,7 @@ function SidebarContent({ onNavigate, user }: { onNavigate?: () => void; user?:{
                       )}
                     >
                       <Icon className="size-4 shrink-0" />
-                      <span>{item.label}</span>
+                      <span>{translations[language][item.label]??item.label}</span>
                     </Link>
                   );
                 })}
@@ -214,25 +225,7 @@ function SidebarContent({ onNavigate, user }: { onNavigate?: () => void; user?:{
       </nav>
 
       <div className="shrink-0 border-t border-sidebar-border p-3">
-        {capabilities.has("settings.personal") && <Link
-          href="/settings"
-          onClick={onNavigate}
-          className={cn(
-            "mb-2 flex min-h-9 items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors",
-            isActivePath(pathname, "/settings")
-              ? "bg-sidebar-accent text-sidebar-accent-foreground"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground",
-          )}
-        >
-          <Settings className="size-4" />
-          Settings
-        </Link>}
-
-        <Link
-          href="/profile"
-          onClick={onNavigate}
-          className="flex items-center gap-3 rounded-lg border border-sidebar-border bg-background/60 p-3 transition-colors hover:bg-muted"
-        >
+        <div className="flex items-center gap-3 rounded-lg border border-sidebar-border bg-background/60 p-3">
           <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary/10 text-sm font-bold text-primary">
             {user?.username?.[0]?.toUpperCase()??"?"}
           </span>
@@ -240,8 +233,7 @@ function SidebarContent({ onNavigate, user }: { onNavigate?: () => void; user?:{
             <span className="block truncate text-[13px] font-semibold">{user?.username??"Loading…"}</span>
             <span className="block truncate text-[11px] text-muted-foreground">{user?.displayRole??"Authenticated user"}</span>
           </span>
-          <ChevronDown className="size-4 text-muted-foreground" />
-        </Link>
+        </div>
       </div>
     </div>
   );
@@ -251,9 +243,18 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [accessibilityOpen,setAccessibilityOpen]=useState(false);
+  const [language,setLanguage]=useState<Language>("en");
+  const [reducedMotion,setReducedMotion]=useState(false);
+  const [increasedContrast,setIncreasedContrast]=useState(false);
+  const [largeText,setLargeText]=useState(false);
+  const [notifications,setNotifications]=useState<CanonicalNotificationDto[]>([]);
+  const [notificationError,setNotificationError]=useState("");
   const [sessionUser,setSessionUser]=useState<{username:string;displayRole:string;capabilities:string[]}>();
-  const pageTitle = pageTitles.get(pathname) ?? "DIVU Analytics";
-  const unreadCount = 0;
+  const rawPageTitle = pageTitles.get(pathname) ?? "DIVU Analytics";
+  const pageTitle = translations[language][rawPageTitle]??rawPageTitle;
+  const unreadCount = notifications.filter(item=>!item.read_at_utc).length;
 
   useEffect(() => {
     const openNotifications = () => setNotificationsOpen(true);
@@ -261,11 +262,36 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("divu-open-notifications", openNotifications);
   }, []);
   useEffect(()=>{fetch("/api/auth/session",{credentials:"same-origin"}).then(response=>response.ok?response.json():null).then(data=>setSessionUser(data?.user)).catch(()=>undefined)},[]);
+  useEffect(()=>{
+    const stored=(localStorage.getItem("divu-language")||"en") as Language;
+    const motion=localStorage.getItem("divu-reduced-motion")==="true";
+    const contrast=localStorage.getItem("divu-increased-contrast")==="true";
+    const text=localStorage.getItem("divu-large-text")==="true";
+    const frame=requestAnimationFrame(()=>{if(stored in languageNames)setLanguage(stored);setReducedMotion(motion);setIncreasedContrast(contrast);setLargeText(text)});
+    document.documentElement.classList.toggle("reduce-motion",motion);
+    document.documentElement.classList.toggle("increase-contrast",contrast);
+    document.documentElement.classList.toggle("large-interface-text",text);
+    apiRequest<unknown>("/api/backend/notifications")
+      .then(payload=>setNotifications(normalizeNotifications(payload)))
+      .catch(cause=>{setNotifications([]);setNotificationError(cause instanceof Error?cause.message:"Notifications are unavailable.")});
+    apiRequest<{language?:Language}>("/api/backend/profile").then(profile=>{if(profile.language&&profile.language in languageNames){setLanguage(profile.language);localStorage.setItem("divu-language",profile.language);document.documentElement.lang=profile.language}}).catch(()=>undefined);
+    return()=>cancelAnimationFrame(frame);
+  },[]);
+  function chooseLanguage(value:Language){
+    setLanguage(value);localStorage.setItem("divu-language",value);document.documentElement.lang=value;
+    void apiRequest("/api/backend/profile",{method:"PATCH",body:JSON.stringify({language:value})}).catch(()=>undefined);
+  }
+  function setAccessPreference(key:"motion"|"contrast"|"text",value:boolean){
+    const names={motion:["divu-reduced-motion","reduce-motion"],contrast:["divu-increased-contrast","increase-contrast"],text:["divu-large-text","large-interface-text"]} as const;
+    localStorage.setItem(names[key][0],String(value));document.documentElement.classList.toggle(names[key][1],value);
+    if(key==="motion")setReducedMotion(value);if(key==="contrast")setIncreasedContrast(value);if(key==="text")setLargeText(value);
+  }
 
   return (
     <div className="flex h-dvh min-h-[36rem] overflow-hidden bg-background">
+      <a href="#main-content" className="platform-skip">Skip to main content</a>
       <aside className="hidden w-64 shrink-0 border-r border-sidebar-border lg:block">
-        <SidebarContent user={sessionUser}/>
+        <SidebarContent user={sessionUser} language={language}/>
       </aside>
 
       {mobileOpen && (
@@ -277,7 +303,7 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
             onClick={() => setMobileOpen(false)}
           />
           <aside className="relative h-full w-[min(20rem,88vw)] border-r border-sidebar-border shadow-2xl">
-            <SidebarContent user={sessionUser} onNavigate={() => setMobileOpen(false)} />
+            <SidebarContent user={sessionUser} language={language} onNavigate={() => setMobileOpen(false)} />
             <button
               type="button"
               onClick={() => setMobileOpen(false)}
@@ -315,22 +341,52 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
               type="button"
               onClick={() => setNotificationsOpen(true)}
               className="relative grid size-9 place-items-center rounded-lg border bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              aria-label={`Notifications, ${unreadCount} unread`}
+              aria-label={notificationError?`Notifications unavailable: ${notificationError}`:`${translations[language].Notifications}, ${unreadCount} unread`}
             >
               <Bell className="size-4" />
               {unreadCount > 0 && <span className="absolute -right-1.5 -top-1.5 grid h-5 min-w-5 place-items-center rounded-full border-2 border-[var(--dv-header)] bg-primary px-1 font-mono text-[10px] font-bold leading-none text-primary-foreground shadow-sm">{unreadCount}</span>}
             </button>
-            <Link
-              href="/profile"
-              className="hidden size-9 place-items-center rounded-lg border bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:grid"
-              aria-label="Open profile"
-            >
-              <CircleUserRound className="size-4" />
-            </Link>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setAccountOpen((value) => !value)}
+                aria-expanded={accountOpen}
+                aria-haspopup="menu"
+                className="flex h-9 items-center gap-2 rounded-lg border bg-card px-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                aria-label="Open account menu"
+              >
+                <CircleUserRound className="size-4" />
+                <span className="hidden max-w-28 truncate text-xs font-semibold sm:block">{sessionUser?.username ?? "Account"}</span>
+                <ChevronDown className="size-3.5" />
+              </button>
+              {accountOpen && <div role="menu" className="absolute right-0 top-11 z-40 w-56 rounded-xl border bg-card p-2 shadow-[var(--dv-shadow-m)]">
+                <div className="border-b px-3 py-2">
+                  <p className="truncate text-xs font-semibold">{sessionUser?.username ?? "Authenticated user"}</p>
+                  <p className="truncate text-[10px] text-muted-foreground">{sessionUser?.displayRole}</p>
+                </div>
+                <button type="button" role="menuitem" onClick={() => { setAccountOpen(false); setNotificationsOpen(true); }} className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs hover:bg-muted">
+                  <Bell className="size-4" /> {translations[language].Notifications}
+                  {unreadCount > 0 && <span className="ml-auto rounded-full bg-primary px-1.5 text-[9px] text-primary-foreground">{unreadCount}</span>}
+                </button>
+                <Link role="menuitem" href="/profile" onClick={() => setAccountOpen(false)} className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs hover:bg-muted">
+                  <CircleUserRound className="size-4" /> {translations[language].Profile}
+                </Link>
+                <label className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs">
+                  <Languages className="size-4"/><span className="sr-only">Language</span>
+                  <select aria-label="Interface language" value={language} onChange={event=>chooseLanguage(event.target.value as Language)} className="min-w-0 flex-1 bg-transparent">
+                    {(Object.keys(languageNames) as Language[]).map(code=><option key={code} value={code}>{languageNames[code]}</option>)}
+                  </select>
+                </label>
+                <button type="button" role="menuitem" onClick={()=>setAccessibilityOpen(value=>!value)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs hover:bg-muted"><Accessibility className="size-4"/>{translations[language].Accessibility}</button>
+                {accessibilityOpen&&<fieldset className="m-1 space-y-2 rounded-lg border p-3"><legend className="px-1 text-[9px] font-semibold">Accessibility</legend>
+                  {[["Reduced motion",reducedMotion,(value:boolean)=>setAccessPreference("motion",value)],["Increased contrast",increasedContrast,(value:boolean)=>setAccessPreference("contrast",value)],["Larger interface text",largeText,(value:boolean)=>setAccessPreference("text",value)]].map(([label,checked,change])=><label key={String(label)} className="flex items-center gap-2 text-[10px]"><input type="checkbox" checked={Boolean(checked)} onChange={event=>(change as (value:boolean)=>void)(event.target.checked)}/>{String(label)}</label>)}
+                </fieldset>}
+              </div>}
+            </div>
           </div>
         </header>
 
-        <main className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+        <main id="main-content" tabIndex={-1} className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
           <div className="mx-auto w-full max-w-[96rem]">{children}</div>
         </main>
       </div>
