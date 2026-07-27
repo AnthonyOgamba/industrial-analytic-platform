@@ -11,6 +11,7 @@ import { MetricCard } from "./metric-card";
 import { ProductionChart } from "./production-chart";
 import { SectionCard } from "./section-card";
 import { RecentActivity, SensorStatus } from "./status-panels";
+import { normalizeDashboardResponse } from "./normalize-dashboard";
 
 function DashboardSkeleton() {
   return <div aria-label="Loading dashboard" role="status" className="space-y-5"><div className="h-16 animate-pulse rounded-xl bg-muted"/><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">{Array.from({length:10},(_,i)=><div key={i} className="h-40 animate-pulse rounded-xl bg-muted"/>)}</div><div className="h-72 animate-pulse rounded-xl bg-muted"/></div>;
@@ -57,7 +58,7 @@ export function Dashboard() {
       from.setUTCDate(from.getUTCDate() - days);
       params.set("fromUtc", from.toISOString());
       params.set("toUtc", to.toISOString());
-      setWorkspace(await apiRequest<DashboardWorkspaceDto>(`/api/backend/dashboard?${params}`));
+      setWorkspace(normalizeDashboardResponse(await apiRequest<unknown>(`/api/backend/dashboard?${params}`)));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Dashboard data could not be loaded.");
     } finally {
@@ -98,7 +99,7 @@ export function Dashboard() {
   );
   const latestProduction = productionTrend.at(-1);
   const latestDowntime = downtimeTrend.at(-1);
-  const financial = workspace?.financialImpact.reduce(
+  const financial = (workspace?.financialImpact ?? []).reduce(
     (total, item) => ({ cost:total.cost + item.downtimeCost, lost:total.lost + item.lostProductionValue }),
     { cost:0, lost:0 },
   );
