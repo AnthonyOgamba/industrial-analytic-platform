@@ -1,16 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Download, FileText, RefreshCw } from "lucide-react";
+import { Download, RefreshCw } from "lucide-react";
 
 import { useFacilityHierarchy } from "@/lib/facility-hierarchy";
 import { pageApi, type ReportListItem } from "@/lib/page-api";
 
-type Tab = "available" | "scheduled" | "recent";
-
 export function ReportCenter() {
   const hierarchy = useFacilityHierarchy();
-  const [tab, setTab] = useState<Tab>("recent");
   const [capabilities, setCapabilities] = useState<string[]>([]);
   const [reports, setReports] = useState<ReportListItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -58,6 +55,10 @@ export function ReportCenter() {
   }, []);
 
   async function exportWorkbook() {
+    if (fromUtc && toUtc && fromUtc > toUtc) {
+      setError("The start date must be on or before the end date.");
+      return;
+    }
     setExporting(true);
     setError("");
     try {
@@ -71,6 +72,10 @@ export function ReportCenter() {
       if (!response.ok) {
         const body = await response.json().catch(() => null) as { error?: string } | null;
         throw new Error(body?.error || "Report export failed.");
+      }
+      const contentType = response.headers.get("content-type") ?? "";
+      if (!contentType.includes("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")) {
+        throw new Error("The export service returned an unexpected file format.");
       }
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
@@ -106,29 +111,12 @@ export function ReportCenter() {
           <h1 className="mt-1 text-2xl font-bold tracking-tight">Report Center</h1>
           <p className="mt-1 text-sm text-muted-foreground">Facility-scoped report exports and server-generated report history</p>
         </div>
-        {canExport&&<div className="flex flex-wrap items-center gap-2"><select aria-label="Export report scope" value={reportType} onChange={event=>setReportType(event.target.value)} className="h-10 rounded-lg border bg-card px-3 text-xs"><option value="industrial-analytics">Complete Platform Workbook</option><option value="financial-impact">Financial Impact</option><option value="downtime">Downtime</option><option value="facilities">Facilities</option><option value="sensors">Sensors</option></select><button onClick={() => void exportWorkbook()} disabled={exporting} className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-50">
+        {canExport&&<div className="flex flex-wrap items-center gap-2"><select aria-label="Export report type" value={reportType} onChange={event=>setReportType(event.target.value)} className="h-10 rounded-lg border bg-card px-3 text-xs"><option value="industrial-analytics">Complete Platform Workbook</option><option value="production">Production</option><option value="downtime">Downtime</option><option value="facilities">Facilities & OEE</option><option value="sensors">Sensor Telemetry</option><option value="financial-impact">Financial Impact</option><option value="alerts">Olive Alerts</option><option value="security">Security Events</option><option value="audit">Audit Log</option></select><button onClick={() => void exportWorkbook()} disabled={exporting} className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-50">
           <Download className="size-4" />{exporting ? "Generating…" : "Export Excel"}
         </button></div>}
       </header>
 
-      <nav className="flex overflow-x-auto border-b" role="tablist" aria-label="Report views">
-        {([["available", "Available Reports"], ["scheduled", "Scheduled Reports"], ["recent", "Recent Reports"]] as const).map(([key, label]) => (
-          <button key={key} role="tab" aria-selected={tab === key} onClick={() => setTab(key)} className={`relative h-12 px-4 text-xs font-medium ${tab === key ? "text-primary after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:bg-primary" : "text-muted-foreground"}`}>
-            {label}{key === "recent" && <span className="ml-2 rounded-full bg-muted px-2 py-0.5">{total}</span>}
-          </button>
-        ))}
-      </nav>
-
-      {tab !== "recent" ? (
-        <div className="rounded-xl border border-dashed bg-muted/20 p-10 text-center">
-          <FileText className="mx-auto size-8 text-muted-foreground" />
-          <h2 className="mt-3 font-semibold">{tab === "available" ? "Report templates are unavailable" : "Report scheduling is unavailable"}</h2>
-          <p className="mx-auto mt-2 max-w-xl text-xs leading-5 text-muted-foreground">
-            The current backend contract supports report history and Excel export, but does not provide {tab === "available" ? "a report-template or report-generation API" : "report scheduling or lifecycle operations"}.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-4">
+      <div className="space-y-4">
           <div className="grid gap-3 rounded-xl border bg-card p-4 sm:grid-cols-2 lg:grid-cols-4">
             <select value={facilityId} onChange={(event) => { setFacilityId(event.target.value); setLineId(""); setStationId(""); setPage(1); }} className="h-10 rounded-lg border bg-background px-3 text-xs" aria-label="Facility">
               <option value="">All authorized facilities</option>
@@ -142,7 +130,7 @@ export function ReportCenter() {
             <label className="flex h-10 items-center gap-2 rounded-lg border bg-background px-3 text-xs"><input type="checkbox" checked={includeSynthetic} onChange={(event) => setIncludeSynthetic(event.target.checked)} />Include synthetic data</label>
             <button onClick={() => void load()} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border text-xs"><RefreshCw className="size-3.5" />Refresh</button>
           </div>
-          {canExport&&reportType!=="industrial-analytics"&&<p className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-700">The selected scope is sent to the backend. The current export contract still defines a fixed multi-sheet workbook, so sheet-level separation requires a backend export update.</p>}
+          {canExport&&<p className="rounded-lg border bg-muted/30 p-3 text-xs text-muted-foreground">Export: <strong className="text-foreground">{reportType==="industrial-analytics"?"Complete platform workbook":reportType.replaceAll("-"," ")}</strong> · Scope: <strong className="text-foreground">{selectedFacility?.name??"All authorized facilities"}</strong>{lineId&&<> · Line: <strong className="text-foreground">{lines.find(item=>String(item.productionLineId)===lineId)?.name}</strong></>}{stationId&&<> · Station: <strong className="text-foreground">{stations.find(item=>String(item.stationId)===stationId)?.name}</strong></>} · Synthetic data: <strong className="text-foreground">{includeSynthetic?"included":"excluded"}</strong> · Format: <strong className="text-foreground">Excel (.xlsx)</strong></p>}
 
           {error && <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">{error}</p>}
           <div className="overflow-x-auto rounded-xl border bg-card">
@@ -155,8 +143,7 @@ export function ReportCenter() {
             {loading ? <div className="h-36 animate-pulse bg-muted/30" /> : !reports.length && <p className="p-10 text-center text-sm text-muted-foreground">No report exports match these filters.</p>}
           </div>
           <div className="flex items-center justify-between text-xs text-muted-foreground"><span>{total.toLocaleString()} reports</span><div className="flex items-center gap-2"><button disabled={page <= 1} onClick={() => setPage((value) => value - 1)} className="rounded-lg border px-3 py-2 disabled:opacity-40">Previous</button><span>Page {page} of {pageCount}</span><button disabled={page >= pageCount} onClick={() => setPage((value) => value + 1)} className="rounded-lg border px-3 py-2 disabled:opacity-40">Next</button></div></div>
-        </div>
-      )}
+      </div>
     </section>
   );
 }

@@ -7,6 +7,7 @@ import type {
   CanonicalNotificationDto,
   CanonicalSensorDto,
 } from "@/lib/backend-dtos";
+import { normalizeSensorThresholds } from "@/lib/sensor-thresholds";
 
 const COMMON_KEYS = ["items", "data", "results", "records", "value"] as const;
 const CONTAINER_KEYS = ["data", "result", "payload"] as const;
@@ -74,14 +75,50 @@ export function normalizeCollection<T>(
   };
 }
 
-export const normalizeNotifications = (payload: unknown) =>
-  normalizeArrayResponse<CanonicalNotificationDto>(payload, ["notifications"], "notifications");
+export const normalizeNotifications = (payload: unknown): CanonicalNotificationDto[] =>
+  normalizeArrayResponse<Record<string, unknown>>(payload, ["notifications"], "notifications")
+    .map((item) => ({
+      notificationId: Number(item.notificationId ?? item.notification_id),
+      notificationType: String(item.notificationType ?? item.notification_type ?? "activity"),
+      title: String(item.title ?? ""),
+      message: String(item.message ?? ""),
+      recipientUserId: Number(item.recipientUserId ?? item.recipient_user_id),
+      actorUserId: item.actorUserId == null && item.actor_user_id == null
+        ? null
+        : Number(item.actorUserId ?? item.actor_user_id),
+      actorUsername: typeof (item.actorUsername ?? item.actor_username) === "string"
+        ? String(item.actorUsername ?? item.actor_username)
+        : null,
+      targetType: typeof (item.targetType ?? item.target_type ?? item.resource_type) === "string"
+        ? String(item.targetType ?? item.target_type ?? item.resource_type)
+        : null,
+      targetId: item.targetId == null && item.target_id == null && item.resource_id == null
+        ? null
+        : String(item.targetId ?? item.target_id ?? item.resource_id),
+      facilityId: item.facilityId == null && item.facility_id == null
+        ? null
+        : Number(item.facilityId ?? item.facility_id),
+      action: typeof item.action === "string" ? item.action : null,
+      severity: String(item.severity ?? "info"),
+      route: typeof item.route === "string" ? item.route : null,
+      correlationId: typeof (item.correlationId ?? item.correlation_id) === "string"
+        ? String(item.correlationId ?? item.correlation_id)
+        : null,
+      createdAtUtc: String(item.createdAtUtc ?? item.created_at_utc ?? ""),
+      readAtUtc: typeof (item.readAtUtc ?? item.read_at_utc) === "string"
+        ? String(item.readAtUtc ?? item.read_at_utc)
+        : null,
+    }))
+    .filter((item) => Number.isFinite(item.notificationId));
 export const normalizeApprovals = (payload: unknown) =>
   normalizeArrayResponse<ApprovalDto>(payload, ["approvals"], "approvals");
 export const normalizeAssets = (payload: unknown) =>
   normalizeArrayResponse<CanonicalAssetDto>(payload, ["assets"], "assets");
 export const normalizeSensors = (payload: unknown) =>
-  normalizeArrayResponse<CanonicalSensorDto>(payload, ["sensors"], "sensors");
+  normalizeArrayResponse<CanonicalSensorDto>(payload, ["sensors"], "sensors").map((sensor) => ({
+    ...sensor,
+    thresholds: normalizeSensorThresholds(sensor.thresholds),
+  }));
 export const normalizeDowntimeEvents = (payload: unknown) =>
   normalizeArrayResponse<CanonicalDowntimeDto>(payload, ["events", "downtime"], "downtime events");
 export const normalizeUsers = (payload: unknown) =>

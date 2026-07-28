@@ -1,6 +1,6 @@
-import { UsersPage } from "@/components/users/users-page";
-import { SensitiveUserActions } from "@/components/users/sensitive-user-actions";
+import { Suspense } from "react";
+import { UserAccessPage } from "@/components/users/user-access-page";
 
 export default function Page() {
-  return <div className="space-y-5"><UsersPage /><SensitiveUserActions /></div>;
+  return <Suspense fallback={<div className="h-64 animate-pulse rounded-xl bg-muted" />}><UserAccessPage /></Suspense>;
 }

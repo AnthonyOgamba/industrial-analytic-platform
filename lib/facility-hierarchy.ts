@@ -71,10 +71,14 @@ export function useFacilityHierarchy() {
   useEffect(() => {
     const listener = () => setVersion((value) => value + 1);
     const refreshVisible = () => {
-      if (document.visibilityState === "visible") void refreshFacilityHierarchy();
+      if (document.visibilityState === "visible") {
+        void refreshFacilityHierarchy().catch(() => undefined);
+      }
     };
     listeners.add(listener);
-    if (!state.data && !state.loading) void refreshFacilityHierarchy();
+    if (!state.data && !state.loading) {
+      void refreshFacilityHierarchy().catch(() => undefined);
+    }
     window.addEventListener("focus", refreshVisible);
     document.addEventListener("visibilitychange", refreshVisible);
     const refreshTimer = window.setInterval(refreshVisible, 30_000);

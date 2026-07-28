@@ -70,7 +70,7 @@ export type AuditRecordDto = {
   facility?: string | null;
 };
 export type PagedEnvelope<T> = { items: T[]; page: number; pageSize: number; total: number; totalPages: number };
-export type BackendUserDto = { uid:number; username:string; email:string; role:string; status:string; mustChangePassword:boolean; lastLoginAtUtc:string|null; createdAt:string };
+export type BackendUserDto = { uid:number; username:string; email:string; role:string; roles?:string[]; status:string; mustChangePassword:boolean; lastLoginAtUtc:string|null; createdAt:string };
 export type BackendRoleDto = { role:string; displayName:string; description:string; isSystem:boolean; capabilities:string[] };
 export type CreateBackendUserResponse = { uid:number; username:string; email:string; role:string; facilityIds:number[]; temporaryPassword:string; mustChangePassword:boolean };
 export type FinancialSnapshotDto = { financialSnapshotId:string; facilityId:number; productionLineId:number|null; stationId:number|null; downtimeCost:number; lostProductionValue:number; maintenanceCostEstimate:number; avoidedCost:number; currency:string; source:string; isSynthetic:boolean; generationBatchId:string|null; snapshotAtUtc:string };
@@ -105,6 +105,8 @@ export type GovernanceRecordDto = {
   classification:string;
   retentionDays:number;
   status:string;
+  ownerType:string|null;
+  ownerId:string|null;
   source:string;
   isSynthetic:boolean;
   createdBy:number;
@@ -189,8 +191,11 @@ export type CanonicalDowntimeDto = {
   start_utc:string; end_utc:string|null; planned_type:string; reason_code:string|null;
   severity:string; detection_source:string; production_loss:number; repair_cost:number;
   corrective_action:string|null; status:string; approval_state:string; Description?:string|null;
+  assigned_technician_user_id?:number|null; assigned_technician_name?:string|null;
+  repair_status?:string; repair_notes?:string|null; repaired_at_utc?:string|null;
+  repaired_by_user_id?:number|null;
   source:string; is_synthetic:boolean; generator:string|null; generated_at_utc:string|null;
-  asset_name:string;
+  asset_name:string; facility_name?:string; hall_name?:string; line_name?:string;
 };
 export type DowntimeWriteDto = {
   assetId:number; sensorId?:number|null; productionId:number; startUtc:string; endUtc?:string|null;
@@ -198,10 +203,26 @@ export type DowntimeWriteDto = {
   productionLoss:number; repairCost:number; correctiveAction?:string|null; status:string;
   description?:string|null; source?:string; isSynthetic?:boolean;
   generator?:string|null; generatedAtUtc?:string|null;
+  assignedTechnicianUserId?:number|null; assignedTechnicianName?:string|null;
+  repairStatus?:string; repairNotes?:string|null; repairedAtUtc?:string|null;
+  repairedByUserId?:number|null;
+};
+export type DowntimeRepairWriteDto = {
+  assignedTechnicianUserId:number|null; assignedTechnicianName:string|null;
+  repairStatus:string; repairNotes:string|null; repairedAtUtc:string|null;
+  repairedByUserId:number|null;
+};
+export type FacilityFinancialConfigurationDto = {
+  facilityId:number; hourlyProductionValue:number|null; downtimeCostPerHour:number|null;
+  labourRate:number|null; maintenanceRate:number|null; energyRate:number|null;
+  scrapCost:number|null; currency:string|null; updatedAtUtc:string;
 };
 export type CanonicalNotificationDto = {
-  notification_id:number; notification_type:string; title:string; message:string;
-  resource_type:string|null; resource_id:string|null; created_at_utc:string; read_at_utc:string|null;
+  notificationId:number; notificationType:string; title:string; message:string;
+  recipientUserId:number; actorUserId:number|null; actorUsername:string|null;
+  targetType:string|null; targetId:string|null; facilityId:number|null;
+  action:string|null; severity:string; route:string|null; correlationId:string|null;
+  createdAtUtc:string; readAtUtc:string|null;
 };
 export type ApprovalDto = {
   request_id:string; action:string; requester_user_id:number; requester_username:string;
