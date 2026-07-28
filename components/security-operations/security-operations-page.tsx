@@ -1,21 +1,334 @@
 "use client";
 
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, FileSearch, Filter, LockKeyhole, RefreshCw, ShieldAlert } from "lucide-react";
+import {
+  AlertTriangle,
+  FileSearch,
+  Filter,
+  LockKeyhole,
+  RefreshCw,
+  ShieldAlert,
+} from "lucide-react";
+
 import { apiRequest } from "@/lib/api-client";
 import type { PagedEnvelope, SecurityEventDto } from "@/lib/backend-dtos";
 import { useFacilityHierarchy } from "@/lib/facility-hierarchy";
 
-type Tab="events"|"investigations"|"trends"|"threats"|"notifications";
-const tabs:{id:Tab;label:string}[]=[{id:"events",label:"Security Events"},{id:"investigations",label:"Investigations"},{id:"trends",label:"Security Trends"},{id:"threats",label:"Threat Monitoring"},{id:"notifications",label:"Notifications"}];
+type Tab =
+  | "overview"
+  | "threats"
+  | "api-gateway"
+  | "authentication"
+  | "ingestion"
+  | "sessions"
+  | "blocked";
+const tabs: Array<{ id: Tab; label: string }> = [
+  { id: "overview", label: "Overview" },
+  { id: "threats", label: "Threats & Alerts" },
+  { id: "api-gateway", label: "API & Gateway" },
+  { id: "authentication", label: "Authentication" },
+  { id: "ingestion", label: "Data Ingestion Security" },
+  { id: "sessions", label: "Active Sessions" },
+  { id: "blocked", label: "Blocked Clients" },
+];
+const unsupported: Record<
+  Exclude<Tab, "overview" | "threats" | "authentication" | "ingestion">,
+  { title: string; message: string }
+> = {
+  "api-gateway": {
+    title: "API and gateway telemetry unavailable",
+    message:
+      "API health, traffic, failed-request, rate-limit, and service-availability metrics are not currently available.",
+  },
+  sessions: {
+    title: "Active sessions unavailable",
+    message:
+      "Active-session inventory and session revocation are not currently available.",
+  },
+  blocked: {
+    title: "Blocked clients unavailable",
+    message:
+      "Blocked-client inventory and unblock controls are not currently available.",
+  },
+};
 
-export function SecurityOperationsPage(){
-  const hierarchy=useFacilityHierarchy();const[tab,setTab]=useState<Tab>("events");const[facilityId,setFacilityId]=useState("");const[severity,setSeverity]=useState("");const[status,setStatus]=useState("");const[data,setData]=useState<PagedEnvelope<SecurityEventDto>>({items:[],page:1,pageSize:200,total:0,totalPages:0});const[loading,setLoading]=useState(true);const[error,setError]=useState("");
-  const load=useCallback(async()=>{setLoading(true);try{const query=new URLSearchParams({page:"1",pageSize:"200"});if(facilityId)query.set("facilityId",facilityId);if(severity)query.set("severity",severity);if(status)query.set("status",status);setData(await apiRequest(`/api/backend/security-events?${query}`));setError("")}catch(cause){setError(cause instanceof Error?cause.message:"Security events could not be loaded.")}finally{setLoading(false)}},[facilityId,severity,status]);
-  useEffect(()=>{// eslint-disable-next-line react-hooks/set-state-in-effect
-    void load()
-  },[load]);
-  const counts=useMemo(()=>({critical:data.items.filter(item=>item.severity.toLowerCase()==="critical").length,open:data.items.filter(item=>!["resolved","closed"].includes(item.status.toLowerCase())).length,users:new Set(data.items.map(item=>item.userId).filter(Boolean)).size,facilities:new Set(data.items.map(item=>item.facilityId).filter(Boolean)).size}),[data.items]);
-  const types=useMemo(()=>{const result=new Map<string,number>();data.items.forEach(item=>result.set(item.eventType,(result.get(item.eventType)??0)+1));return [...result].sort((a,b)=>b[1]-a[1])},[data.items]);const max=Math.max(1,...types.map(([,value])=>value));
-  return <div className="space-y-5 pb-6"><header className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start"><div><h1 className="text-2xl font-bold tracking-tight">Security Operations</h1><p className="mt-1 text-sm text-muted-foreground">Facility-scoped persisted security monitoring</p></div><button onClick={()=>void load()} className="inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-xs"><RefreshCw className="size-4"/>Refresh</button></header>{error&&<p role="alert" className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive"><AlertTriangle className="size-4"/>{error}</p>}<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{[{label:"Server Total",value:data.total,icon:ShieldAlert},{label:"Open Events",value:counts.open,icon:AlertTriangle},{label:"Critical Events",value:counts.critical,icon:LockKeyhole},{label:"Affected Facilities",value:counts.facilities,icon:FileSearch}].map(({icon:Icon,...item})=><article key={item.label} className="rounded-xl border bg-card p-4"><Icon className="size-4 text-primary"/><p className="mt-3 text-xl font-bold">{item.value}</p><p className="mt-1 text-[10px] text-muted-foreground">{item.label}</p></article>)}</div><nav className="overflow-x-auto border-b"><div className="flex min-w-max">{tabs.map(item=><button key={item.id} onClick={()=>setTab(item.id)} className={`h-12 border-b-2 px-4 text-xs font-medium ${tab===item.id?"border-primary text-primary":"border-transparent text-muted-foreground"}`}>{item.label}</button>)}</div></nav>{tab==="events"&&<><section className="flex flex-wrap items-center gap-2 rounded-xl border bg-card p-3"><Filter className="size-4 text-muted-foreground"/><select value={facilityId} onChange={event=>setFacilityId(event.target.value)} className="h-9 rounded-lg border bg-background px-3 text-xs"><option value="">All Facilities</option>{(hierarchy.data?.facilities??[]).map(item=><option key={item.facilityId} value={item.facilityId}>{item.name}</option>)}</select><select value={severity} onChange={event=>setSeverity(event.target.value)} className="h-9 rounded-lg border bg-background px-3 text-xs"><option value="">All Severities</option>{["critical","high","medium","low","info"].map(item=><option key={item}>{item}</option>)}</select><select value={status} onChange={event=>setStatus(event.target.value)} className="h-9 rounded-lg border bg-background px-3 text-xs"><option value="">All Statuses</option>{["new","investigating","acknowledged","resolved"].map(item=><option key={item}>{item}</option>)}</select></section>{loading?<div className="h-64 animate-pulse rounded-xl bg-muted"/>:<div className="overflow-hidden rounded-xl border bg-card"><div className="overflow-x-auto"><table className="w-full min-w-[70rem] text-left text-xs"><thead className="bg-muted/40 font-mono text-[9px] uppercase text-muted-foreground"><tr>{["ID","Event","Description","Facility","Severity","Status","Source","Occurred"].map(item=><th key={item} className="px-3 py-3">{item}</th>)}</tr></thead><tbody>{data.items.map(item=><tr key={item.securityEventId} className="border-t"><td className="px-3 py-3 font-mono">#{item.securityEventId}</td><td className="px-3 py-3 font-semibold">{item.eventType}</td><td className="max-w-md px-3 py-3 text-muted-foreground">{item.description}</td><td className="px-3 py-3">{hierarchy.data?.facilities.find(facility=>facility.facilityId===item.facilityId)?.name??(item.facilityId?`Facility ${item.facilityId}`:"Global")}</td><td className="px-3 py-3 uppercase">{item.severity}</td><td className="px-3 py-3">{item.status}</td><td className="px-3 py-3">{item.source}</td><td className="px-3 py-3">{new Date(item.occurredAtUtc).toLocaleString()}</td></tr>)}{!data.items.length&&<tr><td colSpan={8} className="p-12 text-center text-muted-foreground">No security events match these filters.</td></tr>}</tbody></table></div></div>}</>}{tab==="trends"&&<section className="rounded-xl border bg-card p-5"><h2 className="font-bold">Events by Type</h2><p className="mt-1 text-xs text-muted-foreground">Current server-filtered result</p><div className="mt-5 space-y-3">{types.map(([label,value])=><div key={label} className="grid grid-cols-[10rem_1fr_3rem] items-center gap-3 text-xs"><span className="truncate">{label}</span><span className="h-6 rounded bg-muted"><span className="block h-full rounded bg-primary/40" style={{width:`${value/max*100}%`}}/></span><strong className="text-right">{value}</strong></div>)}{!types.length&&<p className="py-10 text-center text-muted-foreground">No trend records are available.</p>}</div></section>}{(tab==="investigations"||tab==="threats")&&<section className="rounded-xl border border-dashed bg-muted/20 p-10 text-center text-sm text-muted-foreground">The backend exposes security events, but no persisted {tab==="investigations"?"investigation workflow":"threat-actor scoring"} contract. No sample records are displayed.</section>}{tab==="notifications"&&<section className="rounded-xl border border-dashed bg-muted/20 p-10 text-center text-sm text-muted-foreground">Platform-wide security notifications are not implemented. Olive notifications remain available in the Olive workspace.</section>}</div>
+function EventTable({ items }: { items: SecurityEventDto[] }) {
+  return (
+    <div className="overflow-hidden rounded-xl border bg-card">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[70rem] text-left text-xs">
+          <caption className="sr-only">Persisted security events</caption>
+          <thead className="bg-muted/40 font-mono text-[9px] uppercase text-muted-foreground">
+            <tr>
+              {[
+                "ID",
+                "Event",
+                "Description",
+                "Severity",
+                "Status",
+                "Source",
+                "Occurred",
+              ].map((item) => (
+                <th scope="col" key={item} className="px-3 py-3">
+                  {item}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item) => (
+              <tr key={item.securityEventId} className="border-t">
+                <td className="px-4 py-4 font-mono">#{item.securityEventId}</td>
+                <td className="px-4 py-4 font-semibold">{item.eventType}</td>
+                <td className="max-w-md px-4 py-4 leading-5 text-muted-foreground">
+                  {item.description}
+                </td>
+                <td className="px-4 py-4 uppercase">{item.severity}</td>
+                <td className="px-4 py-4">{item.status}</td>
+                <td className="px-4 py-4">{item.source}</td>
+                <td className="px-4 py-4">
+                  {new Date(item.occurredAtUtc).toLocaleString()}
+                </td>
+              </tr>
+            ))}
+            {!items.length && (
+              <tr>
+                <td
+                  colSpan={7}
+                  className="p-12 text-center text-muted-foreground"
+                >
+                  No persisted security events match this view.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+export function SecurityOperationsPage() {
+  const search = useSearchParams();
+  const requested = search.get("tab") as Tab | null;
+  const hierarchy = useFacilityHierarchy();
+  const [tab, setTab] = useState<Tab>(
+    tabs.some((item) => item.id === requested) ? requested! : "overview",
+  );
+  const [facilityId, setFacilityId] = useState("");
+  const [severity, setSeverity] = useState("");
+  const [status, setStatus] = useState("");
+  const [data, setData] = useState<PagedEnvelope<SecurityEventDto>>({
+    items: [],
+    page: 1,
+    pageSize: 200,
+    total: 0,
+    totalPages: 0,
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const query = new URLSearchParams({ page: "1", pageSize: "200" });
+      if (facilityId) query.set("facilityId", facilityId);
+      if (severity) query.set("severity", severity);
+      if (status) query.set("status", status);
+      setData(await apiRequest(`/api/backend/security-events?${query}`));
+      setError("");
+    } catch (cause) {
+      setData({ items: [], page: 1, pageSize: 200, total: 0, totalPages: 0 });
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Security events could not be loaded.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [facilityId, severity, status]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void load();
+  }, [load]);
+  const counts = useMemo(
+    () => ({
+      critical: data.items.filter(
+        (item) => item.severity.toLowerCase() === "critical",
+      ).length,
+      open: data.items.filter(
+        (item) => !["resolved", "closed"].includes(item.status.toLowerCase()),
+      ).length,
+      facilities: new Set(
+        data.items.map((item) => item.facilityId).filter(Boolean),
+      ).size,
+    }),
+    [data.items],
+  );
+  const authEvents = data.items.filter((item) =>
+    /auth|login|password|passcode/i.test(
+      `${item.eventType} ${item.description}`,
+    ),
+  );
+  const threats = data.items.filter((item) =>
+    ["critical", "high"].includes(item.severity.toLowerCase()),
+  );
+  const ingestionEvents = data.items.filter((item) =>
+    /ingest|import|upload|payload|protocol|telemetry|source/i.test(
+      `${item.eventType} ${item.description} ${item.source}`,
+    ),
+  );
+  const content =
+    tab === "overview" ? (
+      <div className="space-y-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { label: "Persisted events", value: data.total, icon: ShieldAlert },
+            { label: "Open events", value: counts.open, icon: AlertTriangle },
+            {
+              label: "Critical events",
+              value: counts.critical,
+              icon: LockKeyhole,
+            },
+            {
+              label: "Affected facilities",
+              value: counts.facilities,
+              icon: FileSearch,
+            },
+          ].map(({ icon: Icon, ...item }) => (
+            <article key={item.label} className="rounded-xl border bg-card p-4">
+              <Icon className="size-4 text-primary" />
+              <p className="mt-3 text-xl font-bold">{item.value}</p>
+              <p className="mt-1 text-[10px] text-muted-foreground">
+                {item.label}
+              </p>
+            </article>
+          ))}
+        </div>
+        <EventTable items={data.items.slice(0, 10)} />
+        <Link
+          href="/audit?source=security"
+          className="inline-flex h-9 items-center rounded-lg border px-3 text-xs font-semibold"
+        >
+          View Audit & Approvals
+        </Link>
+      </div>
+    ) : tab === "threats" ? (
+      <EventTable items={threats} />
+    ) : tab === "authentication" ? (
+      <EventTable items={authEvents} />
+    ) : tab === "ingestion" ? (
+      <div className="space-y-3">
+        <p className="rounded-lg border bg-card px-4 py-3 text-xs text-muted-foreground">
+          Data-ingestion security events recorded by the canonical security
+          event stream.
+        </p>
+        <EventTable items={ingestionEvents} />
+      </div>
+    ) : (
+      <section className="rounded-xl border border-dashed bg-muted/20 p-10 text-center">
+        <ShieldAlert className="mx-auto size-8 text-muted-foreground" />
+        <h2 className="mt-3 font-semibold">{unsupported[tab].title}</h2>
+        <p className="mx-auto mt-2 max-w-2xl text-xs leading-5 text-muted-foreground">
+          {unsupported[tab].message}
+        </p>
+      </section>
+    );
+  return (
+    <div className="space-y-5 pb-6">
+      <header className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">
+            Security Operations
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Persisted security events and platform capability status
+          </p>
+        </div>
+        <button
+          onClick={() => void load()}
+          className="inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-xs"
+        >
+          <RefreshCw className="size-4" />
+          Refresh
+        </button>
+      </header>
+      {error && (
+        <p
+          role="alert"
+          className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive"
+        >
+          <AlertTriangle className="size-4" />
+          {error}
+        </p>
+      )}
+      <section className="flex flex-wrap items-center gap-2 rounded-xl border bg-card p-3">
+        <Filter className="size-4 text-muted-foreground" />
+        <select
+          aria-label="Facility"
+          value={facilityId}
+          onChange={(event) => setFacilityId(event.target.value)}
+          className="h-9 rounded-lg border bg-background px-3 text-xs"
+        >
+          <option value="">All Facilities</option>
+          {(hierarchy.data?.facilities ?? []).map((item) => (
+            <option key={item.facilityId} value={item.facilityId}>
+              {item.name}
+            </option>
+          ))}
+        </select>
+        <select
+          aria-label="Severity"
+          value={severity}
+          onChange={(event) => setSeverity(event.target.value)}
+          className="h-9 rounded-lg border bg-background px-3 text-xs"
+        >
+          <option value="">All Severities</option>
+          {["critical", "high", "medium", "low", "info"].map((item) => (
+            <option key={item}>{item}</option>
+          ))}
+        </select>
+        <select
+          aria-label="Status"
+          value={status}
+          onChange={(event) => setStatus(event.target.value)}
+          className="h-9 rounded-lg border bg-background px-3 text-xs"
+        >
+          <option value="">All Statuses</option>
+          {["new", "investigating", "acknowledged", "resolved"].map((item) => (
+            <option key={item}>{item}</option>
+          ))}
+        </select>
+      </section>
+      <nav
+        className="overflow-x-auto border-b"
+        role="tablist"
+        aria-label="Security operations sections"
+      >
+        <div className="flex min-w-max gap-2 px-2">
+          {tabs.map((item) => (
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === item.id}
+              key={item.id}
+              onClick={() => setTab(item.id)}
+              className={`h-12 border-b-2 px-5 text-xs font-medium ${tab === item.id ? "border-primary text-primary" : "border-transparent text-muted-foreground"}`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      </nav>
+      <div role="tabpanel">
+        {loading ? (
+          <div className="h-64 animate-pulse rounded-xl bg-muted" />
+        ) : (
+          content
+        )}
+      </div>
+    </div>
+  );
 }

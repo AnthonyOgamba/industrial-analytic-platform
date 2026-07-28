@@ -16,6 +16,7 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(search.get("reason") === "session-expired" ? t("sessionExpired") : "");
+  const passwordChanged = search.get("reason") === "password-changed";
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (pending) return;
@@ -23,8 +24,9 @@ export function LoginForm() {
     setPending(true); setError("");
     try {
       await apiRequest<{ username: string; role: string; uid: number }>("/api/auth/login", { method: "POST", body: JSON.stringify({ username: username.trim(), password }) });
+      const session = await apiRequest<{ user?: { mustChangePassword?: boolean } }>("/api/auth/session");
       setPassword("");
-      router.replace("/");
+      router.replace(session.user?.mustChangePassword ? "/change-password" : "/");
       router.refresh();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : t("failed"));
@@ -34,6 +36,7 @@ export function LoginForm() {
     <div className="auth-form-shell">
       <h1>{t("login")}</h1>
       <form className="auth-card" onSubmit={submit} noValidate>
+        {passwordChanged && <div className="auth-alert" role="status">Password changed. Sign in with your new password.</div>}
         {error && <div className="auth-alert auth-alert-error" role="alert">{error}</div>}
         <label htmlFor="username">{t("username")}</label>
         <div className="auth-input-wrap">

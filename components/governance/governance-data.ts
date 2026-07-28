@@ -97,7 +97,6 @@ export const governanceSections: Array<{
   shortLabel: string;
 }> = [
   { key: "policies", label: "Governance Policies", shortLabel: "Policies" },
-  { key: "classification", label: "Classification Registry", shortLabel: "Registry" },
   { key: "retention", label: "Retention Policies", shortLabel: "Retention" },
   { key: "ownership", label: "Data Ownership", shortLabel: "Ownership" },
   { key: "compliance", label: "Compliance Controls", shortLabel: "Compliance" },

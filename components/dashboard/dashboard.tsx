@@ -116,7 +116,7 @@ export function Dashboard() {
   const platformMetrics = useMemo<DashboardMetric[]>(() => workspace ? [
     { label:"Active Facilities", value:String(workspace.summary.activeFacilities), delta:"Within your authorized scope", icon:"shield", href:"/facilities" },
     { label:"Open Olive Alerts", value:String(workspace.summary.openAlerts), delta:`${workspace.recentAlerts.filter(item=>item.severity==="critical").length} recent critical`, severity:workspace.summary.openAlerts ? "critical" : "healthy", icon:"alert", href:"/local-ai" },
-    { label:"Estimated Downtime Cost", value:formatCurrency(workspace.summary.estimatedDowntimeCost,currency), delta:"Backend-calculated exposure", severity:workspace.summary.estimatedDowntimeCost > 0 ? "warning" : "healthy", icon:"dollar", href:"/financial" },
+    { label:"Estimated Downtime Cost", value:formatCurrency(workspace.summary.estimatedDowntimeCost,currency), delta:"Calculated exposure", severity:workspace.summary.estimatedDowntimeCost > 0 ? "warning" : "healthy", icon:"dollar", href:"/financial" },
     { label:"Lost Production Value", value:formatCurrency(financial?.lost ?? 0,currency), delta:financial?.cost ? `${formatCurrency(financial.cost,currency)} recorded downtime cost` : "No financial impact recorded", icon:"dollar", href:"/financial" },
     { label:"Active Production Runs", value:String(workspace.summary.activeRuns), delta:`${workspace.summary.totalStations} registered stations`, severity:workspace.summary.activeRuns ? "healthy" : "neutral", icon:"users", href:"/operations" },
   ] : [], [workspace, financial, currency]);
@@ -156,7 +156,7 @@ export function Dashboard() {
     <section><h2 className="mb-2.5 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Operational performance</h2><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">{operationalMetrics.map(metric=><MetricCard key={metric.label} {...metric}/>)}</div></section>
     <section><h2 className="mb-2.5 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Platform and financial</h2><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">{platformMetrics.map(metric=><MetricCard key={metric.label} {...metric}/>)}</div></section>
     <div className="grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(20rem,.75fr)]">
-      <SectionCard title="Production Output Trend" subtitle="Backend production totals by period" action={<span className="font-mono text-[9px] text-primary">Live</span>}>{trend.length?<ProductionChart data={trend}/>:<p className="grid h-52 place-items-center text-sm text-muted-foreground">No production trend points are available.</p>}</SectionCard>
+      <SectionCard title="Production Output Trend" subtitle="Production totals by period" action={<span className="font-mono text-[9px] text-primary">Live</span>}>{trend.length?<ProductionChart data={trend}/>:<p className="grid h-52 place-items-center text-sm text-muted-foreground">No production trend points are available.</p>}</SectionCard>
       <SectionCard title="Equipment Health" subtitle="Current OEE by facility">{equipment.length?<EquipmentHealth lines={equipment}/>:<p className="grid h-52 place-items-center text-sm text-muted-foreground">No facility OEE records are available.</p>}</SectionCard>
     </div>
     <div className="grid gap-5 xl:grid-cols-2">

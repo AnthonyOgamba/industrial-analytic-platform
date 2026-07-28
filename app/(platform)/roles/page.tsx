@@ -1,5 +1,5 @@
-import { RolesPage } from "@/components/roles/roles-page";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <RolesPage />;
+  redirect("/users?tab=roles");
 }

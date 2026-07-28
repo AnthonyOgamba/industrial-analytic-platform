@@ -1,5 +1,5 @@
-import { ApiSecurityPage as ApiSecurityWorkspace } from "@/components/api-security/api-security-page";
+import { redirect } from "next/navigation";
 
 export default function ApiSecurityPage() {
-  return <ApiSecurityWorkspace />;
+  redirect("/security-ops?tab=api-gateway");
 }

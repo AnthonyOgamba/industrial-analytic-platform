@@ -3,9 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
-  BarChart3,
   Accessibility,
   Bell,
   ChevronDown,
@@ -21,11 +20,9 @@ import {
   Moon,
   Bot,
   Radio,
-  Settings,
   Settings2,
   ShieldCheck,
   ShieldEllipsis,
-  ShieldUser,
   Sun,
   Users,
   X,
@@ -34,23 +31,24 @@ import {
 import { cn } from "@/lib/utils";
 import { NotificationDrawer } from "@/components/notifications/notification-drawer";
 import { apiRequest } from "@/lib/api-client";
+import { useAccess } from "@/lib/access-control";
 import type { CanonicalNotificationDto } from "@/lib/backend-dtos";
 import { normalizeNotifications } from "@/lib/normalize-notifications";
 
 type Language = "en"|"fr"|"es"|"pa";
 const languageNames:Record<Language,string>={en:"English",fr:"Français",es:"Español",pa:"ਪੰਜਾਬੀ"};
 const translations:Record<Language,Record<string,string>>={
-  en:{Dashboard:"Dashboard",Operations:"Operations",Facilities:"Facilities",Assets:"Assets",Sensors:"Sensors",Downtime:"Downtime",Analytics:"Analytics",Financial:"Financial",Reports:"Reports",AI:"AI","Olive AI":"Olive AI","Governance & Security":"Governance & Security","Data Governance":"Data Governance","Security Operations":"Security Operations","API Security":"API Security","Audit Log":"Audit Log",Administration:"Administration",Users:"Users","Roles & Permissions":"Roles & Permissions",Settings:"Settings",Notifications:"Notifications",Profile:"Profile",Accessibility:"Accessibility"},
-  fr:{Dashboard:"Tableau de bord",Operations:"Opérations",Facilities:"Installations",Assets:"Actifs",Sensors:"Capteurs",Downtime:"Temps d’arrêt",Analytics:"Analytique",Financial:"Finances",Reports:"Rapports",AI:"IA","Olive AI":"IA Olive","Governance & Security":"Gouvernance et sécurité","Data Governance":"Gouvernance des données","Security Operations":"Opérations de sécurité","API Security":"Sécurité API","Audit Log":"Journal d’audit",Administration:"Administration",Users:"Utilisateurs","Roles & Permissions":"Rôles et autorisations",Settings:"Paramètres",Notifications:"Notifications",Profile:"Profil",Accessibility:"Accessibilité"},
-  es:{Dashboard:"Panel",Operations:"Operaciones",Facilities:"Instalaciones",Assets:"Activos",Sensors:"Sensores",Downtime:"Tiempo de inactividad",Analytics:"Analítica",Financial:"Finanzas",Reports:"Informes",AI:"IA","Olive AI":"IA Olive","Governance & Security":"Gobernanza y seguridad","Data Governance":"Gobernanza de datos","Security Operations":"Operaciones de seguridad","API Security":"Seguridad API","Audit Log":"Registro de auditoría",Administration:"Administración",Users:"Usuarios","Roles & Permissions":"Roles y permisos",Settings:"Configuración",Notifications:"Notificaciones",Profile:"Perfil",Accessibility:"Accesibilidad"},
-  pa:{Dashboard:"ਡੈਸ਼ਬੋਰਡ",Operations:"ਕਾਰਜ",Facilities:"ਸਹੂਲਤਾਂ",Assets:"ਸੰਪਤੀਆਂ",Sensors:"ਸੈਂਸਰ",Downtime:"ਬੰਦ ਸਮਾਂ",Analytics:"ਵਿਸ਼ਲੇਸ਼ਣ",Financial:"ਵਿੱਤੀ",Reports:"ਰਿਪੋਰਟਾਂ",AI:"ਏਆਈ","Olive AI":"Olive ਏਆਈ","Governance & Security":"ਸ਼ਾਸਨ ਅਤੇ ਸੁਰੱਖਿਆ","Data Governance":"ਡਾਟਾ ਸ਼ਾਸਨ","Security Operations":"ਸੁਰੱਖਿਆ ਕਾਰਜ","API Security":"API ਸੁਰੱਖਿਆ","Audit Log":"ਆਡਿਟ ਲੌਗ",Administration:"ਪ੍ਰਸ਼ਾਸਨ",Users:"ਉਪਭੋਗਤਾ","Roles & Permissions":"ਭੂਮਿਕਾਵਾਂ ਅਤੇ ਅਨੁਮਤੀਆਂ",Settings:"ਸੈਟਿੰਗਾਂ",Notifications:"ਸੂਚਨਾਵਾਂ",Profile:"ਪ੍ਰੋਫਾਈਲ",Accessibility:"ਪਹੁੰਚਯੋਗਤਾ"},
+  en:{Dashboard:"Dashboard",Operations:"Operations",Facilities:"Facilities",Assets:"Assets",Sensors:"Sensors",Downtime:"Downtime",Analytics:"Analytics",Financial:"Financial",Reports:"Reports",AI:"AI","Olive AI":"Olive AI","Governance & Security":"Governance & Security","Data Governance":"Data Governance","Security Operations":"Security Operations","Audit Log":"Audit Log","User & Access Management":"User & Access Management",Users:"Users",Roles:"Roles",Permissions:"Permissions","Access Assignments":"Access Assignments","Access Requests":"Access Requests",Notifications:"Notifications",Profile:"Profile",Accessibility:"Accessibility"},
+  fr:{Dashboard:"Tableau de bord",Operations:"Opérations",Facilities:"Installations",Assets:"Actifs",Sensors:"Capteurs",Downtime:"Temps d’arrêt",Analytics:"Analytique",Financial:"Finances",Reports:"Rapports",AI:"IA","Olive AI":"IA Olive","Governance & Security":"Gouvernance et sécurité","Data Governance":"Gouvernance des données","Security Operations":"Opérations de sécurité","Audit Log":"Journal d’audit","User & Access Management":"Gestion des utilisateurs et accès",Users:"Utilisateurs",Roles:"Rôles",Permissions:"Autorisations","Access Assignments":"Attributions d’accès","Access Requests":"Demandes d’accès",Notifications:"Notifications",Profile:"Profil",Accessibility:"Accessibilité"},
+  es:{Dashboard:"Panel",Operations:"Operaciones",Facilities:"Instalaciones",Assets:"Activos",Sensors:"Sensores",Downtime:"Tiempo de inactividad",Analytics:"Analítica",Financial:"Finanzas",Reports:"Informes",AI:"IA","Olive AI":"IA Olive","Governance & Security":"Gobernanza y seguridad","Data Governance":"Gobernanza de datos","Security Operations":"Operaciones de seguridad","Audit Log":"Registro de auditoría","User & Access Management":"Gestión de usuarios y acceso",Users:"Usuarios",Roles:"Roles",Permissions:"Permisos","Access Assignments":"Asignaciones de acceso","Access Requests":"Solicitudes de acceso",Notifications:"Notificaciones",Profile:"Perfil",Accessibility:"Accesibilidad"},
+  pa:{Dashboard:"ਡੈਸ਼ਬੋਰਡ",Operations:"ਕਾਰਜ",Facilities:"ਸਹੂਲਤਾਂ",Assets:"ਸੰਪਤੀਆਂ",Sensors:"ਸੈਂਸਰ",Downtime:"ਬੰਦ ਸਮਾਂ",Analytics:"ਵਿਸ਼ਲੇਸ਼ਣ",Financial:"ਵਿੱਤੀ",Reports:"ਰਿਪੋਰਟਾਂ",AI:"ਏਆਈ","Olive AI":"Olive ਏਆਈ","Governance & Security":"ਸ਼ਾਸਨ ਅਤੇ ਸੁਰੱਖਿਆ","Data Governance":"ਡਾਟਾ ਸ਼ਾਸਨ","Security Operations":"ਸੁਰੱਖਿਆ ਕਾਰਜ","Audit Log":"ਆਡਿਟ ਲੌਗ","User & Access Management":"ਯੂਜ਼ਰ ਅਤੇ ਪਹੁੰਚ ਪ੍ਰਬੰਧਨ",Users:"ਉਪਭੋਗਤਾ",Roles:"ਭੂਮਿਕਾਵਾਂ",Permissions:"ਅਨੁਮਤੀਆਂ","Access Assignments":"ਪਹੁੰਚ ਨਿਯੁਕਤੀਆਂ","Access Requests":"ਪਹੁੰਚ ਬੇਨਤੀਆਂ",Notifications:"ਸੂਚਨਾਵਾਂ",Profile:"ਪ੍ਰੋਫਾਈਲ",Accessibility:"ਪਹੁੰਚਯੋਗਤਾ"},
 };
 
 type NavigationItem = {
   label: string;
   href: string;
   icon: React.ElementType;
-  capability: string;
+  capability: string | string[];
 };
 
 type NavigationGroup = {
@@ -90,18 +88,15 @@ const navigation: NavigationGroup[] = [
   {
     label: "Governance & Security",
     items: [
-      { label: "Data Governance", href: "/governance", icon: ShieldCheck, capability: "settings.organization" },
+      { label: "Data Governance", href: "/governance", icon: ShieldCheck, capability: "governance.view" },
       { label: "Security Operations", href: "/security-ops", icon: ShieldEllipsis, capability: "security.view" },
-      { label: "API Security", href: "/api-security", icon: BarChart3, capability: "security.view" },
-      { label: "Audit Log", href: "/audit", icon: ClipboardList, capability: "audit.view" },
+      { label: "Audit & Approvals", href: "/audit", icon: ClipboardList, capability: "audit.view" },
     ],
   },
   {
-    label: "Administration",
+    label: "User & Access Management",
     items: [
       { label: "Users", href: "/users", icon: Users, capability: "users.view" },
-      { label: "Roles & Permissions", href: "/roles", icon: ShieldUser, capability: "roles.view" },
-      { label: "Settings", href: "/settings", icon: Settings, capability: "settings.personal" },
     ],
   },
 ];
@@ -109,14 +104,14 @@ const navigation: NavigationGroup[] = [
 const pageTitles = new Map(
   navigation.flatMap((group) => group.items.map((item) => [item.href, item.label])),
 );
-pageTitles.set("/settings", "Settings");
 pageTitles.set("/profile", "Profile");
 pageTitles.set("/api-security/logs", "API Audit Log");
 
 function isActivePath(pathname: string, href: string) {
+  const hrefPath = href.split("?")[0];
   return href === "/"
     ? pathname === href
-    : pathname === href || pathname.startsWith(`${href}/`);
+    : pathname === hrefPath || pathname.startsWith(`${hrefPath}/`);
 }
 
 function ThemeToggle() {
@@ -157,37 +152,39 @@ function SidebarContent({ onNavigate, user, language }: { onNavigate?: () => voi
   const pathname = usePathname();
   const capabilities = new Set(user?.capabilities ?? []);
   const visibleNavigation = navigation
-    .map(group => ({ ...group, items: group.items.filter(item => capabilities.has(item.capability)) }))
+    .map(group => ({ ...group, items: group.items.filter(item =>
+      Array.isArray(item.capability)
+        ? item.capability.some(capability => capabilities.has(capability))
+        : capabilities.has(item.capability),
+    ) }))
     .filter(group => group.items.length);
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-sidebar text-sidebar-foreground">
-      <div className="flex h-16 shrink-0 items-center gap-3 border-b border-sidebar-border px-5">
-        <div className="relative h-11 w-14 shrink-0 overflow-hidden" aria-label="DIVU">
+      <div className="flex h-16 shrink-0 items-center gap-2 border-b border-sidebar-border px-4">
+        <Link href="/" onClick={onNavigate} className="flex h-16 w-[92px] shrink-0 items-center" aria-label="DIVU dashboard">
           <Image
             src="/assets/divu-auth-logo.png"
             alt="DIVU"
-            width={128}
-            height={72}
+            width={120}
+            height={68}
             priority
-            className="absolute -left-9 -top-3 h-[68px] w-32 object-contain dark:hidden"
+            className="h-[58px] w-[92px] object-contain dark:hidden"
           />
           <Image
             src="/assets/divu-auth-logo-white.png"
             alt=""
-            width={128}
-            height={72}
+            width={120}
+            height={68}
             priority
             aria-hidden="true"
-            className="absolute -left-9 -top-3 hidden h-[68px] w-32 object-contain dark:block"
+            className="hidden h-[58px] w-[92px] object-contain dark:block"
           />
-        </div>
-        <div className="min-w-0">
-          <p className="truncate text-sm font-bold tracking-tight">DIVU Analytics</p>
-          <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
-            Industrial IoT
-          </p>
-        </div>
+        </Link>
+          <span className="whitespace-nowrap leading-none">
+            <strong className="block text-[13px] tracking-tight">DIVU Analytics</strong>
+            <span className="mt-1 block text-[7px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Industrial IoT</span>
+          </span>
       </div>
 
       <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-4" aria-label="Platform navigation">
@@ -240,9 +237,11 @@ function SidebarContent({ onNavigate, user, language }: { onNavigate?: () => voi
 }
 
 export function PlatformShell({ children }: { children: React.ReactNode }) {
+  const access = useAccess();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const closeNotifications = useCallback(() => setNotificationsOpen(false), []);
   const [accountOpen, setAccountOpen] = useState(false);
   const [accessibilityOpen,setAccessibilityOpen]=useState(false);
   const [language,setLanguage]=useState<Language>("en");
@@ -251,17 +250,16 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
   const [largeText,setLargeText]=useState(false);
   const [notifications,setNotifications]=useState<CanonicalNotificationDto[]>([]);
   const [notificationError,setNotificationError]=useState("");
-  const [sessionUser,setSessionUser]=useState<{username:string;displayRole:string;capabilities:string[]}>();
+  const sessionUser = access.user;
   const rawPageTitle = pageTitles.get(pathname) ?? "DIVU Analytics";
   const pageTitle = translations[language][rawPageTitle]??rawPageTitle;
-  const unreadCount = notifications.filter(item=>!item.read_at_utc).length;
+  const unreadCount = notifications.filter(item=>!item.readAtUtc).length;
 
   useEffect(() => {
     const openNotifications = () => setNotificationsOpen(true);
     window.addEventListener("divu-open-notifications", openNotifications);
     return () => window.removeEventListener("divu-open-notifications", openNotifications);
   }, []);
-  useEffect(()=>{fetch("/api/auth/session",{credentials:"same-origin"}).then(response=>response.ok?response.json():null).then(data=>setSessionUser(data?.user)).catch(()=>undefined)},[]);
   useEffect(()=>{
     const stored=(localStorage.getItem("divu-language")||"en") as Language;
     const motion=localStorage.getItem("divu-reduced-motion")==="true";
@@ -390,7 +388,7 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
           <div className="mx-auto w-full max-w-[96rem]">{children}</div>
         </main>
       </div>
-      <NotificationDrawer open={notificationsOpen} onClose={() => setNotificationsOpen(false)} />
+      <NotificationDrawer open={notificationsOpen} onClose={closeNotifications} onChange={setNotifications} />
     </div>
   );
 }

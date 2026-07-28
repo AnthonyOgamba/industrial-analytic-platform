@@ -9,7 +9,6 @@ import type {
   FinancialAggregateEnvelope,
   FinancialFacilityDto,
   FinancialLineDto,
-  FinancialMonthlyDto,
   FinancialSnapshotDto,
   FinancialSummaryDto,
   PagedEnvelope,
@@ -47,20 +46,24 @@ function rangeForYear(year:number) {
   };
 }
 
-function impact(item:FinancialAggregateDto) {
+function impact(item:Pick<FinancialAggregateDto,"downtimeCost"|"lostProductionValue"|"maintenanceCostEstimate"|"avoidedCost">) {
   return item.downtimeCost+item.lostProductionValue+item.maintenanceCostEstimate-item.avoidedCost;
 }
 
-function TrendChart({items,value,color="var(--chart-1)"}:{items:FinancialMonthlyDto[];value:(item:FinancialMonthlyDto)=>number;color?:string}) {
-  const year=items[0]?new Date(items[0].periodStartUtc).getUTCFullYear():new Date().getUTCFullYear();
-  const finalMonth=year===new Date().getUTCFullYear()?new Date().getUTCMonth():11;
-  const months=Array.from({length:finalMonth+1},(_,month)=>{
-    const item=items.find(candidate=>{const date=new Date(candidate.periodStartUtc);return date.getUTCFullYear()===year&&date.getUTCMonth()===month});
-    return {label:new Date(Date.UTC(year,month,1)).toLocaleDateString(undefined,{month:"short"}),amount:item?value(item):null};
-  });
-  const values=months.flatMap(item=>item.amount===null?[]:[item.amount]);const max=Math.max(...values,1);const step=months.length>1?600/(months.length-1):0;
-  const points=months.flatMap((item,index)=>item.amount===null?[]:[`${50+index*step},${190-item.amount/max*150}`]).join(" ");
-  return <div className="overflow-x-auto"><svg viewBox="0 0 680 225" className="h-auto w-full min-w-[34rem]" role="img" aria-label="Monthly financial cost-impact trend beginning in January"><g className="text-muted-foreground" stroke="currentColor" strokeOpacity=".2">{[40,90,140,190].map(y=><line key={y} x1="50" x2="650" y1={y} y2={y} strokeDasharray="4 4"/>)}</g>{points&&<polyline points={points} fill="none" stroke={color} strokeWidth="3"/>}{months.map((item,index)=>item.amount===null?null:<circle key={`${item.label}-${index}`} cx={50+index*step} cy={190-item.amount/max*150} r="4" fill={color}/>)}{months.map((item,index)=><text key={`${item.label}-${index}`} x={50+index*step} y="215" textAnchor="middle" fill="currentColor" className="text-[11px] text-muted-foreground">{item.label}</text>)}</svg></div>;
+type WeeklyFinancialPoint={periodStartUtc:string;currency:string;downtimeCost:number;lostProductionValue:number;maintenanceCostEstimate:number;avoidedCost:number};
+
+function weekStartUtc(value:string|Date){const date=new Date(value);const day=(date.getUTCDay()+6)%7;return new Date(Date.UTC(date.getUTCFullYear(),date.getUTCMonth(),date.getUTCDate()-day))}
+function calculateWeeklyFinancials(items:FinancialSnapshotDto[]):WeeklyFinancialPoint[]{const groups=new Map<string,WeeklyFinancialPoint>();for(const item of items){const start=weekStartUtc(item.snapshotAtUtc).toISOString();const key=`${item.currency}:${start}`;const current=groups.get(key)??{periodStartUtc:start,currency:item.currency,downtimeCost:0,lostProductionValue:0,maintenanceCostEstimate:0,avoidedCost:0};current.downtimeCost+=item.downtimeCost;current.lostProductionValue+=item.lostProductionValue;current.maintenanceCostEstimate+=item.maintenanceCostEstimate;current.avoidedCost+=item.avoidedCost;groups.set(key,current)}return [...groups.values()].sort((a,b)=>a.periodStartUtc.localeCompare(b.periodStartUtc))}
+async function loadAllFinancialSnapshots(params:URLSearchParams,signal:AbortSignal){const firstParams=new URLSearchParams(params);firstParams.set("page","1");firstParams.set("pageSize","200");const first=await apiRequest<PagedEnvelope<FinancialSnapshotDto>>(`/api/backend/financial?${firstParams}`,{signal});if(first.totalPages<=1)return first.items;const remaining=await Promise.all(Array.from({length:first.totalPages-1},(_,index)=>{const next=new URLSearchParams(firstParams);next.set("page",String(index+2));return apiRequest<PagedEnvelope<FinancialSnapshotDto>>(`/api/backend/financial?${next}`,{signal})}));return [...first.items,...remaining.flatMap(page=>page.items)]}
+
+function TrendChart({items,value,color="var(--chart-1)"}:{items:WeeklyFinancialPoint[];value:(item:WeeklyFinancialPoint)=>number;color?:string}) {
+  const first=items[0]?weekStartUtc(items[0].periodStartUtc):weekStartUtc(new Date());
+  const last=items.at(-1)?weekStartUtc(items.at(-1)!.periodStartUtc):first;
+  const weeks:Array<{label:string;amount:number|null}>=[];
+  for(let cursor=new Date(first);cursor<=last;cursor=new Date(cursor.getTime()+7*86_400_000)){const key=cursor.toISOString();const item=items.find(candidate=>candidate.periodStartUtc===key);weeks.push({label:cursor.toLocaleDateString(undefined,{month:"short",day:"numeric",timeZone:"UTC"}),amount:item?value(item):null})}
+  const values=weeks.flatMap(item=>item.amount===null?[]:[item.amount]);const max=Math.max(...values,1);const width=Math.max(680,weeks.length*54);const chartWidth=width-80;const step=weeks.length>1?chartWidth/(weeks.length-1):0;
+  const points=weeks.flatMap((item,index)=>item.amount===null?[]:[`${50+index*step},${190-item.amount/max*150}`]).join(" ");
+  return <div className="overflow-x-auto"><svg viewBox={`0 0 ${width} 225`} style={{minWidth:width}} className="h-auto w-full" role="img" aria-label="Weekly financial cost-impact trend calculated from persisted snapshots"><g className="text-muted-foreground" stroke="currentColor" strokeOpacity=".2">{[40,90,140,190].map(y=><line key={y} x1="50" x2={width-30} y1={y} y2={y} strokeDasharray="4 4"/>)}</g>{points&&<polyline points={points} fill="none" stroke={color} strokeWidth="3"/>}{weeks.map((item,index)=>item.amount===null?null:<circle key={`${item.label}-${index}`} cx={50+index*step} cy={190-item.amount/max*150} r="4" fill={color}/>)}{weeks.map((item,index)=><text key={`${item.label}-${index}`} x={50+index*step} y="215" textAnchor="middle" fill="currentColor" className="text-[11px] text-muted-foreground">{item.label}</text>)}</svg></div>;
 }
 
 function Bars({items}:{items:{label:string;value:number|null;note:string}[]}) {
@@ -83,7 +86,7 @@ export function FinancialAnalytics() {
   const [page,setPage]=useState(1);
   const [snapshots,setSnapshots]=useState<PagedEnvelope<FinancialSnapshotDto>|null>(null);
   const [summary,setSummary]=useState<FinancialSummaryDto|null>(null);
-  const [monthly,setMonthly]=useState<FinancialMonthlyDto[]>([]);
+  const [weekly,setWeekly]=useState<WeeklyFinancialPoint[]>([]);
   const [facilities,setFacilities]=useState<FinancialFacilityDto[]>([]);
   const [financialLines,setFinancialLines]=useState<FinancialLineDto[]>([]);
   const [loading,setLoading]=useState(true);
@@ -113,20 +116,20 @@ export function FinancialAnalytics() {
       if(origin==="generated")shared.set("source","ai-generated");
       if(currency)shared.set("currency",currency);
       const paged=new URLSearchParams(shared);paged.set("page",String(page));paged.set("pageSize","25");
-      const [nextSnapshots,nextSummary,nextMonthly,nextFacilities,nextLines]=await Promise.allSettled([
+      const [nextSnapshots,nextSummary,nextWeeklySnapshots,nextFacilities,nextLines]=await Promise.allSettled([
         apiRequest<PagedEnvelope<FinancialSnapshotDto>>(`/api/backend/financial?${paged}`,{signal:controller.signal}),
         apiRequest<FinancialSummaryDto>(`/api/backend/financial/summary?${shared}`,{signal:controller.signal}),
-        apiRequest<FinancialAggregateEnvelope<FinancialMonthlyDto>>(`/api/backend/financial/monthly?${shared}`,{signal:controller.signal}),
+        loadAllFinancialSnapshots(shared,controller.signal),
         apiRequest<FinancialAggregateEnvelope<FinancialFacilityDto>>(`/api/backend/financial/facilities?${shared}`,{signal:controller.signal}),
         apiRequest<FinancialAggregateEnvelope<FinancialLineDto>>(`/api/backend/financial/lines?${shared}`,{signal:controller.signal}),
       ]);
       if(nextSnapshots.status==="rejected")throw nextSnapshots.reason;
       setSnapshots(nextSnapshots.value);
       setSummary(nextSummary.status==="fulfilled"?nextSummary.value:null);
-      setMonthly(nextMonthly.status==="fulfilled"?nextMonthly.value.items:[]);
+      setWeekly(nextWeeklySnapshots.status==="fulfilled"?calculateWeeklyFinancials(nextWeeklySnapshots.value):[]);
       setFacilities(nextFacilities.status==="fulfilled"?nextFacilities.value.items:[]);
       setFinancialLines(nextLines.status==="fulfilled"?nextLines.value.items:[]);
-      const aggregateFailures=[nextSummary,nextMonthly,nextFacilities,nextLines].filter(result=>result.status==="rejected");
+      const aggregateFailures=[nextSummary,nextWeeklySnapshots,nextFacilities,nextLines].filter(result=>result.status==="rejected");
       if(aggregateFailures.length){
         const first=aggregateFailures[0];
         setError(first.status==="rejected"&&first.reason instanceof Error?`Some financial summaries are unavailable: ${first.reason.message}`:"Some financial summaries are unavailable.");
@@ -143,11 +146,11 @@ export function FinancialAnalytics() {
   const currencies=useMemo(()=>[...new Set([
     ...(summary?.items.map(item=>item.currency)??[]),
     ...(snapshots?.items.map(item=>item.currency)??[]),
-    ...monthly.map(item=>item.currency),
+    ...weekly.map(item=>item.currency),
     ...facilities.map(item=>item.currency),
     ...financialLines.map(item=>item.currency),
-  ])].sort(),[facilities,financialLines,monthly,summary?.items,snapshots?.items]);
-  const monthGroups=useMemo(()=>currencies.map(code=>({currency:code,items:monthly.filter(item=>item.currency===code)})),[currencies,monthly]);
+  ])].sort(),[facilities,financialLines,summary?.items,snapshots?.items,weekly]);
+  const weekGroups=useMemo(()=>currencies.map(code=>({currency:code,items:weekly.filter(item=>item.currency===code)})),[currencies,weekly]);
 
   if(!session.loading&&!canView)return <div role="alert" className="rounded-xl border bg-card p-8 text-center"><ShieldAlert className="mx-auto size-8 text-muted-foreground"/><h1 className="mt-3 font-semibold">Financial access required</h1><p className="mt-1 text-sm text-muted-foreground">Your current role does not include financial analytics.</p></div>;
   if(loading)return <div className="space-y-5" role="status" aria-label="Loading Financial Analytics"><div className="h-20 animate-pulse rounded-xl bg-muted"/><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{Array.from({length:4},(_,index)=><div key={index} className="h-40 animate-pulse rounded-xl bg-muted"/>)}</div><div className="h-72 animate-pulse rounded-xl bg-muted"/></div>;
@@ -156,7 +159,7 @@ export function FinancialAnalytics() {
     <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><h1 className="text-2xl font-bold tracking-tight">Financial Analytics</h1><p className="mt-1 text-sm text-muted-foreground">Manufacturing cost intelligence and financial impact analysis</p></div><div className="flex max-w-full flex-wrap items-center gap-2 rounded-xl border bg-card p-2 shadow-[var(--dv-shadow)]"><Filter className="ml-1 size-4 text-muted-foreground"/>
       <select aria-label="Facility" value={facilityId} onChange={event=>{setFacilityId(event.target.value);setLineId("");setStationId("");resetFilters()}} className="h-9 rounded-lg border bg-background px-3 text-xs"><option value="">All Sites</option>{(hierarchy.data?.facilities??[]).map(item=><option key={item.facilityId} value={item.facilityId}>{item.name}</option>)}</select>
       <select aria-label="Production line" value={lineId} disabled={!facilityId} onChange={event=>{setLineId(event.target.value);setStationId("");resetFilters()}} className="h-9 rounded-lg border bg-background px-3 text-xs disabled:opacity-50"><option value="">All Lines</option>{lines.map(item=><option key={item.productionLineId} value={item.productionLineId}>{item.name}</option>)}</select>
-      <select aria-label="Station context only" title="Financial snapshots are not station-granular. This selection is not sent to the backend." value={stationId} disabled={!lineId} onChange={event=>setStationId(event.target.value)} className="h-9 rounded-lg border bg-background px-3 text-xs disabled:opacity-50"><option value="">Station context</option>{stations.map(item=><option key={item.stationId} value={item.stationId}>{item.name}</option>)}</select>
+      <select aria-label="Station context only" title="Financial snapshots are not station-granular, so this selection does not affect the results." value={stationId} disabled={!lineId} onChange={event=>setStationId(event.target.value)} className="h-9 rounded-lg border bg-background px-3 text-xs disabled:opacity-50"><option value="">Station context</option>{stations.map(item=><option key={item.stationId} value={item.stationId}>{item.name}</option>)}</select>
       <select aria-label="Year" value={year} onChange={event=>{setYear(Number(event.target.value));resetFilters()}} className="h-9 rounded-lg border bg-background px-3 text-xs">{[year,new Date().getUTCFullYear()].filter((value,index,values)=>values.indexOf(value)===index).map(value=><option key={value} value={value}>YTD {value}</option>)}</select>
       <select aria-label="Financial data provenance" value={origin} onChange={event=>{setOrigin(event.target.value as OriginFilter);resetFilters()}} className="h-9 rounded-lg border bg-background px-3 text-xs"><option value="all">Include synthetic data</option><option value="generated">Generated data only</option><option value="operational">Exclude synthetic data</option></select>
       <select aria-label="Currency" value={currency} onChange={event=>{setCurrency(event.target.value);resetFilters()}} className="h-9 rounded-lg border bg-background px-3 text-xs"><option value="">All currencies</option>{currencies.map(code=><option key={code}>{code}</option>)}</select>
@@ -176,16 +179,16 @@ export function FinancialAnalytics() {
 
     <nav className="overflow-x-auto border-b" role="tablist" aria-label="Financial analysis views"><div className="flex min-w-max">{tabs.map(item=><button key={item.id} role="tab" aria-selected={tab===item.id} onClick={()=>setTab(item.id)} className={cn("h-12 border-b-2 px-4 text-xs font-medium",tab===item.id?"border-primary text-primary":"border-transparent text-muted-foreground")}>{item.label}</button>)}</div></nav>
 
-    {tab==="overview"&&<div className="space-y-5">{monthGroups.map(group=><Card key={group.currency} title={`Financial Impact — Monthly (${group.currency})`} subtitle="Persisted cost-impact aggregates from the backend"><TrendChart items={group.items} value={impact}/><div className="mt-2 flex flex-wrap justify-center gap-4 text-[10px] text-muted-foreground"><span>Downtime Cost</span><span>Estimated Lost Production</span><span>Maintenance Estimate</span><span>Avoided Cost</span></div></Card>)}{!monthly.length&&<EmptyState message="No monthly financial aggregates match the selected filters."/>}<SnapshotTable envelope={snapshots} page={page} pending={refreshing} onPage={setPage}/></div>}
+    {tab==="overview"&&<div className="space-y-5">{weekGroups.map(group=><Card key={group.currency} title={`Financial Impact — Weekly (${group.currency})`} subtitle="Persisted cost-impact aggregates"><TrendChart items={group.items} value={impact}/><div className="mt-2 flex flex-wrap justify-center gap-4 text-[10px] text-muted-foreground"><span>Downtime Cost</span><span>Estimated Lost Production</span><span>Maintenance Estimate</span><span>Avoided Cost</span></div></Card>)}{!weekly.length&&<EmptyState message="No weekly financial aggregates match the selected filters."/>}<SnapshotTable envelope={snapshots} page={page} pending={refreshing} onPage={setPage}/></div>}
 
     {tab==="sites"&&<div className="space-y-5"><div className="grid gap-5 xl:grid-cols-2"><Card title="Financial Impact by Facility" subtitle="Every created site; unavailable means no persisted financial snapshot"><Bars items={(hierarchy.data?.facilities??[]).flatMap<{label:string;value:number|null;note:string}>(site=>{const rows=facilities.filter(item=>item.facilityId===site.facilityId);return rows.length?rows.map(item=>({label:rows.length>1?`${site.name} (${item.currency})`:site.name,value:impact(item),note:money(impact(item),item.currency)})):[{label:site.name,value:null,note:"Unavailable"}]})}/></Card><Card title="Estimated Lost Production by Facility" subtitle="Every created site; values remain separated by currency"><Bars items={(hierarchy.data?.facilities??[]).flatMap<{label:string;value:number|null;note:string}>(site=>{const rows=facilities.filter(item=>item.facilityId===site.facilityId);return rows.length?rows.map(item=>({label:rows.length>1?`${site.name} (${item.currency})`:site.name,value:item.lostProductionValue,note:money(item.lostProductionValue,item.currency)})):[{label:site.name,value:null,note:"Unavailable"}]})}/></Card></div><AllFacilitiesTable sites={(hierarchy.data?.facilities??[]).map(item=>({facilityId:item.facilityId,name:item.name,status:item.status}))} aggregates={facilities}/></div>}
 
-    {tab==="costs"&&<div className="grid gap-5 xl:grid-cols-2">{monthGroups.flatMap(group=>[
+    {tab==="costs"&&<div className="grid gap-5 xl:grid-cols-2">{weekGroups.flatMap(group=>[
       <Card key={`${group.currency}-downtime`} title={`Downtime Cost Trend (${group.currency})`}><TrendChart items={group.items} value={item=>item.downtimeCost} color="var(--chart-3)"/></Card>,
       <Card key={`${group.currency}-lost`} title={`Estimated Lost Production Trend (${group.currency})`}><TrendChart items={group.items} value={item=>item.lostProductionValue} color="var(--chart-5)"/></Card>,
       <Card key={`${group.currency}-maintenance`} title={`Maintenance Estimate Trend (${group.currency})`}><TrendChart items={group.items} value={item=>item.maintenanceCostEstimate} color="var(--chart-1)"/></Card>,
       <Card key={`${group.currency}-avoided`} title={`Avoided Cost Trend (${group.currency})`}><TrendChart items={group.items} value={item=>item.avoidedCost} color="var(--chart-2)"/></Card>,
-    ])}{!monthly.length&&<div className="xl:col-span-2"><EmptyState message="No monthly cost trends match the selected filters."/></div>}</div>}
+    ])}{!weekly.length&&<div className="xl:col-span-2"><EmptyState message="No weekly cost trends match the selected filters."/></div>}</div>}
   </div>;
 }
 

@@ -8,7 +8,7 @@ export class ApiError extends Error {
 
 export async function apiRequest<T>(url: string, init: RequestInit = {}): Promise<T> {
   try {
-    const response = await fetch(url, {
+    const request = () => fetch(url, {
       ...init,
       credentials: "same-origin",
       headers: {
@@ -16,6 +16,17 @@ export async function apiRequest<T>(url: string, init: RequestInit = {}): Promis
         ...init.headers,
       },
     });
+    let response = await request();
+    if (response.status === 401 && url !== "/api/auth/login" && url !== "/api/auth/session") {
+      window.dispatchEvent(new Event("divu-authorization-stale"));
+      const session = await fetch("/api/auth/session", { credentials:"same-origin", cache:"no-store" });
+      const method = (init.method ?? "GET").toUpperCase();
+      if (session.ok && (method === "GET" || method === "HEAD")) response = await request();
+      if (!session.ok || response.status === 401) {
+        window.dispatchEvent(new Event("divu-session-expired"));
+        window.location.assign("/login?reason=authorization-changed");
+      }
+    }
     if (response.status === 204) return undefined as T;
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
@@ -31,10 +42,6 @@ export async function apiRequest<T>(url: string, init: RequestInit = {}): Promis
                 ? "The server could not complete the request."
                 : "The request could not be completed.";
       const message = typeof data.error === "string" && !data.error.trimStart().startsWith("<") ? data.error : fallback;
-      if (response.status === 401 && url !== "/api/auth/login") {
-        window.dispatchEvent(new Event("divu-session-expired"));
-        window.location.assign("/login?reason=session-expired");
-      }
       throw new ApiError(message, response.status);
     }
     return data as T;
