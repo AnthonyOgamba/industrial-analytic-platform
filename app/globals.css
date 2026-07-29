@@ -6,8 +6,6 @@ html.large-interface-text { font-size: 112.5%; }
 html.increase-contrast { filter: contrast(1.15); }
 html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
 :focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
-.platform-skip { position: fixed; left: 1rem; top: -5rem; z-index: 100; border-radius: .5rem; background: var(--card); padding: .75rem 1rem; color: var(--foreground); box-shadow: var(--dv-shadow-m); }
-.platform-skip:focus { top: 1rem; }
 
 @custom-variant dark (&:is(.dark *));
 
