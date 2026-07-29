@@ -27,6 +27,7 @@ type Asset = {
   facilityId:number; facility:string; hallId:number; hall:string;
   lineId:number; line:string; oee:number; availability:number; performance:number; quality:number;
 };
+type AssetFailure = { status:number; message:string };
 
 function riskLabel(value?:AiFailureProbability) {
   return value?.risk_level ?? "unavailable";
@@ -44,6 +45,7 @@ export function AssetsPage() {
   const [success,setSuccess]=useState("");
   const [loadingRelated,setLoadingRelated] = useState(true);
   const [relatedError,setRelatedError] = useState("");
+  const [assetFailure,setAssetFailure] = useState<AssetFailure|null>(null);
   const [query,setQuery] = useState("");
   const [facilityId,setFacilityId] = useState("");
   const [hallId,setHallId] = useState("");
@@ -71,11 +73,20 @@ export function AssetsPage() {
     if(results[2].status==="fulfilled")setDowntime(results[2].value.items);
     if(results[3].status==="fulfilled")setAlerts(results[3].value);
     if(results[4].status==="fulfilled")setFinancial(results[4].value.items);
-    if(results[5].status==="fulfilled")setCanonicalAssets(normalizeAssets(results[5].value));
-    const failures=results.filter(result=>result.status==="rejected") as PromiseRejectedResult[];
+    if(results[5].status==="fulfilled"){
+      setCanonicalAssets(normalizeAssets(results[5].value));
+      setAssetFailure(null);
+    } else {
+      const reason=results[5].reason;
+      setAssetFailure({
+        status:reason instanceof ApiError?reason.status:0,
+        message:reason instanceof Error?reason.message:"Assets could not be loaded.",
+      });
+    }
+    const failures=results.slice(0,5).filter(result=>result.status==="rejected") as PromiseRejectedResult[];
     if(failures.length) {
       const denied=failures.some(item=>item.reason instanceof ApiError&&item.reason.status===403);
-      setRelatedError(denied?"Some asset intelligence is hidden because your role lacks permission.":"Some related sensor, AI, downtime, or financial data could not be loaded.");
+      setRelatedError(denied?"Access Denied: Some asset intelligence is hidden because your role lacks permission.":"Some related sensor, AI, downtime, or financial data could not be loaded.");
     }
     setLoadingRelated(false);
   },[]);
@@ -99,6 +110,7 @@ export function AssetsPage() {
   return <div className="space-y-5 pb-5">
     <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><p className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">Operations</p><h1 className="mt-1.5 text-2xl font-bold tracking-tight">Asset Registry</h1><p className="mt-1 text-sm text-muted-foreground">Stations connected to hierarchy, sensors, Olive risk, downtime, and financial impact</p></div><div className="flex gap-2">{canCreate&&<button onClick={()=>setCreateOpen(true)} className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground"><Plus className="size-4"/>Create Asset</button>}<button onClick={()=>void Promise.allSettled([hierarchy.refresh(),loadRelated()])} className="inline-flex h-10 items-center gap-2 rounded-lg border px-4 text-xs"><RefreshCw className="size-4"/>Refresh</button></div></header>
     {success&&<p role="status" className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-700">{success}</p>}
+    {assetFailure&&<div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 p-5"><div className="flex gap-3"><AlertTriangle className="size-5 shrink-0 text-destructive"/><div><h2 className="font-semibold">{assetFailure.status===401||assetFailure.status===403?"Access Denied":"Assets unavailable"}</h2><p className="mt-1 text-sm text-muted-foreground">{assetFailure.status===401||assetFailure.status===403?"You do not have permission to view assets.":assetFailure.message}</p><button type="button" onClick={()=>void loadRelated()} className="mt-4 inline-flex h-9 items-center gap-2 rounded-lg border bg-card px-3 text-xs font-semibold"><RefreshCw className="size-4"/>Retry</button></div></div></div>}
     {error&&<p role="alert" className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs"><AlertTriangle className="size-4"/>{error}</p>}
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{[{label:"Station Assets",value:assets.length},{label:"Connected Sensors",value:streams.reduce((sum,item)=>sum+item.sensors.length,0)},{label:"Active Downtime",value:downtime.filter(item=>!item.endTime).length},{label:"High / Critical Risk",value:risks.filter(item=>item.risk_level==="high"||item.risk_level==="critical").length}].map(item=><article key={item.label} className="rounded-xl border bg-card p-4"><Cpu className="size-4 text-primary"/><p className="mt-3 text-xl font-bold">{item.value}</p><p className="text-[10px] text-muted-foreground">{item.label}</p></article>)}</div>
     <section className="grid gap-2 rounded-xl border bg-card p-3 sm:grid-cols-2 lg:grid-cols-6"><label className="relative lg:col-span-2"><Search className="absolute left-3 top-3 size-4 text-muted-foreground"/><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Search assets…" className="h-10 w-full rounded-lg border bg-background pl-9 pr-3 text-xs"/></label><select value={facilityId} onChange={event=>{setFacilityId(event.target.value);setHallId("");setLineId("")}} className="h-10 rounded-lg border bg-background px-3 text-xs"><option value="">All Facilities</option>{(hierarchy.data?.facilities??[]).map(item=><option key={item.facilityId} value={item.facilityId}>{item.name}</option>)}</select><select value={hallId} onChange={event=>{setHallId(event.target.value);setLineId("")}} className="h-10 rounded-lg border bg-background px-3 text-xs"><option value="">All Halls</option>{halls.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select><select value={lineId} onChange={event=>setLineId(event.target.value)} className="h-10 rounded-lg border bg-background px-3 text-xs"><option value="">All Lines</option>{lines.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select><div className="grid grid-cols-2 gap-2"><select aria-label="Status" value={status} onChange={event=>setStatus(event.target.value)} className="h-10 rounded-lg border bg-background px-2 text-xs"><option value="">Status</option>{["active","inactive","maintenance","retired"].map(item=><option key={item}>{item}</option>)}</select><select aria-label="Risk" value={risk} onChange={event=>setRisk(event.target.value)} className="h-10 rounded-lg border bg-background px-2 text-xs"><option value="">Risk</option>{["critical","high","medium","low","unavailable"].map(item=><option key={item}>{item}</option>)}</select></div></section>
