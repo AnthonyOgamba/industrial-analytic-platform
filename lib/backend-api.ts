@@ -63,6 +63,15 @@ export async function requestBackend<T>(
   return { response, body: await readBackendBody<T>(response) };
 }
 
+export async function isAuthenticationInvalid(token: string) {
+  try {
+    const validation = await requestBackend("/api/auth/me", { token });
+    return validation.response.status === 401;
+  } catch {
+    return false;
+  }
+}
+
 export function gatewayFailure(error: unknown) {
   const timeout = error instanceof DOMException && error.name === "TimeoutError";
   return NextResponse.json(

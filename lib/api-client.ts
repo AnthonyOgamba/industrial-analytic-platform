@@ -22,7 +22,7 @@ export async function apiRequest<T>(url: string, init: RequestInit = {}): Promis
       const session = await fetch("/api/auth/session", { credentials:"same-origin", cache:"no-store" });
       const method = (init.method ?? "GET").toUpperCase();
       if (session.ok && (method === "GET" || method === "HEAD")) response = await request();
-      if (!session.ok || response.status === 401) {
+      if (session.status === 401) {
         window.dispatchEvent(new Event("divu-session-expired"));
         window.location.assign("/login?reason=authorization-changed");
       }
@@ -30,7 +30,7 @@ export async function apiRequest<T>(url: string, init: RequestInit = {}): Promis
     if (response.status === 204) return undefined as T;
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-      const fallback = response.status === 403
+      const fallback = response.status === 401 || response.status === 403
         ? "You do not have permission to perform this action."
         : response.status === 404
           ? "This feature or resource is unavailable."

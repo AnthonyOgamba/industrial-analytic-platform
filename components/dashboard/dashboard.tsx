@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertTriangle, RefreshCw } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { apiRequest } from "@/lib/api-client";
 import type { DashboardWorkspaceDto } from "@/lib/backend-dtos";
 import { useFacilityHierarchy } from "@/lib/facility-hierarchy";
@@ -45,10 +45,18 @@ export function Dashboard() {
   const [facilityId, setFacilityId] = useState("");
   const [rangeDays, setRangeDays] = useState("30");
   const [error, setError] = useState("");
+  const [refreshWarning, setRefreshWarning] = useState("");
   const [loading, setLoading] = useState(true);
+  const hasLoadedRef = useRef(false);
+  const requestPendingRef = useRef(false);
   const load = useCallback(async () => {
-    setLoading(true);
-    setError("");
+    if (requestPendingRef.current) return;
+    requestPendingRef.current = true;
+    const isInitialLoad = !hasLoadedRef.current;
+    if (isInitialLoad) {
+      setLoading(true);
+      setError("");
+    }
     try {
       const params = new URLSearchParams();
       if (facilityId) params.set("facilityId", facilityId);
@@ -59,10 +67,18 @@ export function Dashboard() {
       params.set("fromUtc", from.toISOString());
       params.set("toUtc", to.toISOString());
       setWorkspace(normalizeDashboardResponse(await apiRequest<unknown>(`/api/backend/dashboard?${params}`)));
+      hasLoadedRef.current = true;
+      setError("");
+      setRefreshWarning("");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Dashboard data could not be loaded.");
+      if (isInitialLoad) {
+        setError(cause instanceof Error ? cause.message : "Dashboard data could not be loaded.");
+      } else {
+        setRefreshWarning("Live refresh delayed. Showing the latest available data.");
+      }
     } finally {
-      setLoading(false);
+      requestPendingRef.current = false;
+      if (isInitialLoad) setLoading(false);
     }
   }, [facilityId, rangeDays]);
 
@@ -153,6 +169,7 @@ export function Dashboard() {
 
   return <div className="space-y-5 pb-4">
     <header className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end"><div><h1 className="text-2xl font-bold tracking-tight">Overview</h1><p className="mt-1 text-sm text-muted-foreground">Live industrial analytics dashboard</p></div><div className="flex flex-wrap items-center gap-2"><select aria-label="Dashboard facility" value={facilityId} onChange={(event)=>setFacilityId(event.target.value)} className="h-9 rounded-lg border bg-card px-3 text-xs"><option value="">All authorized facilities</option>{(hierarchy.data?.facilities??[]).map(facility=><option key={facility.facilityId} value={facility.facilityId}>{facility.name}</option>)}</select><select aria-label="Dashboard date range" value={rangeDays} onChange={(event)=>setRangeDays(event.target.value)} className="h-9 rounded-lg border bg-card px-3 text-xs"><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option><option value="365">Last 365 days</option></select><button type="button" onClick={()=>void load()} aria-label="Refresh dashboard" className="grid size-9 place-items-center rounded-lg border bg-card"><RefreshCw className="size-4"/></button><span className="w-fit rounded-full border bg-card px-3 py-2 font-mono text-[10px] uppercase text-emerald-600">● Live · {new Date(workspace.generatedAtUtc).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}</span></div></header>
+    {refreshWarning&&<div role="status" aria-live="polite" className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300"><AlertTriangle className="size-4 shrink-0"/><span>{refreshWarning}</span></div>}
     <section><h2 className="mb-2.5 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Operational performance</h2><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">{operationalMetrics.map(metric=><MetricCard key={metric.label} {...metric}/>)}</div></section>
     <section><h2 className="mb-2.5 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Platform and financial</h2><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">{platformMetrics.map(metric=><MetricCard key={metric.label} {...metric}/>)}</div></section>
     <div className="grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(20rem,.75fr)]">

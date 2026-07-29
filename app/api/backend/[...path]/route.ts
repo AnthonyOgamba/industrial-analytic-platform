@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { AUTH_COOKIE } from "@/lib/auth/constants";
-import { expireAuthentication, gatewayFailure, publicBackendResponse, requestBackend } from "@/lib/backend-api";
+import { expireAuthentication, gatewayFailure, isAuthenticationInvalid, publicBackendResponse, requestBackend } from "@/lib/backend-api";
 
 type Context = { params: Promise<{ path: string[] }> };
 
@@ -116,7 +116,8 @@ async function handler(request: NextRequest, context: Context) {
   try {
     const result = await requestBackend(`/api/${path}${query}`, { method, token, body });
     const response = publicBackendResponse(result.body, result.response.status);
-    return result.response.status === 401 ? expireAuthentication(response) : response;
+    if (result.response.status !== 401) return response;
+    return await isAuthenticationInvalid(token) ? expireAuthentication(response) : response;
   } catch (error) {
     return gatewayFailure(error);
   }
