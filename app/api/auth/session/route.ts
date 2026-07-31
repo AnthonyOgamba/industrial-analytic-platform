@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { AUTH_COOKIE, normalizeRole } from "@/lib/auth/constants";
 import { requestBackend } from "@/lib/backend-api";
 
+// FEATURE: Session validation
+// ENDPOINT: GET /api/auth/session
+// SESSION: /api/auth/me is authoritative for token validity; authorization-context enriches RBAC.
+// ERROR: Temporary authorization failures preserve a valid authentication cookie.
+
 type CurrentUser = {
   uid: number;
   username: string;
@@ -30,7 +35,7 @@ export async function GET(request: NextRequest) {
       requestBackend<CurrentUser>("/api/auth/me", { token }),
       requestBackend<AuthorizationContext>("/api/auth/me/authorization-context", { token }),
     ]);
-    if (validation.response.status === 401 || authorization.response.status === 401) {
+    if (validation.response.status === 401) {
       const response = NextResponse.json({ error: "Session expired" }, { status: 401 });
       response.cookies.delete(AUTH_COOKIE);
       return response;
@@ -46,7 +51,7 @@ export async function GET(request: NextRequest) {
     if ((!authorization.response.ok || !context) && !user.mustChangePassword) {
       return NextResponse.json(
         { error: "Authorization context is unavailable." },
-        { status: authorization.response.status === 403 ? 403 : 503 },
+        { status: authorization.response.status === 401 || authorization.response.status === 403 ? 403 : 503 },
       );
     }
     const roles = context?.roles ?? user.roles ?? [user.role];

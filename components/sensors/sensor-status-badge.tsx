@@ -17,5 +17,5 @@ export const sensorStatusBorders: Record<SensorStatus, string> = {
 
 export function SensorStatusBadge({ status }: { status: SensorStatus }) {
   const Icon = status === "Active" ? CheckCircle2 : status === "Warning" ? AlertTriangle : status === "Critical" ? AlertCircle : status === "Maintenance" ? Wrench : CircleOff;
-  return <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 font-mono text-[9px] font-semibold uppercase ${styles[status]}`}><Icon className="size-3" />{status}</span>;
+  return <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 font-mono text-xs font-semibold uppercase ${styles[status]}`}><Icon className="size-3" />{status}</span>;
 }

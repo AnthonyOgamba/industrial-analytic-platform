@@ -32,7 +32,7 @@ export function ForgotPasswordForm() {
         {submitted ? (
           <div className="auth-success" role="status" aria-live="polite">
             <CheckCircle2 aria-hidden="true" /><h2>Check your inbox</h2>
-            <p>{confirmation}</p><p className="mt-2 font-mono text-[10px]">Request identifier: {submitted}</p>
+            <p>{confirmation}</p><p className="mt-2 font-mono text-xs">Request identifier: {submitted}</p>
             <button type="button" className="auth-text-button" onClick={() => { setSubmitted(""); setEmail(""); setConfirmation(""); }}>Use a different email</button>
           </div>
         ) : (

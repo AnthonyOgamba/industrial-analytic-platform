@@ -38,7 +38,7 @@ export function RoleDetailsModal({
           </span>
           <div className="min-w-0 flex-1">
             <h2 className="text-sm font-bold">{role.name}</h2>
-            <p className="text-[10px] text-muted-foreground">{role.description}</p>
+            <p className="text-xs text-muted-foreground">{role.description}</p>
           </div>
           <button
             type="button"
@@ -50,7 +50,7 @@ export function RoleDetailsModal({
           </button>
         </header>
 
-        <div className="grid grid-cols-2 gap-2 border-b p-4 text-[10px]">
+        <div className="grid grid-cols-2 gap-2 border-b p-4 text-xs">
           {[
             [
               "Permissions",
@@ -68,7 +68,7 @@ export function RoleDetailsModal({
             ["Type", role.system ? "System Role" : "Custom Role"]
           ].map(([label, value]) => (
             <div key={label} className="rounded-lg border bg-muted/30 p-2">
-              <p className="text-[9px] text-muted-foreground">{label}</p>
+              <p className="text-xs text-muted-foreground">{label}</p>
               <p className="mt-0.5 font-semibold">{value}</p>
             </div>
           ))}
@@ -91,7 +91,7 @@ export function RoleDetailsModal({
                     return (
                       <span
                         key={permission}
-                        className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] ${active ? roleColor[role.color] : "bg-muted text-muted-foreground/50"}`}
+                        className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs ${active ? roleColor[role.color] : "bg-muted text-muted-foreground/50"}`}
                       >
                         {active && <Check className="size-3" />}
                         {permission}
@@ -210,14 +210,14 @@ export function CreateRoleModal({ onClose }: { onClose: () => void }) {
                   <button
                     type="button"
 onClick={() => setGranted(new Set(resources.flatMap((r) => permissionTypes.map((p) => `${r.key}-${p}`))))}
-                    className="rounded bg-emerald-100 px-2 py-1 text-[10px] text-emerald-700"
+                    className="rounded bg-emerald-100 px-2 py-1 text-xs text-emerald-700"
                   >
                     Grant All
                   </button>
                   <button
                     type="button"
                     onClick={() => setGranted(new Set())}
-                    className="rounded bg-red-100 px-2 py-1 text-[10px] text-red-700"
+                    className="rounded bg-red-100 px-2 py-1 text-xs text-red-700"
                   >
                     Revoke All
                   </button>
@@ -225,7 +225,7 @@ onClick={() => setGranted(new Set(resources.flatMap((r) => permissionTypes.map((
               </div>
 
               <div className="mt-2 overflow-hidden rounded-xl border">
-                <table className="w-full text-[10px]">
+                <table className="w-full text-xs">
                   <thead className="bg-muted/50">
                     <tr>
                       <th className="p-2 text-left">Resource</th>

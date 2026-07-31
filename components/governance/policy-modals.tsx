@@ -6,7 +6,7 @@ import { AlertTriangle, FileCheck2, Trash2, X } from "lucide-react";
 import type { GovernancePolicy } from "./governance-data";
 import type { BackendRoleDto } from "@/lib/backend-dtos";
 
-const scopes = ["All Manufacturing Data", "Sensor Telemetry", "Asset Registry", "Downtime Events", "Financial Analytics", "API Clients", "Audit Logs", "User Activity", "Reports", "Production Data"];
+const scopes = ["All Manufacturing Data", "Sensor Telemetry", "Asset Registry", "Downtime Events", "Operational Cost Records", "API Clients", "Audit Logs", "User Activity", "Reports", "Production Data"];
 const retentionPeriods = ["30 Days", "90 Days", "1 Year", "3 Years", "5 Years", "7 Years"];
 
 export type PolicyDraft = Omit<GovernancePolicy, "id" | "createdBy" | "createdAt" | "updatedAt">;
@@ -19,10 +19,10 @@ const emptyDraft: PolicyDraft = {
 };
 
 const inputClass = "mt-1.5 h-10 w-full rounded-lg border bg-background px-3 text-xs outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 disabled:cursor-not-allowed disabled:opacity-50";
-const labelClass = "block text-[10px] font-semibold text-foreground";
+const labelClass = "block text-xs font-semibold text-foreground";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return <fieldset className="space-y-3"><legend className="mb-3 font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-primary">{title}</legend>{children}</fieldset>;
+  return <fieldset className="space-y-3"><legend className="mb-3 font-mono text-xs font-bold uppercase tracking-[0.12em] text-primary">{title}</legend>{children}</fieldset>;
 }
 
 export function PolicyFormModal({ policy, roles, onClose, onSave }: { policy?: GovernancePolicy; roles: BackendRoleDto[]; onClose: () => void; onSave: (draft: PolicyDraft) => void }) {

@@ -11,7 +11,7 @@ const styles: Record<FacilityStatus, string> = {
 
 export function FacilityStatusBadge({ status }: { status: FacilityStatus }) {
   return (
-    <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold", styles[status])}>
+    <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold", styles[status])}>
       <span className="size-1.5 rounded-full bg-current" />
       {status}
     </span>

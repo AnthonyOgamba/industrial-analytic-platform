@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { RefObject } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -29,14 +30,14 @@ const icons: Record<DashboardIcon, React.ElementType> = {
   users: Users,
 };
 
-export function MetricCard(metric: DashboardMetric) {
+export function MetricCard({buttonRef,...metric}: DashboardMetric & {buttonRef?:RefObject<HTMLButtonElement|null>}) {
   const Icon = icons[metric.icon];
   const severity = metric.severity ?? "neutral";
   const content = (
     <article
       className={cn(
         "group flex h-full min-h-40 flex-col rounded-xl border bg-card p-4 shadow-[var(--dv-shadow)] transition-all",
-        metric.href && "hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[var(--dv-shadow-m)]",
+        (metric.href||metric.onClick) && "hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[var(--dv-shadow-m)]",
       )}
     >
       <div className="flex items-start justify-between gap-3">
@@ -46,7 +47,7 @@ export function MetricCard(metric: DashboardMetric) {
         {severity !== "neutral" && (
           <span
             className={cn(
-              "rounded px-2 py-1 font-mono text-[9px] font-semibold uppercase tracking-[0.08em]",
+              "rounded px-2 py-1 font-mono text-xs font-semibold uppercase tracking-[0.08em]",
               severityStyles[severity].badge,
             )}
           >
@@ -79,7 +80,7 @@ export function MetricCard(metric: DashboardMetric) {
           <span className="truncate">{metric.delta}</span>
         </span>
         {metric.detail && (
-          <span className="shrink-0 font-mono text-[9px] text-muted-foreground">{metric.detail}</span>
+          <span className="shrink-0 font-mono text-xs text-muted-foreground">{metric.detail}</span>
         )}
       </div>
     </article>
@@ -89,6 +90,10 @@ export function MetricCard(metric: DashboardMetric) {
     <Link href={metric.href} className="block h-full rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
       {content}
     </Link>
+  ) : metric.onClick ? (
+    <button ref={buttonRef} type="button" onClick={metric.onClick} className="block h-full w-full rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+      {content}
+    </button>
   ) : (
     content
   );

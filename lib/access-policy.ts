@@ -12,7 +12,6 @@ export const routeCapabilities: Array<{
   { matches: (path) => path.startsWith("/assets"), capability: "assets.view" },
   { matches: (path) => path.startsWith("/sensors"), capability: "sensors.view" },
   { matches: (path) => path.startsWith("/downtime"), capability: "downtime.view" },
-  { matches: (path) => path.startsWith("/financial"), capability: "financial.view" },
   { matches: (path) => path.startsWith("/reports"), capability: "reports.view" },
   { matches: (path) => path.startsWith("/local-ai"), capability: "olive.use" },
   { matches: (path) => path.startsWith("/governance"), capability: "governance.view" },
@@ -44,4 +43,14 @@ export function createAccessChecks(claims?: AccessClaims) {
 
 export function requiredCapabilityForPath(pathname: string) {
   return routeCapabilities.find((entry) => entry.matches(pathname))?.capability;
+}
+
+export function requiresFacilityScopeForPath(pathname: string) {
+  return pathname === "/"
+    || pathname.startsWith("/operations")
+    || pathname.startsWith("/assets")
+    || pathname.startsWith("/sensors")
+    || pathname.startsWith("/downtime")
+    || pathname.startsWith("/reports")
+    || pathname.startsWith("/local-ai");
 }

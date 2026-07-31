@@ -78,7 +78,7 @@ export function DataInputPage() {
   return (
     <div className="space-y-5 pb-8">
       <header>
-        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-primary">
+        <p className="font-mono text-xs uppercase tracking-[0.16em] text-primary">
           Data Input
         </p>
         <h1 className="mt-1 text-2xl font-bold tracking-tight">
@@ -173,7 +173,7 @@ export function DataInputPage() {
             <div className="overflow-hidden rounded-xl border bg-card">
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[65rem] text-left text-xs">
-                  <thead className="bg-muted/40 font-mono text-[9px] uppercase text-muted-foreground">
+                  <thead className="bg-muted/40 font-mono text-xs uppercase text-muted-foreground">
                     <tr>
                       {[
                         "Batch",
@@ -195,7 +195,7 @@ export function DataInputPage() {
                   <tbody>
                     {data.items.map((item) => (
                       <tr key={item.importBatchId} className="border-t">
-                        <td className="px-3 py-3 font-mono text-[9px]">
+                        <td className="px-3 py-3 font-mono text-xs">
                           {item.importBatchId}
                         </td>
                         <td className="px-3 py-3">{item.fileName}</td>

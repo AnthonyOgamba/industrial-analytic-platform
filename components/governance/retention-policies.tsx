@@ -36,16 +36,16 @@ export function RetentionPolicies() {
                 ["Review cycle", policy.reviewFrequency],
               ].map(([label, value]) => (
                 <div key={label} className="border-b px-5 py-4 last:border-b-0 sm:odd:border-r xl:border-b-0 xl:not-last:border-r">
-                  <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground">{label}</p>
+                  <p className="font-mono text-xs uppercase tracking-[0.1em] text-muted-foreground">{label}</p>
                   <p className="mt-1.5 text-xs font-medium leading-5">{value}</p>
                 </div>
               ))}
             </div>
 
             <div className="flex min-h-11 flex-wrap items-center gap-2 px-5 py-2.5">
-              <span className="font-mono text-[10px] text-muted-foreground">Linked:</span>
+              <span className="font-mono text-xs text-muted-foreground">Linked:</span>
               {linked.length > 0 ? linked.map((dataset) => (
-                <span key={dataset.id} className="inline-flex items-center gap-1.5 rounded bg-muted px-2 py-1 text-[10px]">
+                <span key={dataset.id} className="inline-flex items-center gap-1.5 rounded bg-muted px-2 py-1 text-xs">
                   <FileText className="size-3 text-primary" />
                   {dataset.name}
                   <ClassificationBadge level={dataset.classification} />

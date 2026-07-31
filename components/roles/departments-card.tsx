@@ -15,13 +15,13 @@ export function DepartmentCard({
   return (
     <article className="rounded-xl border bg-card p-3">
       <div className="flex items-start gap-2">
-        <span className="grid size-8 place-items-center rounded-lg border bg-muted text-[10px] font-bold">Dept</span>
+        <span className="grid size-8 place-items-center rounded-lg border bg-muted text-xs font-bold">Dept</span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
             <h3 className="text-sm font-bold">{department.name}</h3>
           </div>
           {department.description ? (
-            <p className="mt-1 line-clamp-2 text-[10px] text-muted-foreground">{department.description}</p>
+            <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{department.description}</p>
           ) : null}
         </div>
         <div className="flex text-muted-foreground">
@@ -44,7 +44,7 @@ export function DepartmentCard({
         </div>
       </div>
 
-      <div className="mt-3 flex items-center gap-3 text-[10px]">
+      <div className="mt-3 flex items-center gap-3 text-xs">
         <span className="flex items-center gap-1">
           <UsersRound className="size-3" />
           {department.userRoleCount} users/roles

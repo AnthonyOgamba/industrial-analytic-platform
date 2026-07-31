@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { AUTH_COOKIE } from "@/lib/auth/constants";
-import { backendUrl, expireAuthentication, gatewayFailure } from "@/lib/backend-api";
+import { backendUrl, expireAuthentication, gatewayFailure, isAuthenticationInvalid } from "@/lib/backend-api";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,7 +15,8 @@ export async function GET(request: NextRequest) {
     const upstream = await fetch(backendUrl("/api/ai/events"), { headers, cache: "no-store", signal: request.signal });
     if (!upstream.ok || !upstream.body) {
       const response = NextResponse.json({ error: upstream.status === 503 ? "Olive live updates are disabled." : "Olive live updates are unavailable." }, { status: upstream.status });
-      return upstream.status === 401 ? expireAuthentication(response) : response;
+      if (upstream.status !== 401) return response;
+      return await isAuthenticationInvalid(token) ? expireAuthentication(response) : response;
     }
     return new Response(upstream.body, { status: 200, headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache, no-transform", Connection: "keep-alive", "X-Accel-Buffering": "no" } });
   } catch (error) {

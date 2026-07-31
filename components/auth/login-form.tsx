@@ -1,5 +1,10 @@
 "use client";
 
+// FEATURE: Login
+// PAGE: /login authenticates through POST /api/auth/login, then reads /api/auth/session.
+// SESSION: Success redirects to password change or the requested protected page.
+// ERROR: Authentication failures remain in the form and never expose credentials.
+
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { LogIn, User } from "lucide-react";
@@ -17,6 +22,8 @@ export function LoginForm() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(search.get("reason") === "session-expired" ? t("sessionExpired") : "");
   const passwordChanged = search.get("reason") === "password-changed";
+  // HANDLER: Sign In
+  // API: POST /api/auth/login followed by GET /api/auth/session.
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (pending) return;
