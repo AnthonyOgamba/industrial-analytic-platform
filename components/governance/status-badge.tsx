@@ -35,7 +35,7 @@ const alertClasses = {
 
 function Badge({ label, className }: { label: string; className: string }) {
   return (
-    <span className={cn("inline-flex rounded px-2 py-1 font-mono text-[9px] font-semibold uppercase tracking-[0.06em]", className)}>
+    <span className={cn("inline-flex rounded px-2 py-1 font-mono text-xs font-semibold uppercase tracking-[0.06em]", className)}>
       {label}
     </span>
   );

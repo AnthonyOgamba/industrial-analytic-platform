@@ -37,21 +37,21 @@ export function AuditEventRow({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className="text-xs font-bold">{event.user}</span>
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               {event.role}
             </span>
             <AuditActionBadge action={friendlyAuditLabel(event.action)} />
             <AuditResourceBadge resource={friendlyAuditLabel(event.resource)} />
           </div>
           <p className="mt-0.5 text-[11px] font-medium">{event.source}</p>
-          <p className="mt-1 truncate text-[10px] text-muted-foreground">
+          <p className="mt-1 truncate text-xs text-muted-foreground">
             {event.detail}
           </p>
         </div>
       </div>
       <div className="flex items-center justify-between gap-3 pl-10 sm:block sm:min-w-24 sm:pl-0 sm:text-right">
         <AuditStatusBadge status={event.status} />
-        <div className="mt-1 text-[9px] text-muted-foreground">
+        <div className="mt-1 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1">
             <Clock3 className="size-2.5" />
             {event.relativeTime}
@@ -129,7 +129,7 @@ export function AuditEventDetailModal({
           <dl className="grid grid-cols-2 gap-x-5 gap-y-4">
             {fields.map(([label, value]) => (
               <div key={label}>
-                <dt className="text-[9px] text-muted-foreground">{label}</dt>
+                <dt className="text-xs text-muted-foreground">{label}</dt>
                 <dd className="mt-1 break-words font-mono text-[11px] font-semibold">
                   {value}
                 </dd>

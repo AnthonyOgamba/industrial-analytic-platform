@@ -1,5 +1,10 @@
 "use client";
 
+// FEATURE: Dashboard
+// PAGE: / renders facility-scoped operational metrics from GET /api/backend/dashboard.
+// PERMISSION: dashboard.view
+// ERROR: Background refresh failures preserve the last successful cards and charts.
+
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { apiRequest } from "@/lib/api-client";
@@ -12,6 +17,7 @@ import { ProductionChart } from "./production-chart";
 import { SectionCard } from "./section-card";
 import { RecentActivity, SensorStatus } from "./status-panels";
 import { normalizeDashboardResponse } from "./normalize-dashboard";
+import { OperationalCostDialog } from "./operational-cost-dialog";
 
 function DashboardSkeleton() {
   return <div aria-label="Loading dashboard" role="status" className="space-y-5"><div className="h-16 animate-pulse rounded-xl bg-muted"/><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">{Array.from({length:10},(_,i)=><div key={i} className="h-40 animate-pulse rounded-xl bg-muted"/>)}</div><div className="h-72 animate-pulse rounded-xl bg-muted"/></div>;
@@ -46,7 +52,9 @@ export function Dashboard() {
   const [rangeDays, setRangeDays] = useState("30");
   const [error, setError] = useState("");
   const [refreshWarning, setRefreshWarning] = useState("");
+  const [costImpactOpen,setCostImpactOpen]=useState(false);
   const [loading, setLoading] = useState(true);
+  const costImpactTrigger=useRef<HTMLButtonElement>(null);
   const hasLoadedRef = useRef(false);
   const requestPendingRef = useRef(false);
   const load = useCallback(async () => {
@@ -132,8 +140,7 @@ export function Dashboard() {
   const platformMetrics = useMemo<DashboardMetric[]>(() => workspace ? [
     { label:"Active Facilities", value:String(workspace.summary.activeFacilities), delta:"Within your authorized scope", icon:"shield", href:"/facilities" },
     { label:"Open Olive Alerts", value:String(workspace.summary.openAlerts), delta:`${workspace.recentAlerts.filter(item=>item.severity==="critical").length} recent critical`, severity:workspace.summary.openAlerts ? "critical" : "healthy", icon:"alert", href:"/local-ai" },
-    { label:"Estimated Downtime Cost", value:formatCurrency(workspace.summary.estimatedDowntimeCost,currency), delta:"Calculated exposure", severity:workspace.summary.estimatedDowntimeCost > 0 ? "warning" : "healthy", icon:"dollar", href:"/financial" },
-    { label:"Lost Production Value", value:formatCurrency(financial?.lost ?? 0,currency), delta:financial?.cost ? `${formatCurrency(financial.cost,currency)} recorded downtime cost` : "No financial impact recorded", icon:"dollar", href:"/financial" },
+    { label:"Operational Cost Impact", value:formatCurrency(workspace.summary.estimatedDowntimeCost,currency), delta:`${formatCurrency(financial?.lost??0,currency)} lost production · ${new Set(workspace.financialImpact.map(item=>item.facilityId)).size} facilities`, detail:currency, severity:workspace.summary.estimatedDowntimeCost > 0 ? "warning" : "healthy", icon:"dollar", onClick:()=>setCostImpactOpen(true) },
     { label:"Active Production Runs", value:String(workspace.summary.activeRuns), delta:`${workspace.summary.totalStations} registered stations`, severity:workspace.summary.activeRuns ? "healthy" : "neutral", icon:"users", href:"/operations" },
   ] : [], [workspace, financial, currency]);
 
@@ -168,17 +175,18 @@ export function Dashboard() {
   if (!workspace) return <p className="rounded-xl border bg-card p-8 text-center text-sm text-muted-foreground">No dashboard data is available.</p>;
 
   return <div className="space-y-5 pb-4">
-    <header className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end"><div><h1 className="text-2xl font-bold tracking-tight">Overview</h1><p className="mt-1 text-sm text-muted-foreground">Live industrial analytics dashboard</p></div><div className="flex flex-wrap items-center gap-2"><select aria-label="Dashboard facility" value={facilityId} onChange={(event)=>setFacilityId(event.target.value)} className="h-9 rounded-lg border bg-card px-3 text-xs"><option value="">All authorized facilities</option>{(hierarchy.data?.facilities??[]).map(facility=><option key={facility.facilityId} value={facility.facilityId}>{facility.name}</option>)}</select><select aria-label="Dashboard date range" value={rangeDays} onChange={(event)=>setRangeDays(event.target.value)} className="h-9 rounded-lg border bg-card px-3 text-xs"><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option><option value="365">Last 365 days</option></select><button type="button" onClick={()=>void load()} aria-label="Refresh dashboard" className="grid size-9 place-items-center rounded-lg border bg-card"><RefreshCw className="size-4"/></button><span className="w-fit rounded-full border bg-card px-3 py-2 font-mono text-[10px] uppercase text-emerald-600">● Live · {new Date(workspace.generatedAtUtc).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}</span></div></header>
+    <header className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end"><div><h1 className="text-2xl font-bold tracking-tight">Overview</h1><p className="mt-1 text-sm text-muted-foreground">Live industrial analytics dashboard</p></div><div className="flex flex-wrap items-center gap-2"><select aria-label="Dashboard facility" value={facilityId} onChange={(event)=>setFacilityId(event.target.value)} className="h-9 rounded-lg border bg-card px-3 text-xs"><option value="">All authorized facilities</option>{(hierarchy.data?.facilities??[]).map(facility=><option key={facility.facilityId} value={facility.facilityId}>{facility.name}</option>)}</select><select aria-label="Dashboard date range" value={rangeDays} onChange={(event)=>setRangeDays(event.target.value)} className="h-9 rounded-lg border bg-card px-3 text-xs"><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option><option value="365">Last 365 days</option></select><button type="button" onClick={()=>void load()} aria-label="Refresh dashboard" className="grid size-9 place-items-center rounded-lg border bg-card"><RefreshCw className="size-4"/></button><span className="w-fit rounded-full border bg-card px-3 py-2 font-mono text-xs uppercase text-emerald-600">● Live · {new Date(workspace.generatedAtUtc).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}</span></div></header>
     {refreshWarning&&<div role="status" aria-live="polite" className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300"><AlertTriangle className="size-4 shrink-0"/><span>{refreshWarning}</span></div>}
-    <section><h2 className="mb-2.5 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Operational performance</h2><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">{operationalMetrics.map(metric=><MetricCard key={metric.label} {...metric}/>)}</div></section>
-    <section><h2 className="mb-2.5 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Platform and financial</h2><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">{platformMetrics.map(metric=><MetricCard key={metric.label} {...metric}/>)}</div></section>
+    <section><h2 className="mb-2.5 font-mono text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Operational performance</h2><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">{operationalMetrics.map(metric=><MetricCard key={metric.label} {...metric}/>)}</div></section>
+    <section><h2 className="mb-2.5 font-mono text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Platform and operational cost</h2><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{platformMetrics.map(metric=><MetricCard key={metric.label} {...metric} buttonRef={metric.label==="Operational Cost Impact"?costImpactTrigger:undefined}/>)}</div></section>
     <div className="grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(20rem,.75fr)]">
-      <SectionCard title="Production Output Trend" subtitle="Production totals by period" action={<span className="font-mono text-[9px] text-primary">Live</span>}>{trend.length?<ProductionChart data={trend}/>:<p className="grid h-52 place-items-center text-sm text-muted-foreground">No production trend points are available.</p>}</SectionCard>
+      <SectionCard title="Production Output Trend" subtitle="Production totals by period" action={<span className="font-mono text-xs text-primary">Live</span>}>{trend.length?<ProductionChart data={trend}/>:<p className="grid h-52 place-items-center text-sm text-muted-foreground">No production trend points are available.</p>}</SectionCard>
       <SectionCard title="Equipment Health" subtitle="Current OEE by facility">{equipment.length?<EquipmentHealth lines={equipment}/>:<p className="grid h-52 place-items-center text-sm text-muted-foreground">No facility OEE records are available.</p>}</SectionCard>
     </div>
     <div className="grid gap-5 xl:grid-cols-2">
       <SensorStatus sensors={sensors} total={workspace.sensorHealth.total} active={workspace.sensorHealth.active}/>
       <RecentActivity events={activity}/>
     </div>
+    <OperationalCostDialog open={costImpactOpen} onClose={()=>setCostImpactOpen(false)} hierarchy={hierarchy.data} initialCurrency={currency} trigger={costImpactTrigger}/>
   </div>;
 }

@@ -1,5 +1,9 @@
 "use client";
 
+// FEATURE: User deletion request and temporary passcode regeneration
+// API: POST /api/backend/users/{userId}/permanent-deletion creates an auditable request.
+// SECURITY: Typed confirmation, reason, and users.delete are required; secrets display once.
+
 import { useCallback, useEffect, useState } from "react";
 import { Check, Copy, KeyRound, ShieldAlert, Trash2, X } from "lucide-react";
 import { apiRequest } from "@/lib/api-client";
@@ -37,6 +41,8 @@ export function SensitiveUserActions() {
     catch(cause){setError(cause instanceof Error?cause.message:"Temporary passcode regeneration failed.")}
     finally{setPending(false)}
   }
+  // HANDLER: Delete User
+  // API: POST /api/backend/users/{userId}/permanent-deletion creates an auditable request.
   async function requestDeletion(){
     if(!selected||!canDelete||typed!=="DELETE"||!reason.trim())return;
     setPending(true);setError("");

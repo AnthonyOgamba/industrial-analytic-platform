@@ -8,7 +8,7 @@ export function GovernanceWorkspace() {
   return (
     <div className="space-y-5 pb-4">
       <header>
-        <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">Governance Command Center</p>
+        <p className="font-mono text-xs font-semibold uppercase tracking-[0.14em] text-primary">Governance Command Center</p>
         <h1 className="mt-1.5 text-2xl font-bold tracking-tight">Data Governance</h1>
         <p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">Facility-scoped policy registry, retention rules, and retirement controls.</p>
       </header>

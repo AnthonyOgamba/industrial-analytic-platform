@@ -63,7 +63,7 @@ export function ProductionChart({ data }: { data: TrendPoint[] }) {
                 stroke="var(--dv-border)"
                 strokeDasharray="4 5"
               />
-              <text x={padding.left - 10} y={y + 4} textAnchor="end" className="fill-[var(--dv-muted)] font-mono text-[10px]">
+              <text x={padding.left - 10} y={y + 4} textAnchor="end" className="fill-[var(--dv-muted)] font-mono text-xs">
                 {guide.toLocaleString()}
               </text>
             </g>
@@ -83,7 +83,7 @@ export function ProductionChart({ data }: { data: TrendPoint[] }) {
               x={point.x}
               y={height - 13}
               textAnchor="middle"
-              className="fill-[var(--dv-muted)] font-mono text-[10px]"
+              className="fill-[var(--dv-muted)] font-mono text-xs"
             >
               {point.label}
             </text>}

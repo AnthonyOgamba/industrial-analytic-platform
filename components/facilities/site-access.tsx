@@ -28,14 +28,14 @@ export function SiteAccessPanel({ facilities, accessRecords, onGrant, onRevoke }
       <div className="overflow-hidden rounded-xl border bg-card shadow-[var(--dv-shadow)]">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[780px] text-left">
-            <thead className="border-b bg-muted/35 font-mono text-[10px] uppercase tracking-[0.1em] text-muted-foreground"><tr><th className="px-4 py-3">User</th><th className="px-4 py-3">Facility</th><th className="px-4 py-3">Scope</th><th className="px-4 py-3">Access</th><th className="px-4 py-3">Expires</th><th className="px-4 py-3 text-right">Action</th></tr></thead>
+            <thead className="border-b bg-muted/35 font-mono text-xs uppercase tracking-[0.1em] text-muted-foreground"><tr><th className="px-4 py-3">User</th><th className="px-4 py-3">Facility</th><th className="px-4 py-3">Scope</th><th className="px-4 py-3">Access</th><th className="px-4 py-3">Expires</th><th className="px-4 py-3 text-right">Action</th></tr></thead>
             <tbody className="divide-y">
               {accessRecords.map((record) => (
                 <tr key={record.id} className="text-xs hover:bg-muted/20">
                   <td className="px-4 py-3"><p className="font-semibold text-foreground">{record.userName}</p><p className="mt-0.5 text-[11px] text-muted-foreground">{record.platformRole}</p></td>
                   <td className="px-4 py-3 font-medium">{facilityName(record.facilityId)}</td>
-                  <td className="px-4 py-3"><span className="inline-flex items-center gap-1.5 rounded-md bg-muted px-2 py-1 font-mono text-[10px]"><KeyRound className="size-3 text-primary" />{record.station ?? (record.productionLine === "All Lines" ? record.hall : record.productionLine)}</span></td>
-                  <td className="px-4 py-3"><span className="rounded-md bg-primary/10 px-2 py-1 font-mono text-[10px] font-semibold uppercase text-primary">{record.accessLevel}</span></td>
+                  <td className="px-4 py-3"><span className="inline-flex items-center gap-1.5 rounded-md bg-muted px-2 py-1 font-mono text-xs"><KeyRound className="size-3 text-primary" />{record.station ?? (record.productionLine === "All Lines" ? record.hall : record.productionLine)}</span></td>
+                  <td className="px-4 py-3"><span className="rounded-md bg-primary/10 px-2 py-1 font-mono text-xs font-semibold uppercase text-primary">{record.accessLevel}</span></td>
                   <td className="px-4 py-3 text-muted-foreground">{record.expiryDate || "No expiry"}</td>
                   <td className="px-4 py-3 text-right"><button type="button" onClick={() => onRevoke(record.id)} aria-label={`Revoke access for ${record.userName}`} className="inline-flex size-8 items-center justify-center rounded-md border text-muted-foreground hover:border-destructive/40 hover:text-destructive"><Trash2 className="size-3.5" /></button></td>
                 </tr>

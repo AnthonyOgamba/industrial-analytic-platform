@@ -1,5 +1,10 @@
 "use client";
 
+// FEATURE: User deletion approval
+// COMPONENT: Displays canonical approval states and permitted approve/reject/final-delete actions.
+// API: Uses /api/backend/approvals endpoints without bypassing the service workflow.
+// SECURITY: Action availability is derived from effective permissions and request state.
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
@@ -77,6 +82,8 @@ export function ApprovalPanel() {
   const isPermanentDeletion = Boolean(
     deciding && isPermanentDeletionRequest(deciding),
   );
+  // HANDLER: Approve Deletion / Reject Deletion / Final Delete
+  // SECURITY: Sends only the action allowed by the canonical request state and effective permission.
   async function submit() {
     if (!deciding) return;
     setPending(true);
@@ -169,7 +176,7 @@ export function ApprovalPanel() {
               Canonical approval requests and decision status
             </caption>
             <thead>
-              <tr className="font-mono text-[9px] uppercase text-muted-foreground">
+              <tr className="font-mono text-xs uppercase text-muted-foreground">
                 {[
                   "Action",
                   "Final action",
@@ -209,13 +216,13 @@ export function ApprovalPanel() {
                               : "Review and complete this permanent deletion."
                           }
                           onClick={() => setDeciding(item)}
-                          className="inline-flex items-center gap-1 rounded-lg bg-destructive px-3 py-2 text-[10px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
+                          className="inline-flex items-center gap-1 rounded-lg bg-destructive px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
                         >
                           <Trash2 className="size-3" />
                           Final Delete
                         </button>
                         {!canPermanentlyDeleteUsers && (
-                          <p className="mt-1 max-w-32 text-[9px] leading-3 text-muted-foreground">
+                          <p className="mt-1 max-w-32 text-xs leading-3 text-muted-foreground">
                             User management permission required
                           </p>
                         )}
@@ -226,14 +233,14 @@ export function ApprovalPanel() {
                   </td>
                   <td className="p-3">
                     {item.requester_username}
-                    <p className="font-mono text-[9px]">
+                    <p className="font-mono text-xs">
                       #{item.requester_user_id}
                     </p>
                   </td>
                   <td className="p-3">
                     {item.target_type} #{item.target_id}
                   </td>
-                  <td className="max-w-48 truncate p-3 font-mono text-[9px]">
+                  <td className="max-w-48 truncate p-3 font-mono text-xs">
                     {JSON.stringify(item.proposed_values)}
                   </td>
                   <td className="p-3">
@@ -249,7 +256,7 @@ export function ApprovalPanel() {
                     {item.approver_username ?? "Pending"}
                     <p>{item.status}</p>
                   </td>
-                  <td className="p-3 font-mono text-[9px]">
+                  <td className="p-3 font-mono text-xs">
                     {item.correlation_id}
                   </td>
                   <td className="hidden">
@@ -261,7 +268,7 @@ export function ApprovalPanel() {
                       item.requester_user_id !== session.user?.uid) ? (
                       <button
                         onClick={() => setDeciding(item)}
-                        className={`inline-flex items-center gap-1 rounded-lg px-3 py-2 text-[10px] font-semibold text-white ${
+                        className={`inline-flex items-center gap-1 rounded-lg px-3 py-2 text-xs font-semibold text-white ${
                           isPermanentDeletionRequest(item)
                             ? "bg-destructive"
                             : "bg-primary"
@@ -277,17 +284,17 @@ export function ApprovalPanel() {
                     ) : item.status === "pending" &&
                       !isPermanentDeletionRequest(item) &&
                       item.requester_user_id === session.user?.uid ? (
-                      <span className="text-[9px] text-muted-foreground">
+                      <span className="text-xs text-muted-foreground">
                         Another approver required
                       </span>
                     ) : item.status === "pending" &&
                       isPermanentDeletionRequest(item) &&
                       !canPermanentlyDeleteUsers ? (
-                      <span className="text-[9px] text-muted-foreground">
+                      <span className="text-xs text-muted-foreground">
                         User management permission required
                       </span>
                     ) : item.status === "pending" && !canDecide ? (
-                      <span className="text-[9px] text-muted-foreground">
+                      <span className="text-xs text-muted-foreground">
                         Decision permission required
                       </span>
                     ) : (

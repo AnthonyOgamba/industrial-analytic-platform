@@ -20,7 +20,7 @@ export const statusBorderStyles: Record<AssetStatus, string> = {
 
 export function AssetStatusBadge({ status }: { status: AssetStatus }) {
   const Icon = status === "Online" ? CheckCircle2 : status === "Warning" ? AlertTriangle : status === "Maintenance" ? Wrench : CircleOff;
-  return <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 font-mono text-[9px] font-semibold uppercase ${statusStyles[status]}`}><Icon className="size-3" />{status}</span>;
+  return <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 font-mono text-xs font-semibold uppercase ${statusStyles[status]}`}><Icon className="size-3" />{status}</span>;
 }
 
 const riskStyles: Record<AssetRisk, string> = {
@@ -31,9 +31,9 @@ const riskStyles: Record<AssetRisk, string> = {
 };
 
 export function AssetRiskBadge({ risk }: { risk: AssetRisk }) {
-  return <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 font-mono text-[9px] font-semibold uppercase ${riskStyles[risk]}`}><span className="size-1.5 rounded-full bg-current" />Risk: {risk}</span>;
+  return <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 font-mono text-xs font-semibold uppercase ${riskStyles[risk]}`}><span className="size-1.5 rounded-full bg-current" />Risk: {risk}</span>;
 }
 
 export function AssetGovernanceBadge({ policy, classification, encryptionRequired }: { policy: string; classification: AssetClassification; encryptionRequired: boolean }) {
-  return <div className="flex min-w-0 items-center gap-2 rounded-lg bg-muted/55 px-2.5 py-2 text-[10px] text-muted-foreground"><ShieldCheck className="size-3.5 shrink-0 text-primary" /><span className="truncate">{policy}</span><span className="ml-auto hidden rounded bg-background px-1.5 py-0.5 font-mono text-[8px] uppercase sm:inline">{classification}</span>{encryptionRequired && <LockKeyhole className="size-3 shrink-0 text-primary" aria-label="Encryption required" />}</div>;
+  return <div className="flex min-w-0 items-center gap-2 rounded-lg bg-muted/55 px-2.5 py-2 text-xs text-muted-foreground"><ShieldCheck className="size-3.5 shrink-0 text-primary" /><span className="truncate">{policy}</span><span className="ml-auto hidden rounded bg-background px-1.5 py-0.5 font-mono text-xs uppercase sm:inline">{classification}</span>{encryptionRequired && <LockKeyhole className="size-3 shrink-0 text-primary" aria-label="Encryption required" />}</div>;
 }

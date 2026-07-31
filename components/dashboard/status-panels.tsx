@@ -59,7 +59,7 @@ export function RecentActivity({ events }: { events: ActivityEvent[] }) {
             </div>
             <span
               className={cn(
-                "hidden rounded px-2 py-1 font-mono text-[9px] font-semibold sm:inline-flex",
+                "hidden rounded px-2 py-1 font-mono text-xs font-semibold sm:inline-flex",
                 severityStyles[event.severity].badge,
               )}
             >

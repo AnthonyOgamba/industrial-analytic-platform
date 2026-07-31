@@ -14,7 +14,7 @@ export type ReportSource =
   | "Assets"
   | "Operations"
   | "Downtime"
-  | "Financial Analytics"
+  | "Operational Cost Impact"
   | "Security Operations"
   | "API Security"
   | "Audit Log"

@@ -1,5 +1,10 @@
 "use client";
 
+// FEATURE: Audit Log
+// PAGE: /audit displays facility-scoped, read-only audit and approval history.
+// API: GET /api/backend/audit with paging and filters.
+// SECURITY: Values are rendered from the service contract; audit rows are never edited locally.
+
 import { Download, Filter, RefreshCw, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -202,7 +207,7 @@ export function AuditLogPage() {
             <h1 className="text-2xl font-bold tracking-tight">
               Audit & Approval History
             </h1>
-            <span className="rounded-full bg-emerald-500/10 px-2 py-1 font-mono text-[8px] uppercase text-emerald-600">
+            <span className="rounded-full bg-emerald-500/10 px-2 py-1 font-mono text-xs uppercase text-emerald-600">
               Live gateway data
             </span>
           </div>
@@ -236,7 +241,7 @@ export function AuditLogPage() {
           (key) => (
             <div key={key} className="rounded-xl border bg-card p-4">
               <strong className="text-lg">{stats[key]}</strong>
-              <p className="mt-1 text-[10px] text-muted-foreground">
+              <p className="mt-1 text-xs text-muted-foreground">
                 {key} events
               </p>
             </div>
@@ -335,7 +340,7 @@ export function AuditLogPage() {
         </div>
       </section>
       <section className="overflow-hidden rounded-xl border bg-card">
-        <header className="flex justify-between bg-muted/50 px-4 py-3 font-mono text-[9px] uppercase text-muted-foreground">
+        <header className="flex justify-between bg-muted/50 px-4 py-3 font-mono text-xs uppercase text-muted-foreground">
           <span>Recorded platform activity · newest first</span>
           <span>{pageInfo.total} results</span>
         </header>

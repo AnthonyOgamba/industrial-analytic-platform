@@ -60,7 +60,7 @@ function EventTable({ items }: { items: SecurityEventDto[] }) {
       <div className="overflow-x-auto">
         <table className="w-full min-w-[70rem] text-left text-xs">
           <caption className="sr-only">Persisted security events</caption>
-          <thead className="bg-muted/40 font-mono text-[9px] uppercase text-muted-foreground">
+          <thead className="bg-muted/40 font-mono text-xs uppercase text-muted-foreground">
             <tr>
               {[
                 "ID",
@@ -201,7 +201,7 @@ export function SecurityOperationsPage() {
             <article key={item.label} className="rounded-xl border bg-card p-4">
               <Icon className="size-4 text-primary" />
               <p className="mt-3 text-xl font-bold">{item.value}</p>
-              <p className="mt-1 text-[10px] text-muted-foreground">
+              <p className="mt-1 text-xs text-muted-foreground">
                 {item.label}
               </p>
             </article>

@@ -1,5 +1,10 @@
 "use client";
 
+// FEATURE: Authenticated platform shell
+// COMPONENT: Shared navigation, notifications, theme, language, profile, and accessibility controls.
+// SESSION: Protected content uses the authorization provider; navigation is capability-filtered.
+// API: Notification and profile preferences use authenticated /api/backend routes.
+
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -37,10 +42,10 @@ import { normalizeNotifications } from "@/lib/normalize-notifications";
 type Language = "en"|"fr"|"es"|"pa";
 const languageNames:Record<Language,string>={en:"English",fr:"Français",es:"Español",pa:"ਪੰਜਾਬੀ"};
 const translations:Record<Language,Record<string,string>>={
-  en:{Dashboard:"Dashboard",Operations:"Operations",Facilities:"Facilities",Assets:"Assets",Sensors:"Sensors",Downtime:"Downtime",Analytics:"Analytics",Financial:"Financial",Reports:"Reports",AI:"AI","Olive AI":"Olive AI","Governance & Security":"Governance & Security","Data Governance":"Data Governance","Security Operations":"Security Operations","Audit Log":"Audit Log","User & Access Management":"User & Access Management",Users:"Users",Roles:"Roles",Permissions:"Permissions","Access Assignments":"Access Assignments","Access Requests":"Access Requests",Notifications:"Notifications",Profile:"Profile",Accessibility:"Accessibility"},
-  fr:{Dashboard:"Tableau de bord",Operations:"Opérations",Facilities:"Installations",Assets:"Actifs",Sensors:"Capteurs",Downtime:"Temps d’arrêt",Analytics:"Analytique",Financial:"Finances",Reports:"Rapports",AI:"IA","Olive AI":"IA Olive","Governance & Security":"Gouvernance et sécurité","Data Governance":"Gouvernance des données","Security Operations":"Opérations de sécurité","Audit Log":"Journal d’audit","User & Access Management":"Gestion des utilisateurs et accès",Users:"Utilisateurs",Roles:"Rôles",Permissions:"Autorisations","Access Assignments":"Attributions d’accès","Access Requests":"Demandes d’accès",Notifications:"Notifications",Profile:"Profil",Accessibility:"Accessibilité"},
-  es:{Dashboard:"Panel",Operations:"Operaciones",Facilities:"Instalaciones",Assets:"Activos",Sensors:"Sensores",Downtime:"Tiempo de inactividad",Analytics:"Analítica",Financial:"Finanzas",Reports:"Informes",AI:"IA","Olive AI":"IA Olive","Governance & Security":"Gobernanza y seguridad","Data Governance":"Gobernanza de datos","Security Operations":"Operaciones de seguridad","Audit Log":"Registro de auditoría","User & Access Management":"Gestión de usuarios y acceso",Users:"Usuarios",Roles:"Roles",Permissions:"Permisos","Access Assignments":"Asignaciones de acceso","Access Requests":"Solicitudes de acceso",Notifications:"Notificaciones",Profile:"Perfil",Accessibility:"Accesibilidad"},
-  pa:{Dashboard:"ਡੈਸ਼ਬੋਰਡ",Operations:"ਕਾਰਜ",Facilities:"ਸਹੂਲਤਾਂ",Assets:"ਸੰਪਤੀਆਂ",Sensors:"ਸੈਂਸਰ",Downtime:"ਬੰਦ ਸਮਾਂ",Analytics:"ਵਿਸ਼ਲੇਸ਼ਣ",Financial:"ਵਿੱਤੀ",Reports:"ਰਿਪੋਰਟਾਂ",AI:"ਏਆਈ","Olive AI":"Olive ਏਆਈ","Governance & Security":"ਸ਼ਾਸਨ ਅਤੇ ਸੁਰੱਖਿਆ","Data Governance":"ਡਾਟਾ ਸ਼ਾਸਨ","Security Operations":"ਸੁਰੱਖਿਆ ਕਾਰਜ","Audit Log":"ਆਡਿਟ ਲੌਗ","User & Access Management":"ਯੂਜ਼ਰ ਅਤੇ ਪਹੁੰਚ ਪ੍ਰਬੰਧਨ",Users:"ਉਪਭੋਗਤਾ",Roles:"ਭੂਮਿਕਾਵਾਂ",Permissions:"ਅਨੁਮਤੀਆਂ","Access Assignments":"ਪਹੁੰਚ ਨਿਯੁਕਤੀਆਂ","Access Requests":"ਪਹੁੰਚ ਬੇਨਤੀਆਂ",Notifications:"ਸੂਚਨਾਵਾਂ",Profile:"ਪ੍ਰੋਫਾਈਲ",Accessibility:"ਪਹੁੰਚਯੋਗਤਾ"},
+  en:{Dashboard:"Dashboard",Operations:"Operations",Facilities:"Facilities",Assets:"Assets",Sensors:"Sensors",Downtime:"Downtime",Analytics:"Analytics",Reports:"Reports",AI:"AI","Olive AI":"Olive AI","Governance & Security":"Governance & Security","Data Governance":"Data Governance","Security Operations":"Security Operations","Audit Log":"Audit Log","User & Access Management":"User & Access Management",Users:"Users",Roles:"Roles",Permissions:"Permissions","Access Assignments":"Access Assignments","Access Requests":"Access Requests",Notifications:"Notifications",Profile:"Profile",Accessibility:"Accessibility"},
+  fr:{Dashboard:"Tableau de bord",Operations:"Opérations",Facilities:"Installations",Assets:"Actifs",Sensors:"Capteurs",Downtime:"Temps d’arrêt",Analytics:"Analytique",Reports:"Rapports",AI:"IA","Olive AI":"IA Olive","Governance & Security":"Gouvernance et sécurité","Data Governance":"Gouvernance des données","Security Operations":"Opérations de sécurité","Audit Log":"Journal d’audit","User & Access Management":"Gestion des utilisateurs et accès",Users:"Utilisateurs",Roles:"Rôles",Permissions:"Autorisations","Access Assignments":"Attributions d’accès","Access Requests":"Demandes d’accès",Notifications:"Notifications",Profile:"Profil",Accessibility:"Accessibilité"},
+  es:{Dashboard:"Panel",Operations:"Operaciones",Facilities:"Instalaciones",Assets:"Activos",Sensors:"Sensores",Downtime:"Tiempo de inactividad",Analytics:"Analítica",Reports:"Informes",AI:"IA","Olive AI":"IA Olive","Governance & Security":"Gobernanza y seguridad","Data Governance":"Gobernanza de datos","Security Operations":"Operaciones de seguridad","Audit Log":"Registro de auditoría","User & Access Management":"Gestión de usuarios y acceso",Users:"Usuarios",Roles:"Roles",Permissions:"Permisos","Access Assignments":"Asignaciones de acceso","Access Requests":"Solicitudes de acceso",Notifications:"Notificaciones",Profile:"Perfil",Accessibility:"Accesibilidad"},
+  pa:{Dashboard:"ਡੈਸ਼ਬੋਰਡ",Operations:"ਕਾਰਜ",Facilities:"ਸਹੂਲਤਾਂ",Assets:"ਸੰਪਤੀਆਂ",Sensors:"ਸੈਂਸਰ",Downtime:"ਬੰਦ ਸਮਾਂ",Analytics:"ਵਿਸ਼ਲੇਸ਼ਣ",Reports:"ਰਿਪੋਰਟਾਂ",AI:"ਏਆਈ","Olive AI":"Olive ਏਆਈ","Governance & Security":"ਸ਼ਾਸਨ ਅਤੇ ਸੁਰੱਖਿਆ","Data Governance":"ਡਾਟਾ ਸ਼ਾਸਨ","Security Operations":"ਸੁਰੱਖਿਆ ਕਾਰਜ","Audit Log":"ਆਡਿਟ ਲੌਗ","User & Access Management":"ਯੂਜ਼ਰ ਅਤੇ ਪਹੁੰਚ ਪ੍ਰਬੰਧਨ",Users:"ਉਪਭੋਗਤਾ",Roles:"ਭੂਮਿਕਾਵਾਂ",Permissions:"ਅਨੁਮਤੀਆਂ","Access Assignments":"ਪਹੁੰਚ ਨਿਯੁਕਤੀਆਂ","Access Requests":"ਪਹੁੰਚ ਬੇਨਤੀਆਂ",Notifications:"ਸੂਚਨਾਵਾਂ",Profile:"ਪ੍ਰੋਫਾਈਲ",Accessibility:"ਪਹੁੰਚਯੋਗਤਾ"},
 };
 
 type NavigationItem = {
@@ -181,7 +186,7 @@ function SidebarContent({ onNavigate, user, language }: { onNavigate?: () => voi
         </Link>
           <span className="whitespace-nowrap leading-none">
             <strong className="block text-[13px] tracking-tight">DIVU Analytics</strong>
-            <span className="mt-1 block text-[7px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Industrial IoT</span>
+            <span className="mt-1 block text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Industrial IoT</span>
           </span>
       </div>
 
@@ -189,7 +194,7 @@ function SidebarContent({ onNavigate, user, language }: { onNavigate?: () => voi
         <div className="space-y-5">
           {visibleNavigation.map((group) => (
             <div key={group.label || "dashboard"}>
-              {group.label && <p className="mb-1.5 px-3 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{translations[language][group.label]??group.label}</p>}
+              {group.label && <p className="mb-1.5 px-3 font-mono text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">{translations[language][group.label]??group.label}</p>}
               <div className="space-y-1">
                 {group.items.map((item) => {
                   const Icon = item.icon;
@@ -345,7 +350,7 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
               aria-label={notificationError?`Notifications unavailable: ${notificationError}`:`${translations[language].Notifications}, ${unreadCount} unread`}
             >
               <Bell className="size-4" />
-              {unreadCount > 0 && <span className="absolute -right-1.5 -top-1.5 grid h-5 min-w-5 place-items-center rounded-full border-2 border-[var(--dv-header)] bg-primary px-1 font-mono text-[10px] font-bold leading-none text-primary-foreground shadow-sm">{unreadCount}</span>}
+              {unreadCount > 0 && <span className="absolute -right-1.5 -top-1.5 grid h-5 min-w-5 place-items-center rounded-full border-2 border-[var(--dv-header)] bg-primary px-1 font-mono text-xs font-bold leading-none text-primary-foreground shadow-sm">{unreadCount}</span>}
             </button>
             <div className="relative">
               <button
@@ -363,11 +368,11 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
               {accountOpen && <div role="menu" className="absolute right-0 top-11 z-40 w-56 rounded-xl border bg-card p-2 shadow-[var(--dv-shadow-m)]">
                 <div className="border-b px-3 py-2">
                   <p className="truncate text-xs font-semibold">{sessionUser?.username ?? "Authenticated user"}</p>
-                  <p className="truncate text-[10px] text-muted-foreground">{sessionUser?.displayRole}</p>
+                  <p className="truncate text-xs text-muted-foreground">{sessionUser?.displayRole}</p>
                 </div>
                 <button type="button" role="menuitem" onClick={() => { setAccountOpen(false); setNotificationsOpen(true); }} className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs hover:bg-muted">
                   <Bell className="size-4" /> {translations[language].Notifications}
-                  {unreadCount > 0 && <span className="ml-auto rounded-full bg-primary px-1.5 text-[9px] text-primary-foreground">{unreadCount}</span>}
+                  {unreadCount > 0 && <span className="ml-auto rounded-full bg-primary px-1.5 text-xs text-primary-foreground">{unreadCount}</span>}
                 </button>
                 <Link role="menuitem" href="/profile" onClick={() => setAccountOpen(false)} className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs hover:bg-muted">
                   <CircleUserRound className="size-4" /> {translations[language].Profile}
@@ -379,8 +384,8 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
                   </select>
                 </label>
                 <button type="button" role="menuitem" onClick={()=>setAccessibilityOpen(value=>!value)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs hover:bg-muted"><Accessibility className="size-4"/>{translations[language].Accessibility}</button>
-                {accessibilityOpen&&<fieldset className="m-1 space-y-2 rounded-lg border p-3"><legend className="px-1 text-[9px] font-semibold">Accessibility</legend>
-                  {[["Reduced motion",reducedMotion,(value:boolean)=>setAccessPreference("motion",value)],["Increased contrast",increasedContrast,(value:boolean)=>setAccessPreference("contrast",value)],["Larger interface text",largeText,(value:boolean)=>setAccessPreference("text",value)]].map(([label,checked,change])=><label key={String(label)} className="flex items-center gap-2 text-[10px]"><input type="checkbox" checked={Boolean(checked)} onChange={event=>(change as (value:boolean)=>void)(event.target.checked)}/>{String(label)}</label>)}
+                {accessibilityOpen&&<fieldset className="m-1 space-y-2 rounded-lg border p-3"><legend className="px-1 text-xs font-semibold">Accessibility</legend>
+                  {[["Reduced motion",reducedMotion,(value:boolean)=>setAccessPreference("motion",value)],["Increased contrast",increasedContrast,(value:boolean)=>setAccessPreference("contrast",value)],["Larger interface text",largeText,(value:boolean)=>setAccessPreference("text",value)]].map(([label,checked,change])=><label key={String(label)} className="flex items-center gap-2 text-xs"><input type="checkbox" checked={Boolean(checked)} onChange={event=>(change as (value:boolean)=>void)(event.target.checked)}/>{String(label)}</label>)}
                 </fieldset>}
               </div>}
             </div>

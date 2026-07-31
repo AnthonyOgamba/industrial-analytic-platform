@@ -1,6 +1,11 @@
 "use client";
 /* eslint-disable react-hooks/purity */
 
+// FEATURE: Downtime creation and financial impact
+// PAGE: /downtime joins incidents to facilities, assets, optional sensors, runs, and technicians.
+// API: GET/POST /api/backend/downtime/events plus canonical lookup endpoints.
+// SECURITY: Creation and sensitive row actions are controlled by effective capabilities.
+
 import {
   useCallback,
   useEffect,
@@ -94,6 +99,8 @@ function DowntimeForm({
   function change(key: string, value: string) {
     setForm((current) => ({ ...current, [key]: value }));
   }
+  // HANDLER: Create Downtime
+  // API: POST /api/backend/downtime/events with canonical hierarchy and asset relationships.
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!asset || !form.productionId) return;
@@ -491,7 +498,7 @@ export function DowntimePage() {
     <div className="space-y-5 pb-8">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-[.14em] text-primary">
+          <p className="font-mono text-xs uppercase tracking-[.14em] text-primary">
             Operations intelligence
           </p>
           <h1 className="mt-1 text-2xl font-bold">Downtime Management</h1>
@@ -577,7 +584,7 @@ export function DowntimePage() {
           <article key={item.label} className="rounded-xl border bg-card p-4">
             <Icon className="size-4 text-primary" />
             <p className="mt-3 truncate text-lg font-bold">{item.value}</p>
-            <p className="text-[9px] text-muted-foreground">{item.label}</p>
+            <p className="text-xs text-muted-foreground">{item.label}</p>
           </article>
         ))}
       </div>
@@ -591,7 +598,7 @@ export function DowntimePage() {
                 Canonical downtime events, operational loss, repair cost,
                 approval, and source
               </caption>
-              <thead className="bg-muted/40 font-mono text-[9px] uppercase text-muted-foreground">
+              <thead className="bg-muted/40 font-mono text-xs uppercase text-muted-foreground">
                 <tr>
                   {[
                     "Event",
@@ -642,7 +649,7 @@ export function DowntimePage() {
                       <td className="p-3">
                         <span className="font-semibold">{facilityName}</span>
                         {(item.hall_name || asset?.hall_name) && (
-                          <p className="mt-0.5 text-[9px] text-muted-foreground">
+                          <p className="mt-0.5 text-xs text-muted-foreground">
                             {[
                               item.hall_name || asset?.hall_name,
                               item.line_name || asset?.line_name,
@@ -659,7 +666,7 @@ export function DowntimePage() {
                       <td className="p-3">{duration.toFixed(0)}m</td>
                       <td className="p-3">
                         {item.planned_type}
-                        <p className="text-[9px]">{item.reason_code}</p>
+                        <p className="text-xs">{item.reason_code}</p>
                       </td>
                       <td className="p-3">{item.severity}</td>
                       <td className="p-3">{item.status}</td>

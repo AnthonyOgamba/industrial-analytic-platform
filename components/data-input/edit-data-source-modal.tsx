@@ -30,7 +30,7 @@ export function EditDataSourceModal({ source, onClose, onSave }: { source?: Indu
         <label className={`${labelClass} sm:col-span-2`}>Description<textarea required value={form.description} onChange={event => setForm({...form,description:event.target.value})} className="min-h-24 w-full rounded-lg border bg-background p-3 text-sm" placeholder="Describe the industrial data supplied by this connection." /></label>
       </div>
       <fieldset className="rounded-xl border bg-muted/30 p-4">
-        <legend className="px-1 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-primary">Connection Settings</legend>
+        <legend className="px-1 font-mono text-xs font-semibold uppercase tracking-[0.12em] text-primary">Connection Settings</legend>
         <div className="mt-2 grid gap-4 sm:grid-cols-2">
           <label className={labelClass}>Endpoint / Host<input required value={form.endpoint} onChange={event => setForm({...form,endpoint:event.target.value})} className={fieldClass} placeholder="mqtts://gateway.internal:8883" /></label>
           <label className={labelClass}>Authentication Method<select value={form.authenticationMethod} onChange={event => setForm({...form,authenticationMethod:event.target.value})} className={fieldClass}>{authenticationMethods.map(item=><option key={item}>{item}</option>)}</select></label>

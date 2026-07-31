@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { AUTH_COOKIE, normalizeRole } from "@/lib/auth/constants";
 import { requestBackend } from "@/lib/backend-api";
 
+// FEATURE: Session validation
+// ENDPOINT: GET /api/auth/session
+// SESSION: /api/auth/me is authoritative for token validity; authorization-context enriches RBAC.
+// ERROR: Temporary authorization failures preserve a valid authentication cookie.
+
 type CurrentUser = {
   uid: number;
   username: string;

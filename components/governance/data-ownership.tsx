@@ -10,7 +10,7 @@ export function DataOwnership() {
     <GovernanceCard>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[980px] text-left">
-          <thead className="bg-muted/40 font-mono text-[10px] uppercase tracking-[0.09em] text-muted-foreground">
+          <thead className="bg-muted/40 font-mono text-xs uppercase tracking-[0.09em] text-muted-foreground">
             <tr>
               <th className="px-5 py-3 font-medium">Dataset</th>
               <th className="px-4 py-3 font-medium">Business owner</th>

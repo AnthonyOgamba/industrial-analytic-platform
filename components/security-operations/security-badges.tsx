@@ -12,5 +12,5 @@ const statusStyles: Record<SecurityStatus, string> = {
   Investigating: "bg-[var(--dv-badge-ok-bg)] text-[var(--dv-badge-ok-text)]", Acknowledged: "bg-[var(--dv-badge-wa-bg)] text-[var(--dv-badge-wa-text)]",
   Resolved: "bg-[var(--dv-badge-ok-bg)] text-[var(--dv-badge-ok-text)]",
 };
-export function SecuritySeverityBadge({ severity }: { severity: Severity }) { return <span className={`rounded-full px-2 py-1 text-[10px] font-semibold ${severityStyles[severity]}`}>{severity}</span>; }
-export function SecurityStatusBadge({ status }: { status: SecurityStatus }) { return <span className={`rounded px-2 py-1 text-[10px] font-medium ${statusStyles[status]}`}>{status}</span>; }
+export function SecuritySeverityBadge({ severity }: { severity: Severity }) { return <span className={`rounded-full px-2 py-1 text-xs font-semibold ${severityStyles[severity]}`}>{severity}</span>; }
+export function SecurityStatusBadge({ status }: { status: SecurityStatus }) { return <span className={`rounded px-2 py-1 text-xs font-medium ${statusStyles[status]}`}>{status}</span>; }

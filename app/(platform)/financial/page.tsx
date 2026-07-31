@@ -1,5 +1,5 @@
-import { FinancialAnalytics } from "@/components/financial/financial-analytics";
+import { redirect } from "next/navigation";
 
 export default function FinancialPage() {
-  return <FinancialAnalytics />;
+  redirect("/");
 }

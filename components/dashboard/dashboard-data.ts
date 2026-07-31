@@ -21,6 +21,7 @@ export type DashboardMetric = {
   severity?: DashboardSeverity;
   icon: DashboardIcon;
   href?: string;
+  onClick?: () => void;
 };
 
 export type TrendPoint = { label: string; value: number };

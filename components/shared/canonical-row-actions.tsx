@@ -44,13 +44,13 @@ export function CanonicalRowActions({
   }
 
   if (pendingApproval) {
-    return <span className="whitespace-nowrap rounded-full bg-amber-500/15 px-2 py-1 text-[9px] font-semibold text-amber-700">Pending Approval</span>;
+    return <span className="whitespace-nowrap rounded-full bg-amber-500/15 px-2 py-1 text-xs font-semibold text-amber-700">Pending Approval</span>;
   }
 
   return <>
     <div className="flex whitespace-nowrap">
-      <button type="button" onClick={onEdit} className="inline-flex h-8 items-center gap-1 rounded-l-lg border px-2 text-[9px] hover:bg-muted"><Pencil className="size-3"/>Edit</button>
-      <button type="button" onClick={()=>setConfirming(true)} className="inline-flex h-8 items-center gap-1 rounded-r-lg border border-l-0 px-2 text-[9px] text-destructive hover:bg-destructive/10"><Trash2 className="size-3"/>Request deletion</button>
+      <button type="button" onClick={onEdit} className="inline-flex h-8 items-center gap-1 rounded-l-lg border px-2 text-xs hover:bg-muted"><Pencil className="size-3"/>Edit</button>
+      <button type="button" onClick={()=>setConfirming(true)} className="inline-flex h-8 items-center gap-1 rounded-r-lg border border-l-0 px-2 text-xs text-destructive hover:bg-destructive/10"><Trash2 className="size-3"/>Request deletion</button>
     </div>
     {confirming&&<div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/60 sm:items-center sm:p-5" onMouseDown={event=>event.target===event.currentTarget&&!pending&&setConfirming(false)}>
       <section role="dialog" aria-modal="true" aria-labelledby="delete-request-title" className="w-full max-w-lg rounded-t-2xl border bg-background p-5 shadow-2xl sm:rounded-2xl">

@@ -14,5 +14,5 @@ const tones: Record<string, string> = {
 };
 
 export function DataInputStatusBadge({ status }: { status: SourceStatus | ValidationStatus | ProcessingStatus }) {
-  return <span className={`inline-flex rounded px-2 py-1 font-mono text-[9px] font-semibold uppercase tracking-wide ${tones[status]}`}>{status}</span>;
+  return <span className={`inline-flex rounded px-2 py-1 font-mono text-xs font-semibold uppercase tracking-wide ${tones[status]}`}>{status}</span>;
 }
