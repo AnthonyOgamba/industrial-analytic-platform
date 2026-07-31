@@ -45,3 +45,13 @@ export function createAccessChecks(claims?: AccessClaims) {
 export function requiredCapabilityForPath(pathname: string) {
   return routeCapabilities.find((entry) => entry.matches(pathname))?.capability;
 }
+
+export function requiresFacilityScopeForPath(pathname: string) {
+  return pathname === "/"
+    || pathname.startsWith("/operations")
+    || pathname.startsWith("/assets")
+    || pathname.startsWith("/sensors")
+    || pathname.startsWith("/downtime")
+    || pathname.startsWith("/reports")
+    || pathname.startsWith("/local-ai");
+}

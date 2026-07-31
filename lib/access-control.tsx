@@ -14,6 +14,7 @@ import type { SessionUser } from "@/lib/session-user";
 import {
   createAccessChecks,
   requiredCapabilityForPath,
+  requiresFacilityScopeForPath,
 } from "@/lib/access-policy";
 
 type AccessContextValue = {
@@ -40,8 +41,12 @@ async function fetchSession() {
     cache: "no-store",
   });
   if (response.status === 401) return undefined;
-  if (!response.ok) throw new Error("The authenticated session could not be loaded.");
-  const payload = (await response.json()) as { user?: SessionUser };
+  const payload = (await response.json().catch(() => ({}))) as { user?: SessionUser; error?:string };
+  if (!response.ok) {
+    throw new Error(payload.error || (response.status === 403
+      ? "Your authorization context is unavailable."
+      : "The authorization service is temporarily unavailable."));
+  }
   return payload.user;
 }
 
@@ -58,7 +63,6 @@ export function AccessProvider({ children }: { children: React.ReactNode }) {
       setUser(next);
       return next;
     } catch (cause) {
-      setUser(undefined);
       setError(cause instanceof Error ? cause.message : "The authenticated session could not be loaded.");
       return undefined;
     } finally {
@@ -140,6 +144,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (access.loading) return;
+    if (access.error && !access.user) return;
     if (!access.user) {
       router.replace("/login?reason=authentication-required");
       return;
@@ -153,11 +158,23 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     }
   }, [access, required, router]);
 
-  if (access.loading) {
+  if (access.loading && !access.user) {
     return <div role="status" className="m-6 h-64 animate-pulse rounded-xl bg-muted" aria-label="Loading access permissions" />;
+  }
+  if (access.error && !access.user) {
+    return <div role="alert" className="m-6 rounded-xl border border-destructive/30 bg-destructive/10 p-5"><h1 className="font-semibold">Authorization unavailable</h1><p className="mt-1 text-sm text-muted-foreground">{access.error}</p><button type="button" onClick={()=>void access.refresh()} className="mt-4 h-9 rounded-lg border bg-card px-3 text-xs font-semibold">Retry</button></div>;
   }
   if (!access.user || access.user.mustChangePassword || (required && !access.can(required))) {
     return null;
+  }
+  const lacksFacilityScope = requiresFacilityScopeForPath(pathname)
+    && !access.can("facilities.access.global")
+    && access.user.facilityIds.length === 0;
+  if (lacksFacilityScope) {
+    return <div role="status" className="m-6 rounded-xl border bg-card p-6"><h1 className="font-semibold">No facility access assigned</h1><p className="mt-1 text-sm text-muted-foreground">Your account can open this page, but it is not assigned to a facility. Ask an administrator to assign facility access.</p><button type="button" onClick={()=>void access.refresh()} className="mt-4 h-9 rounded-lg border px-3 text-xs font-semibold">Retry access check</button></div>;
+  }
+  if (access.error) {
+    return <><div role="alert" className="m-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs"><strong>Authorization refresh delayed.</strong> {access.error} <button type="button" onClick={()=>void access.refresh()} className="ml-2 rounded border px-2 py-1 font-semibold">Retry</button></div>{children}</>;
   }
   return children;
 }
