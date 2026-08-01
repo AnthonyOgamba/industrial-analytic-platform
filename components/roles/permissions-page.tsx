@@ -1,4 +1,11 @@
 "use client";
+
+/**
+ * PAGE: Permissions
+ * FEATURE: Displays the canonical permission catalog and role grants returned by the service.
+ * PERMISSION: Viewing and editing remain separate effective capabilities.
+ * ERROR: Unexpected response shapes are normalized safely and never become invented grants.
+ */
 /* eslint-disable react-hooks/set-state-in-effect */
 
 import { useCallback,useEffect,useMemo,useState } from "react";

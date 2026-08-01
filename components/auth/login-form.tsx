@@ -20,7 +20,12 @@ export function LoginForm() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState(search.get("reason") === "session-expired" ? t("sessionExpired") : "");
+  const reason = search.get("reason");
+  const [error, setError] = useState(
+    reason === "session-expired" ? t("sessionExpired")
+      : reason === "authorization-changed" ? "Your access has changed. Please sign in again."
+        : "",
+  );
   const passwordChanged = search.get("reason") === "password-changed";
   // HANDLER: Sign In
   // API: POST /api/auth/login followed by GET /api/auth/session.

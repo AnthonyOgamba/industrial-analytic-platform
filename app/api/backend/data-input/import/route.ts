@@ -2,6 +2,12 @@ import { NextRequest } from "next/server";
 import { AUTH_COOKIE } from "@/lib/auth/constants";
 import { backendUrl, expireAuthentication, gatewayFailure, isAuthenticationInvalid, publicBackendResponse, readBackendBody } from "@/lib/backend-api";
 
+/**
+ * BFF: Manufacturing data import
+ * ENDPOINT: Forwards multipart form data without converting it to JSON.
+ * SECURITY: Authentication and import permission remain enforced by the gateway service.
+ */
+
 export async function POST(request:NextRequest){
   const token=request.cookies.get(AUTH_COOKIE)?.value;
   if(!token)return Response.json({error:"Authentication required."},{status:401});

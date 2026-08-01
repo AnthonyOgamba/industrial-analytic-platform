@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * PAGE: Roles
+ * FEATURE: Lists, creates, edits, and removes canonical platform roles.
+ * PERMISSION: Each mutation is shown from effective role-management claims and rechecked by the service.
+ * SECURITY: Role display names never replace canonical role keys in authorization requests.
+ */
+
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { useSearchParams } from "next/navigation";
 import { AlertTriangle, Check, KeyRound, Plus, Search, ShieldCheck, Trash2, Users, X } from "lucide-react";

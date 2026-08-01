@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { AUTH_COOKIE } from "@/lib/auth/constants";
 import { backendUrl, expireAuthentication, gatewayFailure, isAuthenticationInvalid } from "@/lib/backend-api";
 
+/**
+ * BFF: Olive event stream
+ * ENDPOINT: GET /api/backend/ai/events proxies authenticated server-sent events.
+ * SESSION: A stream 401 expires authentication only after identity validation confirms it.
+ */
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 

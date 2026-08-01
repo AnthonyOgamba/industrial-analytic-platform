@@ -6,6 +6,7 @@ import { KeyRound } from "lucide-react";
 
 import { apiRequest } from "@/lib/api-client";
 import { validatePassword } from "@/lib/auth/password-policy";
+import { PasswordField } from "./password-field";
 
 export function ChangePasswordForm() {
   const router = useRouter();
@@ -78,27 +79,24 @@ export function ChangePasswordForm() {
         </p>
         {error && <div className="auth-alert auth-alert-error" role="alert">{error}</div>}
         <label htmlFor="current-password">Current temporary password</label>
-        <input
+        <PasswordField
           id="current-password"
-          type="password"
           autoComplete="current-password"
           required
           value={currentPassword}
           onChange={(event) => setCurrentPassword(event.target.value)}
         />
         <label htmlFor="new-password">New password</label>
-        <input
+        <PasswordField
           id="new-password"
-          type="password"
           autoComplete="new-password"
           required
           value={newPassword}
           onChange={(event) => setNewPassword(event.target.value)}
         />
         <label htmlFor="confirm-password">Confirm new password</label>
-        <input
+        <PasswordField
           id="confirm-password"
-          type="password"
           autoComplete="new-password"
           required
           value={confirmation}
