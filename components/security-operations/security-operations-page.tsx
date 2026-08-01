@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * PAGE: Security Operations
+ * FEATURE: Loads persisted security events and capability-specific operational panels.
+ * SECURITY: Sensitive records and actions remain permission and facility scoped.
+ * ERROR: Missing service contracts are reported without fabricating security records.
+ */
+
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";

@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * COMPONENT: Notifications drawer
+ * FEATURE: Loads recipient-owned notifications and acknowledges one or all unread items.
+ * PERMISSION: notifications.view; ownership is enforced by the backend on every read mutation.
+ * ACCESSIBILITY: The labelled dialog supports Escape and preserves explicit loading, error, and empty states.
+ */
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Bell, CheckCircle2, X } from "lucide-react";
 

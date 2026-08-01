@@ -7,6 +7,12 @@ html.increase-contrast { filter: contrast(1.15); }
 html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
 :focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
 
+/* ACCESSIBILITY: Edge/IE native password controls are hidden so the shared labelled toggle is the only reveal control. */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

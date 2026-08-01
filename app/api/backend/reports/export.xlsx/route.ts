@@ -3,6 +3,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { AUTH_COOKIE } from "@/lib/auth/constants";
 import { backendError, backendUrl, expireAuthentication, gatewayFailure, isAuthenticationInvalid, readBackendBody } from "@/lib/backend-api";
 
+/**
+ * BFF: Report workbook export
+ * ENDPOINT: Preserves the authenticated binary Excel response and download headers.
+ * ERROR: An upstream export failure is not treated as an invalid session.
+ */
+
 export async function GET(request: NextRequest) {
   const token = request.cookies.get(AUTH_COOKIE)?.value;
   if (!token) return NextResponse.json({ error: "Authentication required." }, { status: 401 });

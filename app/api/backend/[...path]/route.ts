@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { AUTH_COOKIE } from "@/lib/auth/constants";
 import { expireAuthentication, gatewayFailure, isAuthenticationInvalid, publicBackendResponse, requestBackend } from "@/lib/backend-api";
 
+/**
+ * BFF: Canonical backend proxy
+ * ENDPOINT: /api/backend/{path} forwards only allow-listed routes and methods.
+ * SESSION: The secure cookie is read server-side and is never exposed to browser code.
+ * SECURITY: Allow-listing prevents an unrestricted gateway tunnel.
+ */
+
 type Context = { params: Promise<{ path: string[] }> };
 
 const allowed = [

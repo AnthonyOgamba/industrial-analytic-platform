@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * PAGE: Settings
+ * FEATURE: Reads and updates persisted organization settings through the authenticated BFF.
+ * VALIDATION: JSON values are parsed when possible and otherwise remain intentional strings.
+ * SECURITY: UI visibility does not bypass the backend settings policy.
+ */
+
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { AlertTriangle, Check, Plus, Save, ShieldCheck } from "lucide-react";
 import { apiRequest } from "@/lib/api-client";

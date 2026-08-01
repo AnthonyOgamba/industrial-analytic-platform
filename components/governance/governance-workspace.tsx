@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * PAGE: Data Governance
+ * FEATURE: Presents canonical policy, ownership, classification, retention, and compliance views.
+ * PERMISSION: Navigation and mutations use effective claims; the service remains authoritative.
+ * ERROR: Unavailable contracts render explicit states rather than fabricated persistence.
+ */
+
 import Link from "next/link";
 
 import { PoliciesStandards } from "./policies-standards";
