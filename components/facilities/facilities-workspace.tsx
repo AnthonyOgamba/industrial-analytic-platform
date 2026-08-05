@@ -10,7 +10,7 @@ import { ProductionPerformance } from "./production-performance";
 import { SiteAccessPanel } from "./site-access";
 import { HierarchyEditModal, type HierarchyEditTarget } from "./hierarchy-edit-modal";
 import { apiRequest } from "@/lib/api-client";
-import type { AiFailureProbability, BackendUserDto, Facility as BackendFacility, FacilityWorkspaceFacility, Hall as BackendHall, ProductionLine as BackendLine, Station as BackendStation } from "@/lib/backend-dtos";
+import type { AiFailureProbability, BackendUserDto, FacilityWorkspaceFacility, Station as BackendStation } from "@/lib/backend-dtos";
 import { facilityHierarchyApi, invalidateFacilityHierarchy, refreshFacilityHierarchy } from "@/lib/facility-hierarchy";
 
 type FacilitiesTab = "sites" | "performance" | "access";
@@ -22,6 +22,15 @@ const tabs: { key: FacilitiesTab; label: string; icon: React.ElementType }[] = [
 
 const statusMap = (status: string): FacilityStatus => status.toLowerCase() === "active" ? "Active" : status.toLowerCase() === "maintenance" ? "Maintenance" : status.toLowerCase() === "inactive" || status.toLowerCase() === "offline" ? "Inactive" : "Standby";
 const accessMap = (level: string): AccessLevel => level.toLowerCase() === "admin" ? "Admin" : level.toLowerCase() === "manager" ? "Manage" : level.toLowerCase() === "operator" ? "Operate" : "View";
+
+function createdId(payload: unknown, camelKey: string, snakeKey: string, label: string) {
+  const record = payload && typeof payload === "object" ? payload as Record<string, unknown> : {};
+  const nested = record.data && typeof record.data === "object" ? record.data as Record<string, unknown> : {};
+  const value = record[camelKey] ?? record[snakeKey] ?? nested[camelKey] ?? nested[snakeKey];
+  const id = Number(value);
+  if (!Number.isInteger(id) || id < 1) throw new Error(`${label} was created without a valid identifier.`);
+  return id;
+}
 
 function mapFacility(item: FacilityWorkspaceFacility, manager?: SiteManagerOption): Facility {
   const halls = item.halls.map((hall) => ({
@@ -87,7 +96,7 @@ export function FacilitiesWorkspace() {
       setManagers(users.filter(user=>user.status.toLowerCase()==="active"&&["manager","plant_manager","operations_manager","admin","super_admin"].includes(user.role)).map(({uid,username,email,role})=>({uid,username,email,role})));
       const managerUsers=users.filter(user=>user.status.toLowerCase()==="active"&&["manager","plant_manager","operations_manager","admin","super_admin"].includes(user.role)).map(({uid,username,email,role})=>({uid,username,email,role}));
       const mappedFacilities = workspace.facilities.map(item=>{
-        const assignment=workspace.siteAccess.find(record=>record.facilityId===item.facilityId&&record.accessLevel.toLowerCase()==="manager");
+        const assignment=workspace.siteAccess.find(record=>record.facilityId===item.facilityId&&["manager","manage","admin"].includes(record.accessLevel.toLowerCase()));
         return mapFacility(item,managerUsers.find(user=>user.uid===assignment?.userId));
       });
       setFacilities(mappedFacilities);
@@ -104,9 +113,10 @@ export function FacilitiesWorkspace() {
 
   async function registerFacility(facility: Facility) {
     try {
-      const created = await apiRequest<BackendFacility>("/api/backend/facilities", { method: "POST", body: JSON.stringify({ name: facility.name, code: facility.code, status: facility.status.toLowerCase() }) });
-      await apiRequest("/api/backend/site-access", { method: "POST", body: JSON.stringify({ userId: Number(facility.managerId), facilityId: created.facilityId, accessLevel: "manager" }) });
-      for (const [hallIndex, hall] of facility.halls.entries()) { const createdHall = await apiRequest<BackendHall>(`/api/backend/facilities/${created.facilityId}/halls`, { method: "POST", body: JSON.stringify({ name: hall.name, code: `${facility.code}-H${hallIndex + 1}`, status: "active" }) }); for (const [lineIndex, line] of hall.lines.entries()) { const createdLine = await apiRequest<BackendLine>(`/api/backend/halls/${createdHall.hallId}/lines`, { method: "POST", body: JSON.stringify({ name: line.name, code: `${facility.code}-H${hallIndex + 1}-L${lineIndex + 1}`, status: "active" }) }); for (const [stationIndex, station] of line.stations.entries()) await apiRequest<BackendStation>(`/api/backend/lines/${createdLine.productionLineId}/stations`, { method: "POST", body: JSON.stringify({ name: station.name, stationCode: `${facility.code}-H${hallIndex + 1}-L${lineIndex + 1}-S${stationIndex + 1}`, status: "active" }) }); } }
+      const created = await apiRequest<unknown>("/api/backend/facilities", { method: "POST", body: JSON.stringify({ name: facility.name, code: facility.code, status: facility.status.toLowerCase() }) });
+      const facilityId = createdId(created, "facilityId", "facility_id", "Facility");
+      await apiRequest("/api/backend/site-access", { method: "POST", body: JSON.stringify({ userId: Number(facility.managerId), facilityId, accessLevel: "manager" }) });
+      for (const [hallIndex, hall] of facility.halls.entries()) { const createdHall = await apiRequest<unknown>(`/api/backend/facilities/${facilityId}/halls`, { method: "POST", body: JSON.stringify({ name: hall.name, code: `${facility.code}-H${hallIndex + 1}`, status: "active" }) }); const hallId=createdId(createdHall,"hallId","hall_id","Hall"); for (const [lineIndex, line] of hall.lines.entries()) { const createdLine = await apiRequest<unknown>(`/api/backend/halls/${hallId}/lines`, { method: "POST", body: JSON.stringify({ name: line.name, code: `${facility.code}-H${hallIndex + 1}-L${lineIndex + 1}`, status: "active" }) }); const productionLineId=createdId(createdLine,"productionLineId","production_line_id","Production line"); for (const [stationIndex, station] of line.stations.entries()) await apiRequest<BackendStation>(`/api/backend/lines/${productionLineId}/stations`, { method: "POST", body: JSON.stringify({ name: station.name, stationCode: `${facility.code}-H${hallIndex + 1}-L${lineIndex + 1}-S${stationIndex + 1}`, status: "active" }) }); } }
       setRegisterOpen(false); await invalidateFacilityHierarchy(); await load();
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Facility registration failed."); setRegisterOpen(false); }
   }
