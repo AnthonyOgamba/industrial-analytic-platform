@@ -12,6 +12,8 @@ import { expireAuthentication, gatewayFailure, isAuthenticationInvalid, publicBa
 type Context = { params: Promise<{ path: string[] }> };
 
 const allowed = [
+  // BFF: Same-origin gateway readiness; the browser never calls Container App URLs directly.
+  { pattern: /^ready$/, methods: ["GET"] },
   { pattern: /^dashboard(?:\/analytics)?$/, methods: ["GET"] },
   { pattern: /^runs$/, methods: ["GET", "POST"] },
   { pattern: /^runs\/(?:active|stations)$/, methods: ["GET"] },
@@ -121,7 +123,9 @@ async function handler(request: NextRequest, context: Context) {
   const requestBody = method === "GET" ? "" : await request.text();
   const body = requestBody || undefined;
   try {
-    const result = await requestBackend(`/api/${path}${query}`, { method, token, body });
+    // ENDPOINT: Gateway readiness is rooted at /ready; application APIs remain under /api.
+    const backendPath = path === "ready" ? `/ready${query}` : `/api/${path}${query}`;
+    const result = await requestBackend(backendPath, { method, token, body });
     const response = publicBackendResponse(result.body, result.response.status);
     if (result.response.status !== 401) return response;
     return await isAuthenticationInvalid(token) ? expireAuthentication(response) : response;

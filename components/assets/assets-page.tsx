@@ -64,7 +64,7 @@ export function AssetsPage() {
       ENABLE_ASSET_SENSOR_STREAMS
         ? apiRequest<SensorStreamDto[]>("/api/backend/sensors/streams").then(list=>Promise.all(list.map(item=>apiRequest<StreamDetail>(`/api/backend/sensors/streams/${item.strid}`))))
         : Promise.resolve([] as StreamDetail[]),
-      apiRequest<PagedEnvelope<DowntimeIncidentDto>>("/api/backend/downtime?page=1&pageSize=500&includeSynthetic=true"),
+      apiRequest<PagedEnvelope<DowntimeIncidentDto>>("/api/backend/downtime?page=1&pageSize=100&includeSynthetic=true"),
       apiRequest<AiAlert[]>("/api/backend/ai/alerts"),
       apiRequest<CanonicalAssetDto[]>("/api/backend/assets"),
     ]);
