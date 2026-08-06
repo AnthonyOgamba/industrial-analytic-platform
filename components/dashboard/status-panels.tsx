@@ -16,11 +16,11 @@ function ViewAllLink({ href }: { href: string }) {
   );
 }
 
-export function SensorStatus({ sensors, total, active }: { sensors: SensorGroup[]; total: number; active: number }) {
+export function SensorStatus({ sensors, total, active, unavailable }: { sensors: SensorGroup[]; total?: number; active?: number; unavailable?: string }) {
   return (
     <SectionCard
       title="Sensor Status"
-      subtitle={`${active} of ${total} sensors active`}
+      subtitle={total === undefined || active === undefined ? (unavailable ?? "Temporarily unavailable") : `${active} of ${total} sensors active`}
       action={<ViewAllLink href="/sensors" />}
     >
       <div className="divide-y">
@@ -34,7 +34,7 @@ export function SensorStatus({ sensors, total, active }: { sensors: SensorGroup[
             <span className="font-mono text-xs font-semibold">{sensor.value}</span>
           </div>
         ))}
-        {!sensors.length && <p className="p-8 text-center text-xs text-muted-foreground">No sensor-health data is available.</p>}
+        {!sensors.length && <p className="p-8 text-center text-xs text-muted-foreground">{unavailable ?? "No sensor-health data is available."}</p>}
       </div>
     </SectionCard>
   );
