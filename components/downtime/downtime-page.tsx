@@ -41,6 +41,8 @@ import {
   normalizeSensors,
   normalizeUsers,
 } from "@/lib/api-normalizers";
+import { pageRequest } from "@/lib/page-request";
+import type { DowntimePageContract } from "@/lib/page-contracts";
 
 const field =
   "mt-1 h-10 w-full rounded-lg border bg-background px-3 text-xs outline-none focus:ring-2 focus:ring-ring/30 disabled:opacity-50";
@@ -423,19 +425,8 @@ export function DowntimePage() {
   const load = useCallback(async () => {
     setRefreshing(true);
     setError("");
-    const accessChecks = createAccessChecks(session.user);
     try {
-      const e=await apiRequest<unknown>("/api/backend/downtime/events");
-      setEvents(normalizeDowntimeEvents(e).filter(
-        (item) => typeof item.facilityid === "number" && accessChecks.hasFacilityAccess(item.facilityid),
-      ));
-      setLoading(false);
-      void Promise.allSettled([apiRequest<unknown>("/api/backend/assets"),apiRequest<unknown>("/api/backend/sensors/catalog"),apiRequest<unknown>("/api/backend/runs"),apiRequest<unknown>("/api/backend/users")]).then(([a,s,r,u])=>{
-        if(a.status==="fulfilled")setAssets(normalizeAssets(a.value).filter(item=>typeof item.facilityid==="number"&&accessChecks.hasFacilityAccess(item.facilityid)));
-        if(s.status==="fulfilled")setSensors(normalizeSensors(s.value).filter(item=>typeof item.facilityid==="number"&&accessChecks.hasFacilityAccess(item.facilityid)));
-        if(r.status==="fulfilled")setRuns(normalizeArrayResponse<ProductionRun>(r.value,["runs"],"production runs").filter(item=>accessChecks.hasFacilityAccess(item.facilityId)));
-        if(u.status==="fulfilled")setUsers(normalizeUsers(u.value));
-      });
+      const response=await pageRequest<DowntimePageContract>("downtime");setEvents(normalizeDowntimeEvents(response.events.items));setLoading(false);
     } catch (cause) {
       setError(
         cause instanceof Error
@@ -446,7 +437,8 @@ export function DowntimePage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [session.user]);
+  }, []);
+  const openCreate=useCallback(async()=>{const accessChecks=createAccessChecks(session.user);try{const[a,s,r,u]=await Promise.all([apiRequest<unknown>("/api/backend/assets"),apiRequest<unknown>("/api/backend/sensors/catalog"),apiRequest<unknown>("/api/backend/runs"),apiRequest<unknown>("/api/backend/users")]);setAssets(normalizeAssets(a).filter(item=>typeof item.facilityid==="number"&&accessChecks.hasFacilityAccess(item.facilityid)));setSensors(normalizeSensors(s));setRuns(normalizeArrayResponse<ProductionRun>(r,["runs"],"production runs"));setUsers(normalizeUsers(u));setCreateOpen(true)}catch(cause){setError(cause instanceof Error?cause.message:"Downtime form options could not be loaded.")}},[session.user]);
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
@@ -496,7 +488,7 @@ export function DowntimePage() {
         <div className="flex gap-2">
           {canManage && (
             <button
-              onClick={() => setCreateOpen(true)}
+              onClick={() => void openCreate()}
               className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground"
             >
               <Plus className="size-4" />

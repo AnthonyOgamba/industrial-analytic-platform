@@ -11,12 +11,12 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Activity, Bell, Check, Edit3, LogOut, ShieldCheck, X } from "lucide-react";
 
 import { apiRequest } from "@/lib/api-client";
-import { useFacilityHierarchy } from "@/lib/facility-hierarchy";
-import { pageApi, type ActivityListItem } from "@/lib/page-api";
+import type { ActivityListItem } from "@/lib/page-api";
 import { normalizeRole } from "@/lib/auth/constants";
 import { PasswordInput } from "@/components/ui/password-input";
 import { useSessionUser } from "@/lib/session-user";
-import { timedRequest } from "@/lib/request-timing";
+import { pageRequest } from "@/lib/page-request";
+import type { ProfilePageContract } from "@/lib/page-contracts";
 
 type Profile={uid:number;username:string;displayName:string|null;email:string;role:string;facilityIds:number[];theme:string;language:string;timeZone:string;notificationPreferences:Record<string,boolean>;defaultFacilityId:number|null;mustChangePassword:boolean;lastLoginAtUtc:string|null};
 const input="mt-1.5 h-10 w-full rounded-lg border bg-background px-3 text-xs outline-none focus:ring-2 focus:ring-ring/30";
@@ -32,9 +32,10 @@ function EditModal({profile,onClose,onSaved}:{profile:Profile;onClose:()=>void;o
 }
 
 export function ProfilePage(){
-  const session=useSessionUser();const hierarchy=useFacilityHierarchy();const[profile,setProfile]=useState<Profile|null>(()=>session.user?{uid:session.user.uid,username:session.user.username,displayName:null,email:session.user.email,role:session.user.role,facilityIds:session.user.facilityIds,theme:"system",language:"en",timeZone:"",notificationPreferences:{},defaultFacilityId:null,mustChangePassword:session.user.mustChangePassword,lastLoginAtUtc:null}:null);const[activity,setActivity]=useState<ActivityListItem[]>([]);const[loading,setLoading]=useState(true);const[preferencePending,setPreferencePending]=useState(false);const[error,setError]=useState("");const[editing,setEditing]=useState(false);const[success,setSuccess]=useState("");
+  const session=useSessionUser();const[facilityNames,setFacilityNames]=useState(new Map<number,string>());const[profile,setProfile]=useState<Profile|null>(()=>session.user?{uid:session.user.uid,username:session.user.username,displayName:null,email:session.user.email,role:session.user.role,facilityIds:session.user.facilityIds,theme:"system",language:"en",timeZone:"",notificationPreferences:{},defaultFacilityId:null,mustChangePassword:session.user.mustChangePassword,lastLoginAtUtc:null}:null);const[activity,setActivity]=useState<ActivityListItem[]>([]);const[loading,setLoading]=useState(true);const[preferencePending,setPreferencePending]=useState(false);const[error,setError]=useState("");const[editing,setEditing]=useState(false);const[success,setSuccess]=useState("");
+  const hierarchy={data:{facilities:[...facilityNames].map(([facilityId,name])=>({facilityId,name}))}};
   // FEATURE: Canonical profile renders independently; recent activity is optional enrichment.
-  const load=useCallback(async()=>{setLoading(true);try{const nextProfile=await timedRequest("profile",()=>apiRequest<Profile>("/api/backend/profile"));setProfile(nextProfile);setError("");setLoading(false);void pageApi.activity({page:1,pageSize:5}).then(result=>setActivity(result.items)).catch(()=>undefined)}catch(cause){setError(cause instanceof Error?cause.message:"Profile could not be loaded.");setLoading(false)}},[]);
+  const load=useCallback(async()=>{setLoading(true);try{const response=await pageRequest<ProfilePageContract>("profile");setProfile(response.data);setActivity(response.enrichment.recentActivity.items);setFacilityNames(new Map(response.enrichment.facilityScope.facilities.map(item=>[item.facilityId,item.name])));setError("")}catch(cause){setError(cause instanceof Error?cause.message:"Profile could not be loaded.")}finally{setLoading(false)}},[]);
   useEffect(()=>{// eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate the session-first view when shared bootstrap completes
     if(!profile&&session.user)setProfile({uid:session.user.uid,username:session.user.username,displayName:null,email:session.user.email,role:session.user.role,facilityIds:session.user.facilityIds,theme:"system",language:"en",timeZone:"",notificationPreferences:{},defaultFacilityId:null,mustChangePassword:session.user.mustChangePassword,lastLoginAtUtc:null})
   },[profile,session.user]);

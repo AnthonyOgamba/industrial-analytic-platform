@@ -15,6 +15,8 @@ import { GeneratorManagementActions } from "./generator-management-actions";
 import { useOliveEvents } from "@/lib/olive-events";
 import { normalizeAlerts, normalizeArrayResponse } from "@/lib/api-normalizers";
 import { useSessionUser } from "@/lib/session-user";
+import { pageRequest } from "@/lib/page-request";
+import type { OlivePageContract } from "@/lib/page-contracts";
 
 type Tab = "chat" | "live" | "risk" | "alerts" | "notifications" | "rules" | "generation" | "settings";
 type ChatMessage = { role: "user" | "assistant"; text: string; author?: string; sources?: AiChatResponse["sources"] };
@@ -33,7 +35,7 @@ export function LocalAiPage() {
   const session=useSessionUser();const [tab,setTab]=useState<Tab>("chat"); const capabilities=session.user?.capabilities??[]; const [readiness,setReadiness]=useState<"checking"|"ready"|"unavailable">("checking"); const [readinessError,setReadinessError]=useState("");
   const events=useOliveEvents(); const version=Number(events.lastEvent?.id??0);
   const manager=capabilities.includes("olive.configure");
-  const checkReadiness=useCallback(async()=>{setReadiness("checking");setReadinessError("");try{await apiRequest("/api/backend/ai/ready");setReadiness("ready")}catch(cause){setReadiness("unavailable");setReadinessError(cause instanceof Error?cause.message:"Olive is not ready.")}},[]);
+  const checkReadiness=useCallback(async()=>{setReadiness("checking");setReadinessError("");try{const response=await pageRequest<OlivePageContract>("olive");setReadiness(response.readiness.status==="ready"?"ready":"unavailable")}catch(cause){setReadiness("unavailable");setReadinessError(cause instanceof Error?cause.message:"Olive is not ready.")}},[]);
   useEffect(()=>{// eslint-disable-next-line react-hooks/set-state-in-effect
     void checkReadiness();
   },[checkReadiness]);

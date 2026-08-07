@@ -15,6 +15,8 @@ import { useOliveEvents } from "@/lib/olive-events";
 import { useSessionUser } from "@/lib/session-user";
 import { normalizeAssets, normalizeSensors } from "@/lib/api-normalizers";
 import { normalizeSensorThresholds } from "@/lib/sensor-thresholds";
+import { pageRequest } from "@/lib/page-request";
+import type { SensorsPageContract } from "@/lib/page-contracts";
 
 const field="mt-1 h-10 w-full rounded-lg border bg-background px-3 text-xs outline-none focus:ring-2 focus:ring-ring/30";
 const sensorTypes=["temperature","vibration","pressure","electrical current","humidity","rotation speed","energy"];
@@ -32,7 +34,9 @@ export function SensorsPage() {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars -- reserved for the non-blocking refresh indicator
   const session=useSessionUser();const olive=useOliveEvents();const[sensors,setSensors]=useState<CanonicalSensorDto[]>([]);const[assets,setAssets]=useState<CanonicalAssetDto[]>([]);const[loading,setLoading]=useState(true);const[refreshing,setRefreshing]=useState(false);const[error,setError]=useState("");const[success,setSuccess]=useState("");const[query,setQuery]=useState("");const[type,setType]=useState("");const[status,setStatus]=useState("");const[createOpen,setCreateOpen]=useState(false);
   const canManage=session.user?.capabilities.includes("sensors.create")??false;
-  const load=useCallback(async()=>{setRefreshing(true);setError("");const accessChecks=createAccessChecks(session.user);try{const nextSensors=await apiRequest<unknown>("/api/backend/sensors/catalog");setSensors(normalizeSensors(nextSensors).filter(item=>typeof item.facilityid==="number"&&accessChecks.hasFacilityAccess(item.facilityid)));setLoading(false);void apiRequest<unknown>("/api/backend/assets").then(value=>setAssets(normalizeAssets(value).filter(item=>typeof item.facilityid==="number"&&accessChecks.hasFacilityAccess(item.facilityid)))).catch(()=>undefined)}catch(cause){setError(cause instanceof Error?cause.message:"Sensor catalog could not be loaded.");setLoading(false)}finally{setRefreshing(false)}},[session.user]);
+  const load=useCallback(async()=>{setRefreshing(true);setError("");try{const response=await pageRequest<SensorsPageContract>("sensors");setSensors(normalizeSensors(response.sensors));setLoading(false)}catch(cause){setError(cause instanceof Error?cause.message:"Sensor catalog could not be loaded.");setLoading(false)}finally{setRefreshing(false)}},[]);
+  const openCreate=useCallback(async()=>{try{const value=await apiRequest<unknown>("/api/backend/assets");const accessChecks=createAccessChecks(session.user);setAssets(normalizeAssets(value).filter(item=>typeof item.facilityid==="number"&&accessChecks.hasFacilityAccess(item.facilityid)));setCreateOpen(true)}catch(cause){setError(cause instanceof Error?cause.message:"Asset options could not be loaded.")}},[session.user]);
+  void openCreate;
   useEffect(()=>{// eslint-disable-next-line react-hooks/set-state-in-effect
     void load()
   },[load]);

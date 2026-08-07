@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react-hooks/preserve-manual-memoization */
 
 // FEATURE: User creation and lifecycle
 // PAGE: /users lists canonical identities, roles, status, and facility assignments.
@@ -10,7 +11,6 @@ import { AlertTriangle, Check, Pencil, Plus, UserRound, X } from "lucide-react";
 import { apiRequest } from "@/lib/api-client";
 import { createAccessChecks } from "@/lib/access-policy";
 import type { BackendRoleDto, BackendUserDto, CreateBackendUserResponse } from "@/lib/backend-dtos";
-import { useFacilityHierarchy } from "@/lib/facility-hierarchy";
 import { normalizeRole } from "@/lib/auth/constants";
 import { CreateUserModal, type CreateUserInput } from "./create-user-modal";
 import { UserFilters } from "./user-filters";
@@ -40,7 +40,7 @@ export function UsersPage(){
   const directory=useUserDirectory();
   const session=useSessionUser();
   const permissions=new Set(session.user?.capabilities??[]);const canCreate=permissions.has("users.create");const canUpdate=permissions.has("users.update");const canActivate=permissions.has("users.activate");const canDisable=permissions.has("users.disable");
-  const hierarchy=useFacilityHierarchy();
+  const hierarchy={data:directory.facilityOptions,refresh:directory.refresh};
   const source=directory.users;const roles=directory.roles;const loading=directory.loading;const[actionError,setError]=useState("");const error=directory.error||actionError;
   const [query,setQuery]=useState("");
   const [site,setSite]=useState("All Sites");

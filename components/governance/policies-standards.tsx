@@ -4,14 +4,15 @@ import { useCallback, useEffect, useState } from "react";
 import { Check, Pencil, Plus, Search, ShieldCheck, Trash2 } from "lucide-react";
 
 import { apiRequest } from "@/lib/api-client";
-import { normalizeArrayResponse } from "@/lib/api-normalizers";
-import type { BackendRoleDto, GovernanceRecordDto, GovernanceRetirementDto, PagedEnvelope } from "@/lib/backend-dtos";
+import type { BackendRoleDto, GovernanceRecordDto, GovernanceRetirementDto } from "@/lib/backend-dtos";
 import { useSessionUser } from "@/lib/session-user";
 
 import type { GovernancePolicy } from "./governance-data";
 import { GovernanceCard } from "./governance-card";
 import { DeletePolicyModal, PolicyFormModal, type PolicyDraft } from "./policy-modals";
 import { StatusBadge } from "./status-badge";
+import { pageRequest } from "@/lib/page-request";
+import { toBackendRole, type GovernancePageContract } from "@/lib/page-contracts";
 
 type ActivityEntry = { id: string; message: string; timestamp: string };
 
@@ -94,11 +95,9 @@ export function PoliciesStandards() {
     setLoading(true);
     setError("");
     try {
-      const response = await apiRequest<PagedEnvelope<GovernanceRecordDto>>("/api/backend/data-governance?page=1&pageSize=200");
+      const response = await pageRequest<GovernancePageContract>("governance");
       setCanManage(session.user?.capabilities.includes("governance.create") ?? false);
-      setPolicies(response.items.map(mapGovernanceRecord));
-      setLoading(false);
-      void apiRequest<unknown>("/api/backend/roles").then(value=>setRoles(normalizeArrayResponse<BackendRoleDto>(value, ["roles"], "roles"))).catch(()=>undefined);
+      setPolicies(response.data.items.map(mapGovernanceRecord));setRoles(response.enrichment.map(toBackendRole));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Governance policies could not be loaded.");
     } finally {

@@ -8,9 +8,8 @@
 import { Download, Filter, RefreshCw, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { apiRequest } from "@/lib/api-client";
-import type { AuditRecordDto, PagedEnvelope } from "@/lib/backend-dtos";
-import { useFacilityHierarchy } from "@/lib/facility-hierarchy";
+import { useAuditPageData } from "@/lib/audit-page-data";
+import type { AuditRecordDto } from "@/lib/backend-dtos";
 
 import { AuditEventDetailModal, AuditEventRow } from "./audit-event";
 import type { AuditEvent } from "./audit-log-data";
@@ -84,10 +83,8 @@ function Select({
 }
 
 export function AuditLogPage() {
-  const hierarchy = useFacilityHierarchy();
-  const [records, setRecords] = useState<AuditEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const pageData=useAuditPageData();const refreshPage=pageData.refresh;const hierarchy={data:pageData.data?.facilityOptions??null};
+  const records=(pageData.data?.audit.items??[]).map(mapRecord);const loading=pageData.loading;const error=pageData.error;
   const [query, setQuery] = useState("");
   const [user, setUser] = useState("All Users");
   const [action, setAction] = useState("");
@@ -96,16 +93,9 @@ export function AuditLogPage() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [page, setPage] = useState(1);
-  const [pageInfo, setPageInfo] = useState({
-    page: 1,
-    total: 0,
-    totalPages: 0,
-  });
+  const pageInfo=pageData.data?.audit??{page:1,total:0,totalPages:0};
   const [selected, setSelected] = useState<AuditEvent | null>(null);
   const load = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
       const params = new URLSearchParams({
         page: String(page),
         pageSize: "50",
@@ -115,29 +105,11 @@ export function AuditLogPage() {
       if (from)
         params.set("fromUtc", new Date(`${from}T00:00:00`).toISOString());
       if (to) params.set("toUtc", new Date(`${to}T23:59:59.999`).toISOString());
-      const data = await apiRequest<PagedEnvelope<AuditRecordDto>>(
-        `/api/backend/audit?${params}`,
-      );
-      setRecords(data.items.map(mapRecord));
-      setPageInfo({
-        page: data.page,
-        total: data.total,
-        totalPages: data.totalPages,
-      });
-    } catch (cause) {
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : "Audit events could not be loaded.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [action, facilityId, from, page, to]);
+      await refreshPage(params);
+  }, [action, facilityId, from, page, refreshPage, to]);
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void load();
-  }, [load]);
+    if(page!==1||facilityId||action||from||to)void load();
+  }, [action,facilityId,from,load,page,to]);
   const users = useMemo(
     () => [...new Set(records.map((event) => event.user))],
     [records],

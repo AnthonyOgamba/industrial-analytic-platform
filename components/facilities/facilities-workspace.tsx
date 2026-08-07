@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Activity, Building2, ChevronDown, ChevronRight, Factory, Gauge, KeyRound, RefreshCw, ShieldCheck, Sparkles } from "lucide-react";
@@ -13,6 +14,8 @@ import { apiRequest } from "@/lib/api-client";
 import type { AiFailureProbability, BackendUserDto, FacilityWorkspaceFacility, Station as BackendStation } from "@/lib/backend-dtos";
 import { facilityHierarchyApi, invalidateFacilityHierarchy, refreshFacilityHierarchy } from "@/lib/facility-hierarchy";
 import { useSessionUser } from "@/lib/session-user";
+import { pageRequest } from "@/lib/page-request";
+import type { FacilitiesPageContract } from "@/lib/page-contracts";
 
 type FacilitiesTab = "sites" | "performance" | "access";
 const tabs: { key: FacilitiesTab; label: string; icon: React.ElementType }[] = [
@@ -89,7 +92,7 @@ export function FacilitiesWorkspace() {
   const load = useCallback(async () => {
     if(!hasFacilities.current)setLoading(true); setError("");
     try {
-      const workspace=await refreshFacilityHierarchy();
+      const response=await pageRequest<FacilitiesPageContract>("facilities");const workspace=response.facilities;
       setCanManage(session.user?.capabilities.includes("facilities.manage")??false);
       const managerUsers:SiteManagerOption[]=[];
       const mappedFacilities = workspace.facilities.map(item=>{
@@ -100,7 +103,7 @@ export function FacilitiesWorkspace() {
       hasFacilities.current=true;
       setAccessRecords(workspace.siteAccess.map((record) => ({ id: String(record.siteAccessAssignmentId), userId: String(record.userId), userName: `User #${record.userId}`, platformRole: "Platform user", operationalRole: accessMap(record.accessLevel), facilityId: String(record.facilityId), hall: "All Halls", productionLine: "All Lines", accessLevel: accessMap(record.accessLevel), effectiveDate: record.createdAt, status: "Active" })));
       setLoading(false);
-      void Promise.allSettled([apiRequest<AiFailureProbability[]>("/api/backend/ai/assets/failure-probabilities"),apiRequest<BackendUserDto[]>("/api/backend/users")]).then(([riskResult,userResult])=>{const users=userResult.status==="fulfilled"?userResult.value:[];const nextManagers=users.filter(user=>user.status.toLowerCase()==="active"&&["manager","plant_manager","operations_manager","admin","super_admin"].includes(user.role)).map(({uid,username,email,role})=>({uid,username,email,role}));if(userResult.status==="fulfilled"){setManagers(nextManagers);setFacilities(workspace.facilities.map(item=>{const assignment=workspace.siteAccess.find(record=>record.facilityId===item.facilityId&&["manager","manage","admin"].includes(record.accessLevel.toLowerCase()));return mapFacility(item,nextManagers.find(user=>user.uid===assignment?.userId))}))}if(riskResult.status==="fulfilled")setInsights(riskResult.value.slice(0,3).map(risk=>({id:risk.asset_id,facility:mappedFacilities.find(facility=>facility.halls.some(hall=>hall.lines.some(line=>line.stations.some(station=>station.id===String(risk.station_id)))))?.name??"Manufacturing network",line:risk.code,message:risk.recommendation,priority:risk.risk_level==="critical"||risk.risk_level==="high"?"High":risk.risk_level==="medium"?"Medium":"Low",confidence:Math.round(risk.failure_probability*100)})))});
+      setInsights(response.risk.slice(0,3).map(risk=>({id:risk.asset_id,facility:mappedFacilities.find(facility=>facility.halls.some(hall=>hall.lines.some(line=>line.stations.some(station=>station.id===String(risk.station_id)))))?.name??"Manufacturing network",line:risk.code,message:risk.recommendation,priority:risk.risk_level==="critical"||risk.risk_level==="high"?"High":risk.risk_level==="medium"?"Medium":"Low",confidence:Math.round(risk.failure_probability*100)})));
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Facilities could not be loaded."); }
     finally { setLoading(false); }
   }, [session.user]);
