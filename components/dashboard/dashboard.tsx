@@ -56,6 +56,8 @@ type DashboardFallback = {
   runs:FallbackResult<ProductionRun>;
   alerts:FallbackResult<AiAlert>;
 };
+const INITIAL_DASHBOARD_TIMEOUT_MS=15_000;
+const REFRESH_DASHBOARD_TIMEOUT_MS=9_000;
 const fallbackLabel = (status:FallbackStatus) => status === "forbidden" ? "Unavailable for current role" : status === "empty" ? "No data returned" : status === "failed" ? "Temporarily unavailable" : "Partial data";
 
 async function fallbackRequest<T>(request:Promise<unknown>, normalize:(value:unknown)=>T[]):Promise<FallbackResult<T>> {
@@ -96,7 +98,9 @@ export function Dashboard() {
       setLoading(true);
       setPartialWarning("");
     }
-    const timeout=window.setTimeout(()=>controller.abort("Dashboard request timed out"),10_000);
+    // STATE: First-hit Azure responses get 15s; warm/background refreshes remain bounded at 9s.
+    const requestTimeout=isInitialLoad?INITIAL_DASHBOARD_TIMEOUT_MS:REFRESH_DASHBOARD_TIMEOUT_MS;
+    const timeout=window.setTimeout(()=>controller.abort("Dashboard request timed out"),requestTimeout);
     try {
       const params = new URLSearchParams();
       if (facilityId) params.set("facilityId", facilityId);
@@ -277,8 +281,8 @@ export function Dashboard() {
     <section><h2 className="mb-2.5 font-mono text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Operational performance</h2><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">{displayedOperationalMetrics.map(metric=><MetricCard key={metric.label} {...metric}/>)}</div></section>
     <section><h2 className="mb-2.5 font-mono text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Platform and operational cost</h2><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{displayedPlatformMetrics.map(metric=><MetricCard key={metric.label} {...metric} buttonRef={metric.label==="Operational Cost Impact"?costImpactTrigger:undefined}/>)}</div></section>
     <div className="grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(20rem,.75fr)]">
-      <SectionCard title="Production Output Trend" subtitle="Production totals by period" action={<span className="font-mono text-xs text-primary">{workspace?"Live":"Temporarily unavailable"}</span>}>{trend.length?<ProductionChart data={trend}/>:<p className="grid h-52 place-items-center text-sm text-muted-foreground">{workspace?"No production trend points are available.":"Temporarily unavailable"}</p>}</SectionCard>
-      <SectionCard title="Equipment Health" subtitle="Current OEE by facility">{equipment.length?<EquipmentHealth lines={equipment}/>:<p className="grid h-52 place-items-center text-sm text-muted-foreground">{workspace?"No facility OEE records are available.":"Not calculated"}</p>}</SectionCard>
+      <SectionCard className="h-[22rem]" title="Production Output Trend" subtitle="Production totals by period" action={<span className="font-mono text-xs text-primary">{workspace?"Live":"Temporarily unavailable"}</span>}>{trend.length?<ProductionChart data={trend}/>:<p className="grid h-[18rem] place-items-center text-sm text-muted-foreground">{workspace?"No production trend points are available.":"Temporarily unavailable"}</p>}</SectionCard>
+      <SectionCard className="h-[22rem]" title="Equipment Health" subtitle="Current OEE by facility">{equipment.length?<EquipmentHealth lines={equipment}/>:<p className="grid h-[18rem] place-items-center text-sm text-muted-foreground">{workspace?"No facility OEE records are available.":"Not calculated"}</p>}</SectionCard>
     </div>
     <div className="grid gap-5 xl:grid-cols-2">
       <SensorStatus sensors={sensors} total={workspace?.sensorHealth.total} active={workspace?.sensorHealth.active} unavailable={fallbackSensors?fallbackLabel(fallbackSensors.status):"Temporarily unavailable"}/>
