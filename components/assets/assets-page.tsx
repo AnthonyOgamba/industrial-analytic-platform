@@ -19,6 +19,7 @@ import { useFacilityHierarchy } from "@/lib/facility-hierarchy";
 import { useSessionUser } from "@/lib/session-user";
 import { CanonicalAssetForm } from "./canonical-asset-form";
 import { normalizeAssets } from "@/lib/api-normalizers";
+import { timedRequest } from "@/lib/request-timing";
 
 type StreamDetail = SensorStreamDto & { sensors: GatewaySensorDto[] };
 const ENABLE_ASSET_SENSOR_STREAMS = process.env.NEXT_PUBLIC_ENABLE_ASSET_SENSOR_STREAMS === "true";
@@ -42,7 +43,8 @@ export function AssetsPage() {
   const [alerts,setAlerts] = useState<AiAlert[]>([]);
   const [canonicalAssets,setCanonicalAssets]=useState<CanonicalAssetDto[]>([]);
   const [success,setSuccess]=useState("");
-  const [loadingRelated,setLoadingRelated] = useState(true);
+  const [loadingAssets,setLoadingAssets] = useState(true);
+  const [refreshing,setRefreshing] = useState(false);
   const [relatedError,setRelatedError] = useState("");
   const [assetFailure,setAssetFailure] = useState<AssetFailure|null>(null);
   const [query,setQuery] = useState("");
@@ -57,8 +59,9 @@ export function AssetsPage() {
   const accessChecks=useMemo(()=>createAccessChecks(session.user),[session.user]);
   const accessibleFacilities=(hierarchy.data?.facilities??[]).filter(item=>accessChecks.hasFacilityAccess(item.facilityId));
 
+  const loadAssets=useCallback(async()=>{setRefreshing(true);try{const value=await timedRequest("assets",()=>apiRequest<unknown>("/api/backend/assets"));setCanonicalAssets(normalizeAssets(value));setAssetFailure(null)}catch(reason){setAssetFailure({status:reason instanceof ApiError?reason.status:0,message:reason instanceof Error?reason.message:"Assets could not be loaded."})}finally{setLoadingAssets(false);setRefreshing(false)}},[]);
   const loadRelated = useCallback(async()=>{
-    setLoadingRelated(true); setRelatedError("");
+    setRelatedError("");
     const results = await Promise.allSettled([
       apiRequest<AiFailureProbability[]>("/api/backend/ai/assets/failure-probabilities"),
       ENABLE_ASSET_SENSOR_STREAMS
@@ -66,33 +69,21 @@ export function AssetsPage() {
         : Promise.resolve([] as StreamDetail[]),
       apiRequest<PagedEnvelope<DowntimeIncidentDto>>("/api/backend/downtime?page=1&pageSize=100&includeSynthetic=true"),
       apiRequest<AiAlert[]>("/api/backend/ai/alerts"),
-      apiRequest<CanonicalAssetDto[]>("/api/backend/assets"),
     ]);
     if(results[0].status==="fulfilled")setRisks(results[0].value);
     if(results[1].status==="fulfilled")setStreams(results[1].value);
     if(results[2].status==="fulfilled")setDowntime(results[2].value.items);
     if(results[3].status==="fulfilled")setAlerts(results[3].value);
-    if(results[4].status==="fulfilled"){
-      setCanonicalAssets(normalizeAssets(results[4].value));
-      setAssetFailure(null);
-    } else {
-      const reason=results[4].reason;
-      setAssetFailure({
-        status:reason instanceof ApiError?reason.status:0,
-        message:reason instanceof Error?reason.message:"Assets could not be loaded.",
-      });
-    }
-    const failures=results.slice(0,4).filter(result=>result.status==="rejected") as PromiseRejectedResult[];
+    const failures=results.filter(result=>result.status==="rejected") as PromiseRejectedResult[];
     if(failures.length) {
       const denied=failures.some(item=>item.reason instanceof ApiError&&item.reason.status===403);
       setRelatedError(denied?"Access Denied: Some asset intelligence is hidden because your role lacks permission.":"Some related sensor, AI, or downtime data could not be loaded.");
     }
-    setLoadingRelated(false);
   },[]);
 
   useEffect(()=>{// eslint-disable-next-line react-hooks/set-state-in-effect
-    void loadRelated()
-  },[loadRelated]);
+    void loadAssets();void loadRelated()
+  },[loadAssets,loadRelated]);
 
   const assets=useMemo(()=>canonicalAssets.map(record=>{for(const facility of accessibleFacilities)for(const hall of facility.halls)for(const line of hall.lines){const station=line.stations.find(item=>item.stationId===record.station_id);if(station)return{assetId:record.asset_id,stationId:station.stationId,name:record.asset_name,code:station.code,status:record.status,machineType:record.machine_type,firmware:record.firmware_version,criticality:record.criticality,facilityId:facility.facilityId,facility:facility.name,hallId:hall.hallId,hall:hall.name,lineId:line.productionLineId,line:line.name,oee:station.performance.oee,availability:station.performance.availability,performance:station.performance.performance,quality:station.performance.quality}}return{assetId:record.asset_id,stationId:record.station_id,name:record.asset_name,code:null,status:record.status,machineType:record.machine_type,firmware:record.firmware_version,criticality:record.criticality,facilityId:record.facilityid??0,facility:record.facility_name,hallId:record.hallid??0,hall:record.hall_name,lineId:record.productionlineid??0,line:record.line_name,oee:0,availability:0,performance:0,quality:0}}).filter(item=>accessChecks.hasFacilityAccess(item.facilityId)),[accessChecks,accessibleFacilities,canonicalAssets]);
   const halls=useMemo(()=>assets.filter(item=>!facilityId||item.facilityId===Number(facilityId)).map(item=>({id:item.hallId,name:item.hall})).filter((item,index,all)=>all.findIndex(other=>other.id===item.id)===index),[assets,facilityId]);
@@ -102,11 +93,11 @@ export function AssetsPage() {
   const downtimeFor=(stationId:number)=>downtime.filter(item=>item.stationId===stationId);
   const alertsFor=(asset:Asset)=>alerts.filter(item=>[asset.name,asset.code,String(asset.stationId)].some(value=>value&&item.resource?.includes(value)));
   const visible=assets.filter(item=>(!facilityId||item.facilityId===Number(facilityId))&&(!hallId||item.hallId===Number(hallId))&&(!lineId||item.lineId===Number(lineId))&&(!status||item.status===status)&&(!risk||riskLabel(riskFor(item.stationId))===risk)&&`${item.name} ${item.code??""} ${item.facility} ${item.hall} ${item.line}`.toLowerCase().includes(query.toLowerCase()));
-  const loading=hierarchy.loading||loadingRelated;
+  const loading=loadingAssets;
   const error=hierarchy.error||relatedError;
 
   return <div className="space-y-5 pb-5">
-    <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><p className="font-mono text-xs font-semibold uppercase tracking-[0.14em] text-primary">Operations</p><h1 className="mt-1.5 text-2xl font-bold tracking-tight">Asset Registry</h1><p className="mt-1 text-sm text-muted-foreground">Stations connected to hierarchy, sensors, Olive risk, and downtime</p></div><div className="flex gap-2">{canCreate&&<button onClick={()=>setCreateOpen(true)} className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground"><Plus className="size-4"/>Create Asset</button>}<button onClick={()=>void Promise.allSettled([hierarchy.refresh(),loadRelated()])} className="inline-flex h-10 items-center gap-2 rounded-lg border px-4 text-xs"><RefreshCw className="size-4"/>Refresh</button></div></header>
+    <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><p className="font-mono text-xs font-semibold uppercase tracking-[0.14em] text-primary">Operations</p><h1 className="mt-1.5 text-2xl font-bold tracking-tight">Asset Registry</h1><p className="mt-1 text-sm text-muted-foreground">Stations connected to hierarchy, sensors, Olive risk, and downtime</p></div><div className="flex gap-2">{refreshing&&<span role="status" className="self-center text-xs text-muted-foreground">Refreshing…</span>}{canCreate&&<button onClick={()=>setCreateOpen(true)} className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground"><Plus className="size-4"/>Create Asset</button>}<button onClick={()=>void Promise.allSettled([hierarchy.refresh(),loadAssets(),loadRelated()])} className="inline-flex h-10 items-center gap-2 rounded-lg border px-4 text-xs"><RefreshCw className="size-4"/>Refresh</button></div></header>
     {success&&<p role="status" className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-700">{success}</p>}
     {assetFailure&&<div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 p-5"><div className="flex gap-3"><AlertTriangle className="size-5 shrink-0 text-destructive"/><div><h2 className="font-semibold">{assetFailure.status===401||assetFailure.status===403?"Access Denied":"Assets unavailable"}</h2><p className="mt-1 text-sm text-muted-foreground">{assetFailure.status===401||assetFailure.status===403?"You do not have permission to view assets.":assetFailure.message}</p><button type="button" onClick={()=>void loadRelated()} className="mt-4 inline-flex h-9 items-center gap-2 rounded-lg border bg-card px-3 text-xs font-semibold"><RefreshCw className="size-4"/>Retry</button></div></div></div>}
     {error&&<p role="alert" className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs"><AlertTriangle className="size-4"/>{error}</p>}

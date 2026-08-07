@@ -15,6 +15,10 @@ type HierarchyState = {
 const state: HierarchyState = { data: null, error: "", loading: false, version: 0 };
 const listeners = new Set<() => void>();
 let pending: Promise<FacilityWorkspace> | null = null;
+let refreshTimer:number|null=null;
+const refreshVisible=()=>{if(document.visibilityState==="visible")void refreshFacilityHierarchy().catch(()=>undefined)};
+function startRefreshTriggers(){if(refreshTimer)return;window.addEventListener("focus",refreshVisible);document.addEventListener("visibilitychange",refreshVisible);refreshTimer=window.setInterval(refreshVisible,30_000)}
+function stopRefreshTriggers(){if(listeners.size||!refreshTimer)return;window.removeEventListener("focus",refreshVisible);document.removeEventListener("visibilitychange",refreshVisible);window.clearInterval(refreshTimer);refreshTimer=null}
 
 function emit() {
   state.version += 1;
@@ -70,23 +74,14 @@ export function useFacilityHierarchy() {
   const [, setVersion] = useState(0);
   useEffect(() => {
     const listener = () => setVersion((value) => value + 1);
-    const refreshVisible = () => {
-      if (document.visibilityState === "visible") {
-        void refreshFacilityHierarchy().catch(() => undefined);
-      }
-    };
     listeners.add(listener);
+    startRefreshTriggers();
     if (!state.data && !state.loading) {
       void refreshFacilityHierarchy().catch(() => undefined);
     }
-    window.addEventListener("focus", refreshVisible);
-    document.addEventListener("visibilitychange", refreshVisible);
-    const refreshTimer = window.setInterval(refreshVisible, 30_000);
     return () => {
       listeners.delete(listener);
-      window.removeEventListener("focus", refreshVisible);
-      document.removeEventListener("visibilitychange", refreshVisible);
-      window.clearInterval(refreshTimer);
+      stopRefreshTriggers();
     };
   }, []);
   const refresh = useCallback(() => refreshFacilityHierarchy(), []);

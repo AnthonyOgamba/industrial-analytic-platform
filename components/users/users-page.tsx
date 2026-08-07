@@ -5,11 +5,10 @@
 // API: /api/backend/users, /api/backend/roles, and user status/update endpoints.
 // SECURITY: Create, update, activate, and disable buttons each require their capability.
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { AlertTriangle, Check, Pencil, Plus, UserRound, X } from "lucide-react";
 import { apiRequest } from "@/lib/api-client";
 import { createAccessChecks } from "@/lib/access-policy";
-import { normalizeArrayResponse, normalizeUsers } from "@/lib/api-normalizers";
 import type { BackendRoleDto, BackendUserDto, CreateBackendUserResponse } from "@/lib/backend-dtos";
 import { useFacilityHierarchy } from "@/lib/facility-hierarchy";
 import { normalizeRole } from "@/lib/auth/constants";
@@ -19,6 +18,7 @@ import { UserStatsCards } from "./user-stats-cards";
 import type { PlatformUser, UserRole, UserStatus } from "./users-data";
 import { UsersTable } from "./users-table";
 import { useSessionUser } from "@/lib/session-user";
+import { useUserDirectory } from "@/lib/user-directory";
 
 // FEATURE: Role labels use the shared canonical formatter; permissions still use backend keys.
 const displayRole = normalizeRole;
@@ -37,13 +37,11 @@ function EditUserModal({user,roles,facilities,assignedFacilityIds,pending,error,
 }
 
 export function UsersPage(){
+  const directory=useUserDirectory();
   const session=useSessionUser();
   const permissions=new Set(session.user?.capabilities??[]);const canCreate=permissions.has("users.create");const canUpdate=permissions.has("users.update");const canActivate=permissions.has("users.activate");const canDisable=permissions.has("users.disable");
   const hierarchy=useFacilityHierarchy();
-  const [source,setSource]=useState<BackendUserDto[]>([]);
-  const [roles,setRoles]=useState<BackendRoleDto[]>([]);
-  const [loading,setLoading]=useState(true);
-  const [error,setError]=useState("");
+  const source=directory.users;const roles=directory.roles;const loading=directory.loading;const[actionError,setError]=useState("");const error=directory.error||actionError;
   const [query,setQuery]=useState("");
   const [site,setSite]=useState("All Sites");
   const [role,setRole]=useState<UserRole|"All Roles">("All Roles");
@@ -58,10 +56,7 @@ export function UsersPage(){
   const [feedback,setFeedback]=useState("");
   const accessChecks=createAccessChecks(session.user);
   const accessibleFacilities=(hierarchy.data?.facilities??[]).filter(facility=>accessChecks.hasFacilityAccess(facility.facilityId));
-  const load=useCallback(async()=>{setLoading(true);try{const nextUsers=await apiRequest<unknown>("/api/backend/users");setSource(normalizeUsers(nextUsers));setError("");setLoading(false);void apiRequest<unknown>("/api/backend/roles").then(value=>setRoles(normalizeArrayResponse<BackendRoleDto>(value,["roles"],"roles"))).catch(()=>undefined)}catch(cause){setError(cause instanceof Error?cause.message:"Users could not be loaded.");setLoading(false)}},[]);
-  useEffect(()=>{// eslint-disable-next-line react-hooks/set-state-in-effect
-    void load()
-  },[load]);
+  const load=directory.refresh;
   const users=useMemo<PlatformUser[]>(()=>source.map(item=>{const assignments=hierarchy.data?.siteAccess.filter(access=>access.userId===item.uid)??[];const sites=assignments.map(access=>hierarchy.data?.facilities.find(facility=>facility.facilityId===access.facilityId)?.name).filter((name):name is string=>Boolean(name));return{id:String(item.uid),name:item.username,email:item.email,initials:initials(item.username),role:displayRole(item.role),department:"Not provided",sites,lastLogin:relative(item.lastLoginAtUtc),status:item.status==="active"?"Active":"Disabled",mfa:"Unavailable",governanceAssignments:[]}}),[source,hierarchy.data]);
   const filtered=useMemo(()=>{const search=query.trim().toLowerCase();return users.filter(user=>(!search||[user.name,user.email,user.role,...user.sites].join(" ").toLowerCase().includes(search))&&(site==="All Sites"||user.sites.includes(site))&&(role==="All Roles"||user.role===role)&&(status==="All"||user.status===status))},[users,query,site,role,status]);
   // HANDLER: Create User

@@ -4,17 +4,17 @@
 // API: POST /api/backend/users/{userId}/permanent-deletion creates an auditable request.
 // SECURITY: Typed confirmation, reason, and users.delete are required; secrets display once.
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { Check, Copy, KeyRound, ShieldAlert, Trash2, X } from "lucide-react";
 import { apiRequest } from "@/lib/api-client";
-import { normalizeUsers } from "@/lib/api-normalizers";
-import type { BackendUserDto, TemporaryPasscodeResponse } from "@/lib/backend-dtos";
+import type { TemporaryPasscodeResponse } from "@/lib/backend-dtos";
 import { useSessionUser } from "@/lib/session-user";
 import { PERMISSIONS } from "@/lib/permissions";
+import { useUserDirectory } from "@/lib/user-directory";
 
 export function SensitiveUserActions() {
+  const directory=useUserDirectory();const users=directory.users;const load=directory.refresh;
   const session=useSessionUser();
-  const [users,setUsers]=useState<BackendUserDto[]>([]);
   const [selectedId,setSelectedId]=useState("");
   const [mode,setMode]=useState<"passcode"|"delete"|null>(null);
   const [typed,setTyped]=useState("");
@@ -28,10 +28,6 @@ export function SensitiveUserActions() {
   const canDelete=permissions.has(PERMISSIONS.users.delete);
   const canManage=permissions.has(PERMISSIONS.users.view)&&(canRegenerate||canDelete);
   const selected=users.find(item=>item.uid===Number(selectedId));
-  const load=useCallback(async()=>{try{setUsers(normalizeUsers(await apiRequest<unknown>("/api/backend/users")))}catch(cause){setUsers([]);setError(cause instanceof Error?cause.message:"Users could not be loaded.")}},[]);
-  useEffect(()=>{// eslint-disable-next-line react-hooks/set-state-in-effect
-    if(canManage)void load()
-  },[canManage,load]);
   if(!canManage)return null;
 
   async function regenerate(){

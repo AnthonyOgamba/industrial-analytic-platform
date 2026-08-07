@@ -414,44 +414,29 @@ export function DowntimePage() {
   const [runs, setRuns] = useState<ProductionRun[]>([]);
   const [users, setUsers] = useState<BackendUserDto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing,setRefreshing]=useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const canManage =
     session.user?.capabilities.includes("downtime.create") ?? false;
   const load = useCallback(async () => {
-    setLoading(true);
+    setRefreshing(true);
     setError("");
+    const accessChecks = createAccessChecks(session.user);
     try {
-      const [e, a, s, r, u] = await Promise.all([
-        apiRequest<unknown>("/api/backend/downtime/events"),
-        apiRequest<unknown>("/api/backend/assets"),
-        apiRequest<unknown>("/api/backend/sensors/catalog"),
-        apiRequest<unknown>("/api/backend/runs"),
-        apiRequest<unknown>("/api/backend/users").catch(() => []),
-      ]);
-      const accessChecks = createAccessChecks(session.user);
+      const e=await apiRequest<unknown>("/api/backend/downtime/events");
       setEvents(normalizeDowntimeEvents(e).filter(
         (item) => typeof item.facilityid === "number" && accessChecks.hasFacilityAccess(item.facilityid),
       ));
-      setAssets(normalizeAssets(a).filter(
-        (item) => typeof item.facilityid === "number" && accessChecks.hasFacilityAccess(item.facilityid),
-      ));
-      setSensors(normalizeSensors(s).filter(
-        (item) => typeof item.facilityid === "number" && accessChecks.hasFacilityAccess(item.facilityid),
-      ));
-      setRuns(
-        normalizeArrayResponse<ProductionRun>(r, ["runs"], "production runs").filter(
-          (item) => accessChecks.hasFacilityAccess(item.facilityId),
-        ),
-      );
-      setUsers(normalizeUsers(u));
+      setLoading(false);
+      void Promise.allSettled([apiRequest<unknown>("/api/backend/assets"),apiRequest<unknown>("/api/backend/sensors/catalog"),apiRequest<unknown>("/api/backend/runs"),apiRequest<unknown>("/api/backend/users")]).then(([a,s,r,u])=>{
+        if(a.status==="fulfilled")setAssets(normalizeAssets(a.value).filter(item=>typeof item.facilityid==="number"&&accessChecks.hasFacilityAccess(item.facilityid)));
+        if(s.status==="fulfilled")setSensors(normalizeSensors(s.value).filter(item=>typeof item.facilityid==="number"&&accessChecks.hasFacilityAccess(item.facilityid)));
+        if(r.status==="fulfilled")setRuns(normalizeArrayResponse<ProductionRun>(r.value,["runs"],"production runs").filter(item=>accessChecks.hasFacilityAccess(item.facilityId)));
+        if(u.status==="fulfilled")setUsers(normalizeUsers(u.value));
+      });
     } catch (cause) {
-      setEvents([]);
-      setAssets([]);
-      setSensors([]);
-      setRuns([]);
-      setUsers([]);
       setError(
         cause instanceof Error
           ? cause.message
@@ -459,6 +444,7 @@ export function DowntimePage() {
       );
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, [session.user]);
   useEffect(() => {
@@ -521,8 +507,8 @@ export function DowntimePage() {
             onClick={() => void load()}
             className="inline-flex h-10 items-center gap-2 rounded-lg border px-4 text-xs"
           >
-            <RefreshCw className="size-4" />
-            Refresh
+            <RefreshCw className={`size-4 ${refreshing?"animate-spin":""}`} />
+            {refreshing&&!loading?"Refreshing…":"Refresh"}
           </button>
         </div>
       </header>
