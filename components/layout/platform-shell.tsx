@@ -275,7 +275,6 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
     apiRequest<unknown>("/api/backend/notifications")
       .then(payload=>setNotifications(normalizeNotifications(payload)))
       .catch(cause=>{setNotifications([]);setNotificationError(cause instanceof Error?cause.message:"Notifications are unavailable.")});
-    apiRequest<{language?:Language}>("/api/backend/profile").then(profile=>{if(profile.language&&profile.language in languageNames){setLanguage(profile.language);localStorage.setItem("divu-language",profile.language);document.documentElement.lang=profile.language}}).catch(()=>undefined);
     return()=>cancelAnimationFrame(frame);
   },[]);
   function chooseLanguage(value:Language){

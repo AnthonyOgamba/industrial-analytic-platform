@@ -7,6 +7,7 @@ import { PermissionsPage } from "@/components/roles/permissions-page";
 import { SensitiveUserActions } from "./sensitive-user-actions";
 import { UsersPage } from "./users-page";
 import { UserRoleAssignments } from "./user-role-assignments";
+import { UserDirectoryProvider } from "@/lib/user-directory";
 
 export function UserAccessPage() {
   const requestedTab = useSearchParams().get("tab");
@@ -23,7 +24,7 @@ export function UserAccessPage() {
         <Link href="/users?tab=permissions" role="tab" aria-selected={activeTab==="permissions"} className={`h-11 border-b-2 px-4 py-3 text-xs font-semibold ${activeTab==="permissions" ? "border-primary text-primary" : "border-transparent text-muted-foreground"}`}>Permissions</Link>
       </nav>
       <section role="tabpanel" aria-label={activeTab}>
-        {activeTab==="users" ? <div className="space-y-5"><UsersPage /><UserRoleAssignments/><SensitiveUserActions /></div> : activeTab==="roles" ? <RoleManagement/> : <PermissionsPage/>}
+        {activeTab==="users" ? <UserDirectoryProvider><div className="space-y-5"><UsersPage /><UserRoleAssignments/><SensitiveUserActions /></div></UserDirectoryProvider> : activeTab==="roles" ? <RoleManagement/> : <PermissionsPage/>}
       </section>
     </div>
   );

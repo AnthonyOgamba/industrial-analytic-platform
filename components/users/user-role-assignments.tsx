@@ -1,26 +1,22 @@
 "use client";
-/* eslint-disable react-hooks/set-state-in-effect */
-
 // FEATURE: Role assignment
 // COMPONENT: Assigns multiple canonical role keys and one primary display role.
 // API: PUT /api/backend/users/{userId}/roles and GET effective-permissions.
 // PERMISSION: users.roles.assign
 
-import { useCallback,useEffect,useMemo,useState } from "react";
+import { useMemo,useState } from "react";
 import { AlertTriangle,Check,ShieldCheck } from "lucide-react";
 import { apiRequest } from "@/lib/api-client";
-import { normalizeArrayResponse,normalizeUsers } from "@/lib/api-normalizers";
-import type { BackendRoleDto,BackendUserDto } from "@/lib/backend-dtos";
 import { useAuthorization } from "@/lib/access-control";
 import { normalizeRole } from "@/lib/auth/constants";
+import { useUserDirectory } from "@/lib/user-directory";
 
 type EffectiveAccess={userId:number;roles:string[];permissions:string[];permissionVersion:number;status:string};
 
 export function UserRoleAssignments(){
-  const access=useAuthorization();const canManage=access.hasPermission("users.roles.assign");const[users,setUsers]=useState<BackendUserDto[]>([]);const[roles,setRoles]=useState<BackendRoleDto[]>([]);const[selectedId,setSelectedId]=useState("");const[selectedRoles,setSelectedRoles]=useState<string[]>([]);const[primaryRole,setPrimaryRole]=useState("");const[effective,setEffective]=useState<EffectiveAccess|null>(null);const[loading,setLoading]=useState(true);const[pending,setPending]=useState(false);const[error,setError]=useState("");const[success,setSuccess]=useState("");
+  const directory=useUserDirectory();const users=directory.users;const roles=directory.roles;const loading=directory.loading;const load=directory.refresh;
+  const access=useAuthorization();const canManage=access.hasPermission("users.roles.assign");const[selectedId,setSelectedId]=useState("");const[selectedRoles,setSelectedRoles]=useState<string[]>([]);const[primaryRole,setPrimaryRole]=useState("");const[effective,setEffective]=useState<EffectiveAccess|null>(null);const[pending,setPending]=useState(false);const[error,setError]=useState("");const[success,setSuccess]=useState("");
   const selected=useMemo(()=>users.find(user=>String(user.uid)===selectedId),[selectedId,users]);
-  const load=useCallback(async()=>{setLoading(true);try{const[u,r]=await Promise.all([apiRequest<unknown>("/api/backend/users"),apiRequest<unknown>("/api/backend/roles")]);setUsers(normalizeUsers(u));setRoles(normalizeArrayResponse<BackendRoleDto>(r,["roles"],"roles"));setError("")}catch(cause){setUsers([]);setRoles([]);setError(cause instanceof Error?cause.message:"Role assignments could not be loaded.")}finally{setLoading(false)}},[]);
-  useEffect(()=>{if(canManage)void load()},[canManage,load]);
   async function chooseUser(value:string){setSelectedId(value);setEffective(null);const user=users.find(item=>String(item.uid)===value);const assigned=user?(user.roles?.length?user.roles:[user.role]):[];setSelectedRoles(assigned);setPrimaryRole(user?.role??assigned[0]??"");setSuccess("");setError("");if(user)try{setEffective(await apiRequest<EffectiveAccess>(`/api/backend/users/${user.uid}/effective-permissions`))}catch(cause){setError(cause instanceof Error?cause.message:"Effective permissions could not be loaded.")}}
   function toggle(role:string,checked:boolean){setSelectedRoles(current=>{const next=checked?[...new Set([...current,role])]:current.filter(item=>item!==role);if(!next.includes(primaryRole))setPrimaryRole(next[0]??"");return next})}
   // HANDLER: Assign Role

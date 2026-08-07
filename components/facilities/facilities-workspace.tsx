@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Activity, Building2, ChevronDown, ChevronRight, Factory, Gauge, KeyRound, RefreshCw, ShieldCheck, Sparkles } from "lucide-react";
 
 import { FacilitiesOverview } from "./facilities-overview";
@@ -84,25 +84,23 @@ export function FacilitiesWorkspace() {
   const [editError,setEditError]=useState("");
   const [canManage,setCanManage]=useState(false);
   const [managers,setManagers]=useState<SiteManagerOption[]>([]);
+  const hasFacilities=useRef(false);
 
   const load = useCallback(async () => {
-    setLoading(true); setError("");
+    if(!hasFacilities.current)setLoading(true); setError("");
     try {
-      const [workspace, risks, users] = await Promise.all([
-        refreshFacilityHierarchy(),
-        apiRequest<AiFailureProbability[]>("/api/backend/ai/assets/failure-probabilities").catch(() => []),
-        apiRequest<BackendUserDto[]>("/api/backend/users").catch(() => []),
-      ]);
+      const workspace=await refreshFacilityHierarchy();
       setCanManage(session.user?.capabilities.includes("facilities.manage")??false);
-      setManagers(users.filter(user=>user.status.toLowerCase()==="active"&&["manager","plant_manager","operations_manager","admin","super_admin"].includes(user.role)).map(({uid,username,email,role})=>({uid,username,email,role})));
-      const managerUsers=users.filter(user=>user.status.toLowerCase()==="active"&&["manager","plant_manager","operations_manager","admin","super_admin"].includes(user.role)).map(({uid,username,email,role})=>({uid,username,email,role}));
+      const managerUsers:SiteManagerOption[]=[];
       const mappedFacilities = workspace.facilities.map(item=>{
         const assignment=workspace.siteAccess.find(record=>record.facilityId===item.facilityId&&["manager","manage","admin"].includes(record.accessLevel.toLowerCase()));
         return mapFacility(item,managerUsers.find(user=>user.uid===assignment?.userId));
       });
       setFacilities(mappedFacilities);
+      hasFacilities.current=true;
       setAccessRecords(workspace.siteAccess.map((record) => ({ id: String(record.siteAccessAssignmentId), userId: String(record.userId), userName: `User #${record.userId}`, platformRole: "Platform user", operationalRole: accessMap(record.accessLevel), facilityId: String(record.facilityId), hall: "All Halls", productionLine: "All Lines", accessLevel: accessMap(record.accessLevel), effectiveDate: record.createdAt, status: "Active" })));
-      setInsights(risks.slice(0, 3).map((risk) => ({ id: risk.asset_id, facility: mappedFacilities.find((facility) => facility.halls.some((hall) => hall.lines.some((line) => line.stations.some((station) => station.id === String(risk.station_id)))))?.name ?? "Manufacturing network", line: risk.code, message: risk.recommendation, priority: risk.risk_level === "critical" || risk.risk_level === "high" ? "High" : risk.risk_level === "medium" ? "Medium" : "Low", confidence: Math.round(risk.failure_probability * 100) })));
+      setLoading(false);
+      void Promise.allSettled([apiRequest<AiFailureProbability[]>("/api/backend/ai/assets/failure-probabilities"),apiRequest<BackendUserDto[]>("/api/backend/users")]).then(([riskResult,userResult])=>{const users=userResult.status==="fulfilled"?userResult.value:[];const nextManagers=users.filter(user=>user.status.toLowerCase()==="active"&&["manager","plant_manager","operations_manager","admin","super_admin"].includes(user.role)).map(({uid,username,email,role})=>({uid,username,email,role}));if(userResult.status==="fulfilled"){setManagers(nextManagers);setFacilities(workspace.facilities.map(item=>{const assignment=workspace.siteAccess.find(record=>record.facilityId===item.facilityId&&["manager","manage","admin"].includes(record.accessLevel.toLowerCase()));return mapFacility(item,nextManagers.find(user=>user.uid===assignment?.userId))}))}if(riskResult.status==="fulfilled")setInsights(riskResult.value.slice(0,3).map(risk=>({id:risk.asset_id,facility:mappedFacilities.find(facility=>facility.halls.some(hall=>hall.lines.some(line=>line.stations.some(station=>station.id===String(risk.station_id)))))?.name??"Manufacturing network",line:risk.code,message:risk.recommendation,priority:risk.risk_level==="critical"||risk.risk_level==="high"?"High":risk.risk_level==="medium"?"Medium":"Low",confidence:Math.round(risk.failure_probability*100)})))});
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Facilities could not be loaded."); }
     finally { setLoading(false); }
   }, [session.user]);
