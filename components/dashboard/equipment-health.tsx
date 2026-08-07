@@ -5,7 +5,7 @@ import { severityStyles } from "./severity";
 
 export function EquipmentHealth({ lines }: { lines: EquipmentLine[] }) {
   return (
-    <div className="h-[18rem] divide-y overflow-y-auto overscroll-contain" role="region" aria-label="Equipment health facilities" tabIndex={0}>
+    <div className="dashboard-scrollbar h-[18rem] divide-y overflow-y-auto overscroll-contain" role="region" aria-label="Equipment health facilities" tabIndex={0}>
       {lines.map((line) => (
         <div key={line.name} className="px-5 py-3.5">
           <div className="mb-2 flex items-center justify-between gap-4">

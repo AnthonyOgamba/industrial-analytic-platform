@@ -6,6 +6,7 @@ import { Check, Pencil, Plus, Search, ShieldCheck, Trash2 } from "lucide-react";
 import { apiRequest } from "@/lib/api-client";
 import { normalizeArrayResponse } from "@/lib/api-normalizers";
 import type { BackendRoleDto, GovernanceRecordDto, GovernanceRetirementDto, PagedEnvelope } from "@/lib/backend-dtos";
+import { useSessionUser } from "@/lib/session-user";
 
 import type { GovernancePolicy } from "./governance-data";
 import { GovernanceCard } from "./governance-card";
@@ -13,7 +14,6 @@ import { DeletePolicyModal, PolicyFormModal, type PolicyDraft } from "./policy-m
 import { StatusBadge } from "./status-badge";
 
 type ActivityEntry = { id: string; message: string; timestamp: string };
-type Session = { user: { capabilities?: string[] } };
 
 function mapGovernanceRecord(record: GovernanceRecordDto): GovernancePolicy {
   const retentionPeriod = record.retentionDays % 365 === 0
@@ -70,6 +70,7 @@ function toGovernanceRequest(draft: PolicyDraft) {
 }
 
 export function PoliciesStandards() {
+  const session = useSessionUser();
   const [policies, setPolicies] = useState<GovernancePolicy[]>([]);
   const [query, setQuery] = useState("");
   const [editing, setEditing] = useState<GovernancePolicy | null | "create">(null);
@@ -93,20 +94,17 @@ export function PoliciesStandards() {
     setLoading(true);
     setError("");
     try {
-      const [response, session, roleResponse] = await Promise.all([
-        apiRequest<PagedEnvelope<GovernanceRecordDto>>("/api/backend/data-governance?page=1&pageSize=200"),
-        apiRequest<Session>("/api/auth/session"),
-        apiRequest<unknown>("/api/backend/roles"),
-      ]);
-      setCanManage(session.user.capabilities?.includes("governance.create") ?? false);
+      const response = await apiRequest<PagedEnvelope<GovernanceRecordDto>>("/api/backend/data-governance?page=1&pageSize=200");
+      setCanManage(session.user?.capabilities.includes("governance.create") ?? false);
       setPolicies(response.items.map(mapGovernanceRecord));
-      setRoles(normalizeArrayResponse<BackendRoleDto>(roleResponse, ["roles"], "roles"));
+      setLoading(false);
+      void apiRequest<unknown>("/api/backend/roles").then(value=>setRoles(normalizeArrayResponse<BackendRoleDto>(value, ["roles"], "roles"))).catch(()=>undefined);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Governance policies could not be loaded.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [session.user]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
