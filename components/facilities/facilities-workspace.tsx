@@ -12,6 +12,7 @@ import { HierarchyEditModal, type HierarchyEditTarget } from "./hierarchy-edit-m
 import { apiRequest } from "@/lib/api-client";
 import type { AiFailureProbability, BackendUserDto, FacilityWorkspaceFacility, Station as BackendStation } from "@/lib/backend-dtos";
 import { facilityHierarchyApi, invalidateFacilityHierarchy, refreshFacilityHierarchy } from "@/lib/facility-hierarchy";
+import { useSessionUser } from "@/lib/session-user";
 
 type FacilitiesTab = "sites" | "performance" | "access";
 const tabs: { key: FacilitiesTab; label: string; icon: React.ElementType }[] = [
@@ -68,6 +69,7 @@ function mapFacility(item: FacilityWorkspaceFacility, manager?: SiteManagerOptio
 }
 
 export function FacilitiesWorkspace() {
+  const session=useSessionUser();
   const [activeTab, setActiveTab] = useState<FacilitiesTab>("sites");
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [accessRecords, setAccessRecords] = useState<SiteAccess[]>([]);
@@ -86,13 +88,12 @@ export function FacilitiesWorkspace() {
   const load = useCallback(async () => {
     setLoading(true); setError("");
     try {
-      const [workspace, risks, session, users] = await Promise.all([
+      const [workspace, risks, users] = await Promise.all([
         refreshFacilityHierarchy(),
         apiRequest<AiFailureProbability[]>("/api/backend/ai/assets/failure-probabilities").catch(() => []),
-        apiRequest<{user:{capabilities?:string[]}}>("/api/auth/session"),
         apiRequest<BackendUserDto[]>("/api/backend/users").catch(() => []),
       ]);
-      setCanManage(session.user.capabilities?.includes("facilities.manage")??false);
+      setCanManage(session.user?.capabilities.includes("facilities.manage")??false);
       setManagers(users.filter(user=>user.status.toLowerCase()==="active"&&["manager","plant_manager","operations_manager","admin","super_admin"].includes(user.role)).map(({uid,username,email,role})=>({uid,username,email,role})));
       const managerUsers=users.filter(user=>user.status.toLowerCase()==="active"&&["manager","plant_manager","operations_manager","admin","super_admin"].includes(user.role)).map(({uid,username,email,role})=>({uid,username,email,role}));
       const mappedFacilities = workspace.facilities.map(item=>{
@@ -104,7 +105,7 @@ export function FacilitiesWorkspace() {
       setInsights(risks.slice(0, 3).map((risk) => ({ id: risk.asset_id, facility: mappedFacilities.find((facility) => facility.halls.some((hall) => hall.lines.some((line) => line.stations.some((station) => station.id === String(risk.station_id)))))?.name ?? "Manufacturing network", line: risk.code, message: risk.recommendation, priority: risk.risk_level === "critical" || risk.risk_level === "high" ? "High" : risk.risk_level === "medium" ? "Medium" : "Low", confidence: Math.round(risk.failure_probability * 100) })));
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Facilities could not be loaded."); }
     finally { setLoading(false); }
-  }, []);
+  }, [session.user]);
   useEffect(() => { // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [load]);

@@ -58,7 +58,7 @@ export function UsersPage(){
   const [feedback,setFeedback]=useState("");
   const accessChecks=createAccessChecks(session.user);
   const accessibleFacilities=(hierarchy.data?.facilities??[]).filter(facility=>accessChecks.hasFacilityAccess(facility.facilityId));
-  const load=useCallback(async()=>{setLoading(true);try{const[nextUsers,nextRoles]=await Promise.all([apiRequest<unknown>("/api/backend/users"),apiRequest<unknown>("/api/backend/roles")]);setSource(normalizeUsers(nextUsers));setRoles(normalizeArrayResponse<BackendRoleDto>(nextRoles,["roles"],"roles"));setError("")}catch(cause){setSource([]);setRoles([]);setError(cause instanceof Error?cause.message:"Users could not be loaded.")}finally{setLoading(false)}},[]);
+  const load=useCallback(async()=>{setLoading(true);try{const nextUsers=await apiRequest<unknown>("/api/backend/users");setSource(normalizeUsers(nextUsers));setError("");setLoading(false);void apiRequest<unknown>("/api/backend/roles").then(value=>setRoles(normalizeArrayResponse<BackendRoleDto>(value,["roles"],"roles"))).catch(()=>undefined)}catch(cause){setError(cause instanceof Error?cause.message:"Users could not be loaded.");setLoading(false)}},[]);
   useEffect(()=>{// eslint-disable-next-line react-hooks/set-state-in-effect
     void load()
   },[load]);

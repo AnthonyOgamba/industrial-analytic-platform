@@ -13,6 +13,17 @@ input[type="password"]::-ms-clear {
   display: none;
 }
 
+.dashboard-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--muted-foreground) 35%, transparent) transparent;
+}
+.dashboard-scrollbar::-webkit-scrollbar { width: 6px; }
+.dashboard-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.dashboard-scrollbar::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--muted-foreground) 35%, transparent);
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

@@ -14,9 +14,9 @@ import { GeneratedDataManagement } from "./generated-data-management";
 import { GeneratorManagementActions } from "./generator-management-actions";
 import { useOliveEvents } from "@/lib/olive-events";
 import { normalizeAlerts, normalizeArrayResponse } from "@/lib/api-normalizers";
+import { useSessionUser } from "@/lib/session-user";
 
 type Tab = "chat" | "live" | "risk" | "alerts" | "notifications" | "rules" | "generation" | "settings";
-type Session = { user: { capabilities?: string[] } };
 type ChatMessage = { role: "user" | "assistant"; text: string; author?: string; sources?: AiChatResponse["sources"] };
 const suggestions = ["Which station is most likely to fail?", "How many alerts are currently open?", "Which stations have the most downtime?", "Are any production runs still active?", "Is sensor data stale?", "What can Olive analyze?"];
 
@@ -30,10 +30,9 @@ function Empty({ children }: { children: React.ReactNode }) { return <p classNam
 function Loading() { return <div role="status" aria-label="Loading Olive data" className="grid gap-3 sm:grid-cols-2"><div className="h-28 animate-pulse rounded-xl bg-muted"/><div className="h-28 animate-pulse rounded-xl bg-muted"/></div>; }
 
 export function LocalAiPage() {
-  const [tab,setTab]=useState<Tab>("chat"); const [capabilities,setCapabilities]=useState<string[]>([]); const [readiness,setReadiness]=useState<"checking"|"ready"|"unavailable">("checking"); const [readinessError,setReadinessError]=useState("");
+  const session=useSessionUser();const [tab,setTab]=useState<Tab>("chat"); const capabilities=session.user?.capabilities??[]; const [readiness,setReadiness]=useState<"checking"|"ready"|"unavailable">("checking"); const [readinessError,setReadinessError]=useState("");
   const events=useOliveEvents(); const version=Number(events.lastEvent?.id??0);
   const manager=capabilities.includes("olive.configure");
-  useEffect(()=>{apiRequest<Session>("/api/auth/session").then(data=>setCapabilities(data.user.capabilities??[])).catch(()=>undefined)},[]);
   const checkReadiness=useCallback(async()=>{setReadiness("checking");setReadinessError("");try{await apiRequest("/api/backend/ai/ready");setReadiness("ready")}catch(cause){setReadiness("unavailable");setReadinessError(cause instanceof Error?cause.message:"Olive is not ready.")}},[]);
   useEffect(()=>{// eslint-disable-next-line react-hooks/set-state-in-effect
     void checkReadiness();

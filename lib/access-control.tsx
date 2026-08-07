@@ -11,6 +11,7 @@ import {
 import { usePathname, useRouter } from "next/navigation";
 
 import type { SessionUser } from "@/lib/session-user";
+import { timedRequest } from "@/lib/request-timing";
 import {
   createAccessChecks,
   requiredCapabilityForPath,
@@ -72,7 +73,7 @@ export function AccessProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let active = true;
-    fetchSession()
+    timedRequest("session bootstrap / authorization context", fetchSession)
       .then((next) => {
         if (active) setUser(next);
       })

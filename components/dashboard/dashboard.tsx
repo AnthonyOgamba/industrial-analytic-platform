@@ -21,6 +21,7 @@ import { SectionCard } from "./section-card";
 import { RecentActivity, SensorStatus } from "./status-panels";
 import { normalizeDashboardResponse } from "./normalize-dashboard";
 import { OperationalCostDialog } from "./operational-cost-dialog";
+import { timedRequest } from "@/lib/request-timing";
 
 function DashboardSkeleton({message="Loading dashboard…"}:{message?:string}) {
   return <div aria-label={message} role="status" className="space-y-5"><p className="text-sm text-muted-foreground">{message}</p><div className="h-16 animate-pulse rounded-xl bg-muted motion-reduce:animate-none"/><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">{Array.from({length:10},(_,i)=><div key={i} className="h-40 animate-pulse rounded-xl bg-muted motion-reduce:animate-none"/>)}</div><div className="h-72 animate-pulse rounded-xl bg-muted motion-reduce:animate-none"/></div>;
@@ -49,6 +50,7 @@ function formatCurrency(value: number, currency: string) {
 }
 
 type FallbackStatus = "success" | "empty" | "forbidden" | "failed";
+type DashboardLoadState = "idle" | "bootstrapping" | "checking-readiness" | "loading-primary" | "loading-fallback" | "ready" | "partial" | "refreshing" | "degraded" | "fatal";
 type FallbackResult<T> = { status:FallbackStatus; data:T[] };
 type DashboardFallback = {
   sensors:FallbackResult<CanonicalSensorDto>;
@@ -56,6 +58,8 @@ type DashboardFallback = {
   runs:FallbackResult<ProductionRun>;
   alerts:FallbackResult<AiAlert>;
 };
+const INITIAL_DASHBOARD_TIMEOUT_MS=15_000;
+const REFRESH_DASHBOARD_TIMEOUT_MS=9_000;
 const fallbackLabel = (status:FallbackStatus) => status === "forbidden" ? "Unavailable for current role" : status === "empty" ? "No data returned" : status === "failed" ? "Temporarily unavailable" : "Partial data";
 
 async function fallbackRequest<T>(request:Promise<unknown>, normalize:(value:unknown)=>T[]):Promise<FallbackResult<T>> {
@@ -78,25 +82,35 @@ export function Dashboard() {
   const [refreshWarning, setRefreshWarning] = useState("");
   const [costImpactOpen,setCostImpactOpen]=useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadState,setLoadState]=useState<DashboardLoadState>("bootstrapping");
   const [readiness,setReadiness]=useState<"checking"|"ready"|"exhausted">("checking");
   const costImpactTrigger=useRef<HTMLButtonElement>(null);
   const hasLoadedRef = useRef(false);
+  const hasUsableDataRef=useRef(false);
+  const lastSuccessfulDashboardRef=useRef<DashboardWorkspaceDto|null>(null);
   const requestPendingRef = useRef(false);
+  const requestKeyRef=useRef("");
   const controllerRef=useRef<AbortController|null>(null);
   const requestIdRef=useRef(0);
   const load = useCallback(async (replacePending=false) => {
+    const requestKey=`${facilityId || "all"}:${rangeDays}`;
+    if (requestPendingRef.current&&requestKeyRef.current===requestKey) return;
     if (requestPendingRef.current&&!replacePending) return;
     controllerRef.current?.abort();
     const controller=new AbortController();
     controllerRef.current=controller;
     const requestId=++requestIdRef.current;
     requestPendingRef.current = true;
-    const isInitialLoad = !hasLoadedRef.current;
+    requestKeyRef.current=requestKey;
+    const isInitialLoad = !hasUsableDataRef.current;
     if (isInitialLoad) {
       setLoading(true);
+      setLoadState("loading-primary");
       setPartialWarning("");
-    }
-    const timeout=window.setTimeout(()=>controller.abort("Dashboard request timed out"),10_000);
+    } else setLoadState("refreshing");
+    // STATE: First-hit Azure responses get 15s; warm/background refreshes remain bounded at 9s.
+    const requestTimeout=isInitialLoad?INITIAL_DASHBOARD_TIMEOUT_MS:REFRESH_DASHBOARD_TIMEOUT_MS;
+    const timeout=window.setTimeout(()=>controller.abort("Dashboard request timed out"),requestTimeout);
     try {
       const params = new URLSearchParams();
       if (facilityId) params.set("facilityId", facilityId);
@@ -106,17 +120,22 @@ export function Dashboard() {
       from.setUTCDate(from.getUTCDate() - days);
       params.set("fromUtc", from.toISOString());
       params.set("toUtc", to.toISOString());
-      const primary=await apiRequest<unknown>(`/api/backend/dashboard?${params}`,{signal:controller.signal});
+      const primary=await timedRequest("Dashboard primary",()=>apiRequest<unknown>(`/api/backend/dashboard?${params}`,{signal:controller.signal}));
       if(requestId!==requestIdRef.current)return;
-      setWorkspace(normalizeDashboardResponse(primary));
+      const normalized=normalizeDashboardResponse(primary);
+      setWorkspace(normalized);
+      lastSuccessfulDashboardRef.current=normalized;
       setFallback(null);
       hasLoadedRef.current = true;
+      hasUsableDataRef.current=true;
+      setLoadState("ready");
       setPartialWarning("");
       setRefreshWarning("");
     } catch {
       if(requestId!==requestIdRef.current)return;
       if(controller.signal.aborted&&controller.signal.reason!=="Dashboard request timed out")return;
       if (isInitialLoad) {
+        setLoadState("loading-fallback");
         const access=createAccessChecks(session.user);
         const selected=facilityId?Number(facilityId):null;
         const allowed=(id:number|undefined)=>typeof id==="number"&&access.hasFacilityAccess(id)&&(!selected||id===selected);
@@ -124,24 +143,34 @@ export function Dashboard() {
         controllerRef.current=fallbackController;
         const fallbackTimeout=window.setTimeout(()=>fallbackController.abort("Dashboard fallback timed out"),8_000);
         const options={signal:fallbackController.signal};
-        const [sensors,downtime,runs,alerts]=await Promise.all([
+        const [sensors,downtime,runs,alerts]=await timedRequest("Dashboard fallback",()=>Promise.all([
           fallbackRequest(apiRequest<unknown>("/api/backend/sensors/catalog",options),value=>normalizeSensors(value).filter(item=>allowed(item.facilityid))),
           fallbackRequest(apiRequest<unknown>("/api/backend/downtime/events",options),value=>normalizeDowntimeEvents(value).filter(item=>allowed(item.facilityid))),
           fallbackRequest(apiRequest<unknown>("/api/backend/runs",options),value=>normalizeArrayResponse<ProductionRun>(value,["runs"],"production runs").filter(item=>allowed(item.facilityId))),
           fallbackRequest(apiRequest<unknown>("/api/backend/ai/alerts",options),normalizeAlerts),
-        ]);
+        ]));
         window.clearTimeout(fallbackTimeout);
         if(requestId!==requestIdRef.current)return;
-        setFallback({sensors,downtime,runs,alerts});
+        const nextFallback={sensors,downtime,runs,alerts};
+        setFallback(previous=>({
+          sensors:sensors.status==="failed"&&previous?.sensors?previous.sensors:sensors,
+          downtime:downtime.status==="failed"&&previous?.downtime?previous.downtime:downtime,
+          runs:runs.status==="failed"&&previous?.runs?previous.runs:runs,
+          alerts:alerts.status==="failed"&&previous?.alerts?previous.alerts:alerts,
+        }));
+        const usable=Object.values(nextFallback).some(result=>result.status==="success"||result.status==="empty")||Boolean(hierarchy.data);
+        hasUsableDataRef.current=hasUsableDataRef.current||usable;
+        setLoadState(usable?"partial":"degraded");
         setPartialWarning("Some dashboard analytics are temporarily unavailable. Showing the latest available platform data.");
       } else {
+        setLoadState("degraded");
         setRefreshWarning("Live refresh delayed. Showing the latest available data.");
       }
     } finally {
       window.clearTimeout(timeout);
-      if(requestId===requestIdRef.current){requestPendingRef.current = false;if (isInitialLoad) setLoading(false)}
+      if(requestId===requestIdRef.current){requestPendingRef.current = false;requestKeyRef.current="";if (isInitialLoad) setLoading(false)}
     }
-  }, [facilityId, rangeDays, session.user]);
+  }, [facilityId, hierarchy.data, rangeDays, session.user]);
   const loadRef=useRef(load);
   useEffect(()=>{loadRef.current=load},[load]);
 
@@ -152,11 +181,12 @@ export function Dashboard() {
     // FEATURE: Readiness gates the first Dashboard request while dependencies start.
     // STATE: Attempts are bounded to immediate, 1s, 2s, and 4s checks.
     const connect=async()=>{
+      if(!hasUsableDataRef.current)setLoadState("checking-readiness");
       const delays=[0,1000,2000,4000];
       for(const delay of delays){
         if(delay)await new Promise<void>(resolve=>window.setTimeout(resolve,delay));
         if(!active)return;
-        try{await apiRequest("/api/backend/ready",{signal:controller.signal});if(!active)return;setReadiness("ready");return}catch{if(!active)return}
+        try{await timedRequest("readiness",()=>apiRequest("/api/backend/ready",{signal:controller.signal}));if(!active)return;setReadiness("ready");return}catch{if(!active)return}
       }
       if(active){setReadiness("exhausted");await loadRef.current(true)}
     };
@@ -165,9 +195,9 @@ export function Dashboard() {
   }, [session.loading,session.user]);
   useEffect(()=>{
     if(readiness!=="ready"||session.loading||!session.user)return;
-    const timer=window.setTimeout(()=>void load(true),0);
+    const timer=window.setTimeout(()=>void loadRef.current(true),0);
     return()=>{window.clearTimeout(timer);controllerRef.current?.abort()};
-  },[facilityId,load,rangeDays,readiness,session.loading,session.user]);
+  },[facilityId,rangeDays,readiness,session.loading,session.user]);
   useEffect(() => {
     const refreshVisible = () => {
       if (document.visibilityState === "visible") void load();
@@ -266,9 +296,9 @@ export function Dashboard() {
   const displayedOperationalMetrics=workspace?operationalMetrics:fallbackOperationalMetrics;
   const displayedPlatformMetrics=workspace?platformMetrics:fallbackPlatformMetrics;
 
-  if(session.loading||readiness==="checking"||loading)return <DashboardSkeleton message="Connecting to operational services…"/>;
   const fallbackUsable=Boolean(hierarchy.data||fallback&&Object.values(fallback).some(result=>result.status==="success"||result.status==="empty"));
-  if(readiness==="exhausted"&&!workspace&&!fallbackUsable)return <div role="alert" className="rounded-xl border bg-card p-6"><h1 className="font-semibold">Operational services are not ready yet. Try again shortly.</h1><button type="button" onClick={()=>window.location.reload()} className="mt-4 inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-xs font-semibold"><RefreshCw className="size-4"/>Retry</button></div>;
+  if(!workspace&&!fallbackUsable&&(session.loading||readiness==="checking"||loading))return <DashboardSkeleton message="Connecting to operational services…"/>;
+  if(readiness==="exhausted"&&!workspace&&!fallbackUsable&&loadState==="fatal")return <div role="alert" className="rounded-xl border bg-card p-6"><h1 className="font-semibold">Operational services are not ready yet. Try again shortly.</h1><button type="button" onClick={()=>void load(true)} className="mt-4 inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-xs font-semibold"><RefreshCw className="size-4"/>Retry</button></div>;
 
   return <div className="space-y-5 pb-4">
     <header className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end"><div><h1 className="text-2xl font-bold tracking-tight">Overview</h1><p className="mt-1 text-sm text-muted-foreground">Live industrial analytics dashboard</p></div><div className="flex flex-wrap items-center gap-2"><select aria-label="Dashboard facility" value={facilityId} onChange={(event)=>setFacilityId(event.target.value)} className="h-9 rounded-lg border bg-card px-3 text-xs"><option value="">All authorized facilities</option>{(hierarchy.data?.facilities??[]).map(facility=><option key={facility.facilityId} value={facility.facilityId}>{facility.name}</option>)}</select><select aria-label="Dashboard date range" value={rangeDays} onChange={(event)=>setRangeDays(event.target.value)} className="h-9 rounded-lg border bg-card px-3 text-xs"><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option><option value="365">Last 365 days</option></select><button type="button" onClick={()=>void load()} aria-label="Refresh dashboard" className="grid size-9 place-items-center rounded-lg border bg-card"><RefreshCw className="size-4"/></button><span className={`w-fit rounded-full border bg-card px-3 py-2 font-mono text-xs uppercase ${workspace?"text-emerald-600":"text-amber-700 dark:text-amber-300"}`}>{workspace?`Live · ${new Date(workspace.generatedAtUtc).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}`:"Partial data"}</span></div></header>
@@ -277,8 +307,8 @@ export function Dashboard() {
     <section><h2 className="mb-2.5 font-mono text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Operational performance</h2><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">{displayedOperationalMetrics.map(metric=><MetricCard key={metric.label} {...metric}/>)}</div></section>
     <section><h2 className="mb-2.5 font-mono text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Platform and operational cost</h2><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{displayedPlatformMetrics.map(metric=><MetricCard key={metric.label} {...metric} buttonRef={metric.label==="Operational Cost Impact"?costImpactTrigger:undefined}/>)}</div></section>
     <div className="grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(20rem,.75fr)]">
-      <SectionCard title="Production Output Trend" subtitle="Production totals by period" action={<span className="font-mono text-xs text-primary">{workspace?"Live":"Temporarily unavailable"}</span>}>{trend.length?<ProductionChart data={trend}/>:<p className="grid h-52 place-items-center text-sm text-muted-foreground">{workspace?"No production trend points are available.":"Temporarily unavailable"}</p>}</SectionCard>
-      <SectionCard title="Equipment Health" subtitle="Current OEE by facility">{equipment.length?<EquipmentHealth lines={equipment}/>:<p className="grid h-52 place-items-center text-sm text-muted-foreground">{workspace?"No facility OEE records are available.":"Not calculated"}</p>}</SectionCard>
+      <SectionCard className="h-[22rem]" title="Production Output Trend" subtitle="Production totals by period" action={<span className="font-mono text-xs text-primary">{workspace?"Live":"Temporarily unavailable"}</span>}>{trend.length?<ProductionChart data={trend}/>:<p className="grid h-[18rem] place-items-center text-sm text-muted-foreground">{workspace?"No production trend points are available.":"Temporarily unavailable"}</p>}</SectionCard>
+      <SectionCard className="h-[22rem]" title="Equipment Health" subtitle="Current OEE by facility">{equipment.length?<EquipmentHealth lines={equipment}/>:<p className="grid h-[18rem] place-items-center text-sm text-muted-foreground">{workspace?"No facility OEE records are available.":"Not calculated"}</p>}</SectionCard>
     </div>
     <div className="grid gap-5 xl:grid-cols-2">
       <SensorStatus sensors={sensors} total={workspace?.sensorHealth.total} active={workspace?.sensorHealth.active} unavailable={fallbackSensors?fallbackLabel(fallbackSensors.status):"Temporarily unavailable"}/>

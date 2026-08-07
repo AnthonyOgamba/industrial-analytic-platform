@@ -10,10 +10,12 @@ import { Download, RefreshCw } from "lucide-react";
 
 import { useFacilityHierarchy } from "@/lib/facility-hierarchy";
 import { pageApi, type ReportListItem } from "@/lib/page-api";
+import { useSessionUser } from "@/lib/session-user";
 
 export function ReportCenter() {
+  const session=useSessionUser();
   const hierarchy = useFacilityHierarchy();
-  const [capabilities, setCapabilities] = useState<string[]>([]);
+  const capabilities=session.user?.capabilities??[];
   const [reports, setReports] = useState<ReportListItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -55,9 +57,6 @@ export function ReportCenter() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [load]);
-  useEffect(() => {
-    void fetch("/api/auth/session", { credentials:"same-origin" }).then(response=>response.ok?response.json():null).then(session=>setCapabilities(session?.user?.capabilities??[])).catch(()=>setCapabilities([]));
-  }, []);
 
   // HANDLER: Export Report
   // API: GET /api/backend/reports/export.xlsx through the binary-preserving BFF route.
