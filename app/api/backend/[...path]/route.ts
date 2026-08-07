@@ -14,6 +14,8 @@ type Context = { params: Promise<{ path: string[] }> };
 const allowed = [
   // BFF: Same-origin gateway readiness; the browser never calls Container App URLs directly.
   { pattern: /^ready$/, methods: ["GET"] },
+  // BFF: Bounded page-oriented read models. Mutations continue through their domain routes.
+  { pattern: /^page\/(?:dashboard|profile|facilities|assets|sensors|downtime|users|users\/roles|reports|governance|audit|olive)$/, methods: ["GET"] },
   { pattern: /^dashboard(?:\/analytics)?$/, methods: ["GET"] },
   { pattern: /^runs$/, methods: ["GET", "POST"] },
   { pattern: /^runs\/(?:active|stations)$/, methods: ["GET"] },

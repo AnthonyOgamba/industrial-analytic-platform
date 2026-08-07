@@ -10,23 +10,13 @@
 
 import { useCallback,useEffect,useMemo,useState } from "react";
 import { AlertTriangle,Check } from "lucide-react";
-import { apiRequest } from "@/lib/api-client";
-import { normalizeArrayResponse } from "@/lib/api-normalizers";
 import type { BackendRoleDto } from "@/lib/backend-dtos";
+import { pageRequest } from "@/lib/page-request";
+import type { UsersRolesPageContract } from "@/lib/page-contracts";
+import { toBackendRole } from "@/lib/page-contracts";
 import { useSessionUser } from "@/lib/session-user";
 
 type PermissionDto={capability:string;description:string;resource:string};
-
-function normalizePermissions(payload:unknown):PermissionDto[]{
-  return normalizeArrayResponse<unknown>(payload,["permissions","items"],"permissions").flatMap(item=>{
-    if(typeof item==="string")return [{capability:item,description:"",resource:item.split(".")[0]}];
-    if(!item||typeof item!=="object")return [];
-    const record=item as Record<string,unknown>;
-    const capability=typeof record.capability==="string"?record.capability:typeof record.name==="string"?record.name:"";
-    if(!capability)return [];
-    return [{capability,description:typeof record.description==="string"?record.description:"",resource:typeof record.resource==="string"?record.resource:capability.split(".")[0]}];
-  });
-}
 
 export function PermissionsPage(){
   const session=useSessionUser();
@@ -35,7 +25,7 @@ export function PermissionsPage(){
   const[permissions,setPermissions]=useState<PermissionDto[]>([]);
   const[loading,setLoading]=useState(true);
   const[error,setError]=useState("");
-  const load=useCallback(async()=>{setLoading(true);try{const[p,r]=await Promise.all([apiRequest<unknown>("/api/backend/permissions"),apiRequest<unknown>("/api/backend/roles")]);setPermissions(normalizePermissions(p));setRoles(normalizeArrayResponse<BackendRoleDto>(r,["roles"],"roles"));setError("")}catch(cause){setPermissions([]);setRoles([]);setError(cause instanceof Error?cause.message:"Permissions could not be loaded.")}finally{setLoading(false)}},[]);
+  const load=useCallback(async()=>{setLoading(true);try{const response=await pageRequest<UsersRolesPageContract>("roles");setPermissions(response.permissions.map(item=>({capability:item.capability,description:item.description,resource:item.module})));setRoles(response.roles.map(toBackendRole));setError("")}catch(cause){setError(cause instanceof Error?cause.message:"Permissions could not be loaded.")}finally{setLoading(false)}},[]);
   useEffect(()=>{if(canView)void load()},[canView,load]);
   const rows=useMemo(()=>permissions.filter(item=>!item.capability.startsWith("financial.")).sort((a,b)=>a.capability.localeCompare(b.capability)),[permissions]);
   if(session.loading||loading)return <div className="h-56 animate-pulse rounded-xl bg-muted"/>;

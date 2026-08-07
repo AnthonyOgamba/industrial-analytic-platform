@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react-hooks/preserve-manual-memoization */
 
 // FEATURE: Reports
 // PAGE: /reports lists persisted report records and exports authorized Excel workbooks.
@@ -8,13 +9,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Download, RefreshCw } from "lucide-react";
 
-import { useFacilityHierarchy } from "@/lib/facility-hierarchy";
-import { pageApi, type ReportListItem } from "@/lib/page-api";
+import type { ReportListItem } from "@/lib/page-api";
 import { useSessionUser } from "@/lib/session-user";
+import { pageRequest } from "@/lib/page-request";
+import type { FacilityWorkspace } from "@/lib/backend-dtos";
+import type { ReportsPageContract } from "@/lib/page-contracts";
 
 export function ReportCenter() {
   const session=useSessionUser();
-  const hierarchy = useFacilityHierarchy();
+  const [facilityScope,setFacilityScope]=useState<FacilityWorkspace|null>(null);const hierarchy={data:facilityScope};
   const capabilities=session.user?.capabilities??[];
   const [reports, setReports] = useState<ReportListItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -36,16 +39,9 @@ export function ReportCenter() {
     setLoading(true);
     setError("");
     try {
-      const response = await pageApi.reports({
-        facilityId: facilityId ? Number(facilityId) : undefined,
-        source: source || undefined,
-        fromUtc: fromUtc ? new Date(`${fromUtc}T00:00:00`).toISOString() : undefined,
-        toUtc: toUtc ? new Date(`${toUtc}T23:59:59.999`).toISOString() : undefined,
-        page,
-        pageSize,
-      });
-      setReports(response.items);
-      setTotal(response.total);
+      const query=new URLSearchParams({page:String(page),pageSize:String(pageSize)});if(facilityId)query.set("facilityId",facilityId);if(source)query.set("source",source);if(fromUtc)query.set("fromUtc",new Date(`${fromUtc}T00:00:00`).toISOString());if(toUtc)query.set("toUtc",new Date(`${toUtc}T23:59:59.999`).toISOString());
+      const response = await pageRequest<ReportsPageContract>("reports",{query});
+      setReports(response.data.items);setTotal(response.data.total);setFacilityScope(response.enrichment);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Report history could not be loaded.");
     } finally {

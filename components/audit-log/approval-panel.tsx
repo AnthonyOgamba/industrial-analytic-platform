@@ -20,6 +20,7 @@ import type { ApprovalDto } from "@/lib/backend-dtos";
 import { useSessionUser } from "@/lib/session-user";
 import { normalizeApprovals } from "@/lib/api-normalizers";
 import { PERMISSIONS } from "@/lib/permissions";
+import { useAuditPageData } from "@/lib/audit-page-data";
 
 type Tab = "pending" | "approved" | "rejected" | "executed";
 
@@ -28,10 +29,10 @@ function isPermanentDeletionRequest(item: ApprovalDto) {
 }
 
 export function ApprovalPanel() {
+  const pageData=useAuditPageData();
   const session = useSessionUser();
-  const [items, setItems] = useState<ApprovalDto[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const items=normalizeApprovals(pageData.data?.approvals.items??[]).map(item=>({...item,status:item.status.toLowerCase()}));
+  const loading=pageData.loading;const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [tab, setTab] = useState<Tab>("pending");
   const [deciding, setDeciding] = useState<ApprovalDto | null>(null);
@@ -44,30 +45,7 @@ export function ApprovalPanel() {
   const canView = capabilities.has("audit.view") || capabilities.has(PERMISSIONS.approvals.view);
   const canDecide = canView &&
     (capabilities.has(PERMISSIONS.approvals.approve) || capabilities.has(PERMISSIONS.approvals.reject));
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      setItems(
-        normalizeApprovals(
-          await apiRequest<unknown>("/api/backend/approvals"),
-        ).map((item) => ({ ...item, status: item.status.toLowerCase() })),
-      );
-    } catch (cause) {
-      setItems([]);
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : "Approvals could not be loaded.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-  useEffect(() => {
-    if (!canView) return; // eslint-disable-next-line react-hooks/set-state-in-effect
-    void load();
-  }, [canView, load]);
+  const load = useCallback(async () => {setError("");await pageData.refresh()}, [pageData]);
   useEffect(() => {
     if (!canView) return;
     const refresh = () => void load();

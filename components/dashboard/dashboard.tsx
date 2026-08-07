@@ -7,21 +7,18 @@
 
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ApiError, apiRequest } from "@/lib/api-client";
 import type { AiAlert, CanonicalDowntimeDto, CanonicalSensorDto, DashboardWorkspaceDto, ProductionRun } from "@/lib/backend-dtos";
-import { normalizeAlerts, normalizeDowntimeEvents, normalizeSensors, normalizeArrayResponse } from "@/lib/api-normalizers";
-import { createAccessChecks } from "@/lib/access-policy";
 import { useSessionUser } from "@/lib/session-user";
-import { useFacilityHierarchy } from "@/lib/facility-hierarchy";
 import type { ActivityEvent, DashboardMetric, DashboardSeverity, EquipmentLine, SensorGroup, TrendPoint } from "./dashboard-data";
 import { EquipmentHealth } from "./equipment-health";
 import { MetricCard } from "./metric-card";
 import { ProductionChart } from "./production-chart";
 import { SectionCard } from "./section-card";
 import { RecentActivity, SensorStatus } from "./status-panels";
-import { normalizeDashboardResponse } from "./normalize-dashboard";
 import { OperationalCostDialog } from "./operational-cost-dialog";
-import { timedRequest } from "@/lib/request-timing";
+import { pageRequest } from "@/lib/page-request";
+import type { DashboardPageContract } from "@/lib/page-contracts";
+import type { FacilityWorkspace } from "@/lib/backend-dtos";
 
 function DashboardSkeleton({message="Loading dashboard…"}:{message?:string}) {
   return <div aria-label={message} role="status" className="space-y-5"><p className="text-sm text-muted-foreground">{message}</p><div className="h-16 animate-pulse rounded-xl bg-muted motion-reduce:animate-none"/><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">{Array.from({length:10},(_,i)=><div key={i} className="h-40 animate-pulse rounded-xl bg-muted motion-reduce:animate-none"/>)}</div><div className="h-72 animate-pulse rounded-xl bg-muted motion-reduce:animate-none"/></div>;
@@ -62,17 +59,8 @@ const INITIAL_DASHBOARD_TIMEOUT_MS=15_000;
 const REFRESH_DASHBOARD_TIMEOUT_MS=9_000;
 const fallbackLabel = (status:FallbackStatus) => status === "forbidden" ? "Unavailable for current role" : status === "empty" ? "No data returned" : status === "failed" ? "Temporarily unavailable" : "Partial data";
 
-async function fallbackRequest<T>(request:Promise<unknown>, normalize:(value:unknown)=>T[]):Promise<FallbackResult<T>> {
-  try {
-    const data=normalize(await request);
-    return {status:data.length?"success":"empty",data};
-  } catch (cause) {
-    return {status:cause instanceof ApiError&&cause.status===403?"forbidden":"failed",data:[]};
-  }
-}
-
 export function Dashboard() {
-  const hierarchy = useFacilityHierarchy();
+  const [facilityScope,setFacilityScope]=useState<FacilityWorkspace|null>(null);const hierarchy={data:facilityScope};
   const session=useSessionUser();
   const [workspace, setWorkspace] = useState<DashboardWorkspaceDto | null>(null);
   const [fallback,setFallback]=useState<DashboardFallback|null>(null);
@@ -83,7 +71,7 @@ export function Dashboard() {
   const [costImpactOpen,setCostImpactOpen]=useState(false);
   const [loading, setLoading] = useState(true);
   const [loadState,setLoadState]=useState<DashboardLoadState>("bootstrapping");
-  const [readiness,setReadiness]=useState<"checking"|"ready"|"exhausted">("checking");
+  const [readiness,setReadiness]=useState<"checking"|"ready"|"exhausted">("ready");
   const costImpactTrigger=useRef<HTMLButtonElement>(null);
   const hasLoadedRef = useRef(false);
   const hasUsableDataRef=useRef(false);
@@ -120,9 +108,9 @@ export function Dashboard() {
       from.setUTCDate(from.getUTCDate() - days);
       params.set("fromUtc", from.toISOString());
       params.set("toUtc", to.toISOString());
-      const primary=await timedRequest("Dashboard primary",()=>apiRequest<unknown>(`/api/backend/dashboard?${params}`,{signal:controller.signal}));
+      const primary=await pageRequest<DashboardPageContract>("dashboard",{signal:controller.signal,query:params});
       if(requestId!==requestIdRef.current)return;
-      const normalized=normalizeDashboardResponse(primary);
+      const normalized=primary.workspace;setFacilityScope(primary.facilityScope);
       setWorkspace(normalized);
       lastSuccessfulDashboardRef.current=normalized;
       setFallback(null);
@@ -135,32 +123,7 @@ export function Dashboard() {
       if(requestId!==requestIdRef.current)return;
       if(controller.signal.aborted&&controller.signal.reason!=="Dashboard request timed out")return;
       if (isInitialLoad) {
-        setLoadState("loading-fallback");
-        const access=createAccessChecks(session.user);
-        const selected=facilityId?Number(facilityId):null;
-        const allowed=(id:number|undefined)=>typeof id==="number"&&access.hasFacilityAccess(id)&&(!selected||id===selected);
-        const fallbackController=new AbortController();
-        controllerRef.current=fallbackController;
-        const fallbackTimeout=window.setTimeout(()=>fallbackController.abort("Dashboard fallback timed out"),8_000);
-        const options={signal:fallbackController.signal};
-        const [sensors,downtime,runs,alerts]=await timedRequest("Dashboard fallback",()=>Promise.all([
-          fallbackRequest(apiRequest<unknown>("/api/backend/sensors/catalog",options),value=>normalizeSensors(value).filter(item=>allowed(item.facilityid))),
-          fallbackRequest(apiRequest<unknown>("/api/backend/downtime/events",options),value=>normalizeDowntimeEvents(value).filter(item=>allowed(item.facilityid))),
-          fallbackRequest(apiRequest<unknown>("/api/backend/runs",options),value=>normalizeArrayResponse<ProductionRun>(value,["runs"],"production runs").filter(item=>allowed(item.facilityId))),
-          fallbackRequest(apiRequest<unknown>("/api/backend/ai/alerts",options),normalizeAlerts),
-        ]));
-        window.clearTimeout(fallbackTimeout);
-        if(requestId!==requestIdRef.current)return;
-        const nextFallback={sensors,downtime,runs,alerts};
-        setFallback(previous=>({
-          sensors:sensors.status==="failed"&&previous?.sensors?previous.sensors:sensors,
-          downtime:downtime.status==="failed"&&previous?.downtime?previous.downtime:downtime,
-          runs:runs.status==="failed"&&previous?.runs?previous.runs:runs,
-          alerts:alerts.status==="failed"&&previous?.alerts?previous.alerts:alerts,
-        }));
-        const usable=Object.values(nextFallback).some(result=>result.status==="success"||result.status==="empty")||Boolean(hierarchy.data);
-        hasUsableDataRef.current=hasUsableDataRef.current||usable;
-        setLoadState(usable?"partial":"degraded");
+        setLoadState("degraded");
         setPartialWarning("Some dashboard analytics are temporarily unavailable. Showing the latest available platform data.");
       } else {
         setLoadState("degraded");
@@ -170,7 +133,7 @@ export function Dashboard() {
       window.clearTimeout(timeout);
       if(requestId===requestIdRef.current){requestPendingRef.current = false;requestKeyRef.current="";if (isInitialLoad) setLoading(false)}
     }
-  }, [facilityId, hierarchy.data, rangeDays, session.user]);
+  }, [facilityId, rangeDays]);
   const loadRef=useRef(load);
   useEffect(()=>{loadRef.current=load},[load]);
 
@@ -186,7 +149,7 @@ export function Dashboard() {
       for(const delay of delays){
         if(delay)await new Promise<void>(resolve=>window.setTimeout(resolve,delay));
         if(!active)return;
-        try{await timedRequest("readiness",()=>apiRequest("/api/backend/ready",{signal:controller.signal}));if(!active)return;setReadiness("ready");return}catch{if(!active)return}
+        try{if(!active)return;setReadiness("ready");return}catch{if(!active)return}
       }
       if(active){setReadiness("exhausted");await loadRef.current(true)}
     };
@@ -246,7 +209,7 @@ export function Dashboard() {
     { label:"Open Olive Alerts", value:String(workspace.summary.openAlerts), delta:`${workspace.recentAlerts.filter(item=>item.severity==="critical").length} recent critical`, severity:workspace.summary.openAlerts ? "critical" : "healthy", icon:"alert", href:"/local-ai" },
     { label:"Operational Cost Impact", value:formatCurrency(workspace.summary.estimatedDowntimeCost,currency), delta:`${formatCurrency(financial?.lost??0,currency)} lost production · ${new Set(workspace.financialImpact.map(item=>item.facilityId)).size} facilities`, detail:currency, severity:workspace.summary.estimatedDowntimeCost > 0 ? "warning" : "healthy", icon:"dollar", onClick:()=>setCostImpactOpen(true) },
     { label:"Active Production Runs", value:String(workspace.summary.activeRuns), delta:`${workspace.summary.totalStations} registered stations`, severity:workspace.summary.activeRuns ? "healthy" : "neutral", icon:"users", href:"/operations" },
-  ] : [], [workspace, financial, currency]);
+  ] : [], [workspace, financial, currency, setCostImpactOpen]);
 
   const trend = useMemo<TrendPoint[]>(() => productionTrend.map(point=>({
     label:new Date(point.timestamp).toLocaleDateString(undefined, { month:"short", day:"numeric" }),

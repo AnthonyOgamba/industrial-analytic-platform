@@ -1,0 +1,26 @@
+{
+    "status":  "ready",
+    "generatedAtUtc":  "2026-08-07T20:47:48.2293434Z",
+    "readiness":  {
+                      "status":  "ready",
+                      "checks":  {
+                                     "jwt":  true,
+                                     "database":  true,
+                                     "schema":  true
+                                 }
+                  },
+    "alertSummary":  {
+                         "open":  {
+                                      "warning":  11175,
+                                      "critical":  3937,
+                                      "info":  4688
+                                  },
+                         "resolved":  {
+                                          "info":  1
+                                      }
+                     },
+    "eventStream":  "/api/ai/events",
+    "warnings":  [
+
+                 ]
+}

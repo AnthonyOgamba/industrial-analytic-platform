@@ -1,0 +1,2286 @@
+{
+    "status":  "ready",
+    "generatedAtUtc":  "2026-08-07T20:47:37.4510013Z",
+    "facilities":  {
+                       "summary":  {
+                                       "activeFacilities":  7,
+                                       "totalFacilities":  7,
+                                       "averageOee":  0.2294,
+                                       "complianceCoverage":  57.1429,
+                                       "recentDowntimeHours":  371.7204
+                                   },
+                       "facilities":  [
+                                          {
+                                              "facilityId":  15,
+                                              "name":  "Calgary NW PLANT",
+                                              "location":  "CA",
+                                              "status":  "active",
+                                              "complianceCoverage":  0,
+                                              "performance":  {
+                                                                  "oee":  0,
+                                                                  "availability":  0,
+                                                                  "performance":  0,
+                                                                  "quality":  0,
+                                                                  "downtimeHours":  0
+                                                              },
+                                              "halls":  [
+
+                                                        ]
+                                          },
+                                          {
+                                              "facilityId":  16,
+                                              "name":  "Calgary site",
+                                              "location":  "CAA123",
+                                              "status":  "active",
+                                              "complianceCoverage":  0,
+                                              "performance":  {
+                                                                  "oee":  0,
+                                                                  "availability":  0,
+                                                                  "performance":  0,
+                                                                  "quality":  0,
+                                                                  "downtimeHours":  0
+                                                              },
+                                              "halls":  [
+
+                                                        ]
+                                          },
+                                          {
+                                              "facilityId":  3,
+                                              "name":  "Dubai Bags Plant",
+                                              "location":  "DBP-003",
+                                              "status":  "active",
+                                              "complianceCoverage":  100,
+                                              "performance":  {
+                                                                  "oee":  0.0226,
+                                                                  "availability":  0.026,
+                                                                  "performance":  0.0251,
+                                                                  "quality":  0.0267,
+                                                                  "downtimeHours":  -102
+                                                              },
+                                              "halls":  [
+                                                            {
+                                                                "hallId":  4,
+                                                                "name":  "Hall 1",
+                                                                "status":  "active",
+                                                                "performance":  {
+                                                                                    "oee":  0.0678,
+                                                                                    "availability":  0.0781,
+                                                                                    "performance":  0.0753,
+                                                                                    "quality":  0.0802,
+                                                                                    "downtimeHours":  -102
+                                                                                },
+                                                                "lines":  [
+                                                                              {
+                                                                                  "productionLineId":  6,
+                                                                                  "name":  "Production Line 1",
+                                                                                  "status":  "active",
+                                                                                  "performance":  {
+                                                                                                      "oee":  0.2034,
+                                                                                                      "availability":  0.2342,
+                                                                                                      "performance":  0.2258,
+                                                                                                      "quality":  0.2405,
+                                                                                                      "downtimeHours":  -102
+                                                                                                  },
+                                                                                  "stations":  [
+                                                                                                   {
+                                                                                                       "stationId":  7,
+                                                                                                       "name":  "Station 1",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0.8137,
+                                                                                                                           "availability":  0.9367,
+                                                                                                                           "performance":  0.9032,
+                                                                                                                           "quality":  0.9621,
+                                                                                                                           "downtimeHours":  -102
+                                                                                                                       }
+                                                                                                   },
+                                                                                                   {
+                                                                                                       "stationId":  8,
+                                                                                                       "name":  "Station 2",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   },
+                                                                                                   {
+                                                                                                       "stationId":  9,
+                                                                                                       "name":  "Station 3",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   },
+                                                                                                   {
+                                                                                                       "stationId":  10,
+                                                                                                       "name":  "Station 4",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   }
+                                                                                               ]
+                                                                              },
+                                                                              {
+                                                                                  "productionLineId":  7,
+                                                                                  "name":  "Production Line 2",
+                                                                                  "status":  "active",
+                                                                                  "performance":  {
+                                                                                                      "oee":  0,
+                                                                                                      "availability":  0,
+                                                                                                      "performance":  0,
+                                                                                                      "quality":  0,
+                                                                                                      "downtimeHours":  0
+                                                                                                  },
+                                                                                  "stations":  [
+                                                                                                   {
+                                                                                                       "stationId":  11,
+                                                                                                       "name":  "Station 1",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   },
+                                                                                                   {
+                                                                                                       "stationId":  12,
+                                                                                                       "name":  "Station 2",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   },
+                                                                                                   {
+                                                                                                       "stationId":  13,
+                                                                                                       "name":  "Station 3",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   },
+                                                                                                   {
+                                                                                                       "stationId":  14,
+                                                                                                       "name":  "Station 4",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   }
+                                                                                               ]
+                                                                              },
+                                                                              {
+                                                                                  "productionLineId":  8,
+                                                                                  "name":  "Production Line 3",
+                                                                                  "status":  "active",
+                                                                                  "performance":  {
+                                                                                                      "oee":  0,
+                                                                                                      "availability":  0,
+                                                                                                      "performance":  0,
+                                                                                                      "quality":  0,
+                                                                                                      "downtimeHours":  0
+                                                                                                  },
+                                                                                  "stations":  [
+                                                                                                   {
+                                                                                                       "stationId":  15,
+                                                                                                       "name":  "Station 1",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   },
+                                                                                                   {
+                                                                                                       "stationId":  16,
+                                                                                                       "name":  "Station 2",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   },
+                                                                                                   {
+                                                                                                       "stationId":  17,
+                                                                                                       "name":  "Station 3",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   },
+                                                                                                   {
+                                                                                                       "stationId":  18,
+                                                                                                       "name":  "Station 4",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   }
+                                                                                               ]
+                                                                              }
+                                                                          ]
+                                                            },
+                                                            {
+                                                                "hallId":  5,
+                                                                "name":  "Hall 2",
+                                                                "status":  "active",
+                                                                "performance":  {
+                                                                                    "oee":  0,
+                                                                                    "availability":  0,
+                                                                                    "performance":  0,
+                                                                                    "quality":  0,
+                                                                                    "downtimeHours":  0
+                                                                                },
+                                                                "lines":  [
+                                                                              {
+                                                                                  "productionLineId":  9,
+                                                                                  "name":  "Production Line 1",
+                                                                                  "status":  "active",
+                                                                                  "performance":  {
+                                                                                                      "oee":  0,
+                                                                                                      "availability":  0,
+                                                                                                      "performance":  0,
+                                                                                                      "quality":  0,
+                                                                                                      "downtimeHours":  0
+                                                                                                  },
+                                                                                  "stations":  [
+                                                                                                   {
+                                                                                                       "stationId":  19,
+                                                                                                       "name":  "Station 1",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   },
+                                                                                                   {
+                                                                                                       "stationId":  20,
+                                                                                                       "name":  "Station 2",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   },
+                                                                                                   {
+                                                                                                       "stationId":  21,
+                                                                                                       "name":  "Station 3",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   },
+                                                                                                   {
+                                                                                                       "stationId":  22,
+                                                                                                       "name":  "Station 4",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   }
+                                                                                               ]
+                                                                              },
+                                                                              {
+                                                                                  "productionLineId":  10,
+                                                                                  "name":  "Production Line 2",
+                                                                                  "status":  "active",
+                                                                                  "performance":  {
+                                                                                                      "oee":  0,
+                                                                                                      "availability":  0,
+                                                                                                      "performance":  0,
+                                                                                                      "quality":  0,
+                                                                                                      "downtimeHours":  0
+                                                                                                  },
+                                                                                  "stations":  [
+                                                                                                   {
+                                                                                                       "stationId":  23,
+                                                                                                       "name":  "Station 1",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   },
+                                                                                                   {
+                                                                                                       "stationId":  24,
+                                                                                                       "name":  "Station 2",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   },
+                                                                                                   {
+                                                                                                       "stationId":  25,
+                                                                                                       "name":  "Station 3",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   },
+                                                                                                   {
+                                                                                                       "stationId":  26,
+                                                                                                       "name":  "Station 4",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   }
+                                                                                               ]
+                                                                              },
+                                                                              {
+                                                                                  "productionLineId":  11,
+                                                                                  "name":  "Production Line 3",
+                                                                                  "status":  "active",
+                                                                                  "performance":  {
+                                                                                                      "oee":  0,
+                                                                                                      "availability":  0,
+                                                                                                      "performance":  0,
+                                                                                                      "quality":  0,
+                                                                                                      "downtimeHours":  0
+                                                                                                  },
+                                                                                  "stations":  [
+                                                                                                   {
+                                                                                                       "stationId":  27,
+                                                                                                       "name":  "Station 1",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   },
+                                                                                                   {
+                                                                                                       "stationId":  28,
+                                                                                                       "name":  "Station 2",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   },
+                                                                                                   {
+                                                                                                       "stationId":  29,
+                                                                                                       "name":  "Station 3",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   },
+                                                                                                   {
+                                                                                                       "stationId":  30,
+                                                                                                       "name":  "Station 4",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   }
+                                                                                               ]
+                                                                              }
+                                                                          ]
+                                                            },
+                                                            {
+                                                                "hallId":  6,
+                                                                "name":  "Hall 3",
+                                                                "status":  "active",
+                                                                "performance":  {
+                                                                                    "oee":  0,
+                                                                                    "availability":  0,
+                                                                                    "performance":  0,
+                                                                                    "quality":  0,
+                                                                                    "downtimeHours":  0
+                                                                                },
+                                                                "lines":  [
+                                                                              {
+                                                                                  "productionLineId":  12,
+                                                                                  "name":  "Production Line 1",
+                                                                                  "status":  "active",
+                                                                                  "performance":  {
+                                                                                                      "oee":  0,
+                                                                                                      "availability":  0,
+                                                                                                      "performance":  0,
+                                                                                                      "quality":  0,
+                                                                                                      "downtimeHours":  0
+                                                                                                  },
+                                                                                  "stations":  [
+                                                                                                   {
+                                                                                                       "stationId":  31,
+                                                                                                       "name":  "Station 1",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   },
+                                                                                                   {
+                                                                                                       "stationId":  32,
+                                                                                                       "name":  "Station 2",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   },
+                                                                                                   {
+                                                                                                       "stationId":  33,
+                                                                                                       "name":  "Station 3",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   },
+                                                                                                   {
+                                                                                                       "stationId":  34,
+                                                                                                       "name":  "Station 4",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   }
+                                                                                               ]
+                                                                              },
+                                                                              {
+                                                                                  "productionLineId":  13,
+                                                                                  "name":  "Production Line 2",
+                                                                                  "status":  "active",
+                                                                                  "performance":  {
+                                                                                                      "oee":  0,
+                                                                                                      "availability":  0,
+                                                                                                      "performance":  0,
+                                                                                                      "quality":  0,
+                                                                                                      "downtimeHours":  0
+                                                                                                  },
+                                                                                  "stations":  [
+                                                                                                   {
+                                                                                                       "stationId":  35,
+                                                                                                       "name":  "Station 1",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   },
+                                                                                                   {
+                                                                                                       "stationId":  36,
+                                                                                                       "name":  "Station 2",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   },
+                                                                                                   {
+                                                                                                       "stationId":  37,
+                                                                                                       "name":  "Station 3",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   },
+                                                                                                   {
+                                                                                                       "stationId":  38,
+                                                                                                       "name":  "Station 4",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   }
+                                                                                               ]
+                                                                              },
+                                                                              {
+                                                                                  "productionLineId":  14,
+                                                                                  "name":  "Production Line 3",
+                                                                                  "status":  "active",
+                                                                                  "performance":  {
+                                                                                                      "oee":  0,
+                                                                                                      "availability":  0,
+                                                                                                      "performance":  0,
+                                                                                                      "quality":  0,
+                                                                                                      "downtimeHours":  0
+                                                                                                  },
+                                                                                  "stations":  [
+                                                                                                   {
+                                                                                                       "stationId":  39,
+                                                                                                       "name":  "Station 1",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   },
+                                                                                                   {
+                                                                                                       "stationId":  40,
+                                                                                                       "name":  "Station 2",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   },
+                                                                                                   {
+                                                                                                       "stationId":  41,
+                                                                                                       "name":  "Station 3",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   },
+                                                                                                   {
+                                                                                                       "stationId":  42,
+                                                                                                       "name":  "Station 4",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   }
+                                                                                               ]
+                                                                              }
+                                                                          ]
+                                                            }
+                                                        ]
+                                          },
+                                          {
+                                              "facilityId":  5,
+                                              "name":  "kawd",
+                                              "location":  "NAP-01",
+                                              "status":  "active",
+                                              "complianceCoverage":  100,
+                                              "performance":  {
+                                                                  "oee":  0,
+                                                                  "availability":  0,
+                                                                  "performance":  0,
+                                                                  "quality":  0,
+                                                                  "downtimeHours":  0
+                                                              },
+                                              "halls":  [
+                                                            {
+                                                                "hallId":  7,
+                                                                "name":  "Hall 1",
+                                                                "status":  "active",
+                                                                "performance":  {
+                                                                                    "oee":  0,
+                                                                                    "availability":  0,
+                                                                                    "performance":  0,
+                                                                                    "quality":  0,
+                                                                                    "downtimeHours":  0
+                                                                                },
+                                                                "lines":  [
+                                                                              {
+                                                                                  "productionLineId":  15,
+                                                                                  "name":  "Production Line 1",
+                                                                                  "status":  "active",
+                                                                                  "performance":  {
+                                                                                                      "oee":  0,
+                                                                                                      "availability":  0,
+                                                                                                      "performance":  0,
+                                                                                                      "quality":  0,
+                                                                                                      "downtimeHours":  0
+                                                                                                  },
+                                                                                  "stations":  [
+                                                                                                   {
+                                                                                                       "stationId":  43,
+                                                                                                       "name":  "Station 1",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   },
+                                                                                                   {
+                                                                                                       "stationId":  44,
+                                                                                                       "name":  "Station 2",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   },
+                                                                                                   {
+                                                                                                       "stationId":  45,
+                                                                                                       "name":  "Station 3",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   }
+                                                                                               ]
+                                                                              },
+                                                                              {
+                                                                                  "productionLineId":  16,
+                                                                                  "name":  "Production Line 2",
+                                                                                  "status":  "active",
+                                                                                  "performance":  {
+                                                                                                      "oee":  0,
+                                                                                                      "availability":  0,
+                                                                                                      "performance":  0,
+                                                                                                      "quality":  0,
+                                                                                                      "downtimeHours":  0
+                                                                                                  },
+                                                                                  "stations":  [
+                                                                                                   {
+                                                                                                       "stationId":  46,
+                                                                                                       "name":  "Station 1",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   },
+                                                                                                   {
+                                                                                                       "stationId":  47,
+                                                                                                       "name":  "Station 2",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   },
+                                                                                                   {
+                                                                                                       "stationId":  48,
+                                                                                                       "name":  "Station 3",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   }
+                                                                                               ]
+                                                                              }
+                                                                          ]
+                                                            },
+                                                            {
+                                                                "hallId":  8,
+                                                                "name":  "Hall 2",
+                                                                "status":  "active",
+                                                                "performance":  {
+                                                                                    "oee":  0,
+                                                                                    "availability":  0,
+                                                                                    "performance":  0,
+                                                                                    "quality":  0,
+                                                                                    "downtimeHours":  0
+                                                                                },
+                                                                "lines":  [
+                                                                              {
+                                                                                  "productionLineId":  17,
+                                                                                  "name":  "Production Line 1",
+                                                                                  "status":  "active",
+                                                                                  "performance":  {
+                                                                                                      "oee":  0,
+                                                                                                      "availability":  0,
+                                                                                                      "performance":  0,
+                                                                                                      "quality":  0,
+                                                                                                      "downtimeHours":  0
+                                                                                                  },
+                                                                                  "stations":  [
+                                                                                                   {
+                                                                                                       "stationId":  49,
+                                                                                                       "name":  "Station 1",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   },
+                                                                                                   {
+                                                                                                       "stationId":  50,
+                                                                                                       "name":  "Station 2",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   },
+                                                                                                   {
+                                                                                                       "stationId":  51,
+                                                                                                       "name":  "Station 3",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   }
+                                                                                               ]
+                                                                              },
+                                                                              {
+                                                                                  "productionLineId":  18,
+                                                                                  "name":  "Production Line 2",
+                                                                                  "status":  "active",
+                                                                                  "performance":  {
+                                                                                                      "oee":  0,
+                                                                                                      "availability":  0,
+                                                                                                      "performance":  0,
+                                                                                                      "quality":  0,
+                                                                                                      "downtimeHours":  0
+                                                                                                  },
+                                                                                  "stations":  [
+                                                                                                   {
+                                                                                                       "stationId":  52,
+                                                                                                       "name":  "Station 1",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   },
+                                                                                                   {
+                                                                                                       "stationId":  53,
+                                                                                                       "name":  "Station 2",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   },
+                                                                                                   {
+                                                                                                       "stationId":  54,
+                                                                                                       "name":  "Station 3",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   }
+                                                                                               ]
+                                                                              }
+                                                                          ]
+                                                            }
+                                                        ]
+                                          },
+                                          {
+                                              "facilityId":  1,
+                                              "name":  "Main Facility",
+                                              "location":  "FAC-001",
+                                              "status":  "active",
+                                              "complianceCoverage":  100,
+                                              "performance":  {
+                                                                  "oee":  0.6531,
+                                                                  "availability":  0.7201,
+                                                                  "performance":  0.6979,
+                                                                  "quality":  0.7285,
+                                                                  "downtimeHours":  473.7204
+                                                              },
+                                              "halls":  [
+                                                            {
+                                                                "hallId":  1,
+                                                                "name":  "Hall A",
+                                                                "status":  "active",
+                                                                "performance":  {
+                                                                                    "oee":  0.8422,
+                                                                                    "availability":  0.9474,
+                                                                                    "performance":  0.9192,
+                                                                                    "quality":  0.963,
+                                                                                    "downtimeHours":  551.7204
+                                                                                },
+                                                                "lines":  [
+                                                                              {
+                                                                                  "productionLineId":  1,
+                                                                                  "name":  "Line 1",
+                                                                                  "status":  "active",
+                                                                                  "performance":  {
+                                                                                                      "oee":  0.9328,
+                                                                                                      "availability":  0.9814,
+                                                                                                      "performance":  0.9607,
+                                                                                                      "quality":  0.9894,
+                                                                                                      "downtimeHours":  312.4604
+                                                                                                  },
+                                                                                  "stations":  [
+                                                                                                   {
+                                                                                                       "stationId":  1,
+                                                                                                       "name":  "Hall A - Line 1 - Assembly",
+                                                                                                       "code":  "STN-001",
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0.9291,
+                                                                                                                           "availability":  0.9798,
+                                                                                                                           "performance":  0.9596,
+                                                                                                                           "quality":  0.9882,
+                                                                                                                           "downtimeHours":  355.5604
+                                                                                                                       }
+                                                                                                   },
+                                                                                                   {
+                                                                                                       "stationId":  2,
+                                                                                                       "name":  "Hall A - Line 1 - Welding",
+                                                                                                       "code":  "STN-002",
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0.9366,
+                                                                                                                           "availability":  0.983,
+                                                                                                                           "performance":  0.9618,
+                                                                                                                           "quality":  0.9907,
+                                                                                                                           "downtimeHours":  -43.1
+                                                                                                                       }
+                                                                                                   }
+                                                                                               ]
+                                                                              },
+                                                                              {
+                                                                                  "productionLineId":  3,
+                                                                                  "name":  "Line 2",
+                                                                                  "status":  "active",
+                                                                                  "performance":  {
+                                                                                                      "oee":  0.7516,
+                                                                                                      "availability":  0.9134,
+                                                                                                      "performance":  0.8776,
+                                                                                                      "quality":  0.9367,
+                                                                                                      "downtimeHours":  239.26
+                                                                                                  },
+                                                                                  "stations":  [
+                                                                                                   {
+                                                                                                       "stationId":  3,
+                                                                                                       "name":  "Hall A - Line 2 - Assembly",
+                                                                                                       "code":  "STN-003",
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0.7516,
+                                                                                                                           "availability":  0.9134,
+                                                                                                                           "performance":  0.8776,
+                                                                                                                           "quality":  0.9367,
+                                                                                                                           "downtimeHours":  239.26
+                                                                                                                       }
+                                                                                                   }
+                                                                                               ]
+                                                                              }
+                                                                          ]
+                                                            },
+                                                            {
+                                                                "hallId":  2,
+                                                                "name":  "Hall B",
+                                                                "status":  "active",
+                                                                "performance":  {
+                                                                                    "oee":  0.464,
+                                                                                    "availability":  0.4928,
+                                                                                    "performance":  0.4766,
+                                                                                    "quality":  0.494,
+                                                                                    "downtimeHours":  -78
+                                                                                },
+                                                                "lines":  [
+                                                                              {
+                                                                                  "productionLineId":  2,
+                                                                                  "name":  "Line 1",
+                                                                                  "status":  "active",
+                                                                                  "performance":  {
+                                                                                                      "oee":  0.928,
+                                                                                                      "availability":  0.9856,
+                                                                                                      "performance":  0.9532,
+                                                                                                      "quality":  0.988,
+                                                                                                      "downtimeHours":  -78
+                                                                                                  },
+                                                                                  "stations":  [
+                                                                                                   {
+                                                                                                       "stationId":  4,
+                                                                                                       "name":  "Hall B - Line 1 - Assembly",
+                                                                                                       "code":  "STN-004",
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0.928,
+                                                                                                                           "availability":  0.9856,
+                                                                                                                           "performance":  0.9532,
+                                                                                                                           "quality":  0.988,
+                                                                                                                           "downtimeHours":  -78
+                                                                                                                       }
+                                                                                                   }
+                                                                                               ]
+                                                                              },
+                                                                              {
+                                                                                  "productionLineId":  4,
+                                                                                  "name":  "Line 2",
+                                                                                  "status":  "active",
+                                                                                  "performance":  {
+                                                                                                      "oee":  0,
+                                                                                                      "availability":  0,
+                                                                                                      "performance":  0,
+                                                                                                      "quality":  0,
+                                                                                                      "downtimeHours":  0
+                                                                                                  },
+                                                                                  "stations":  [
+                                                                                                   {
+                                                                                                       "stationId":  5,
+                                                                                                       "name":  "Hall B - Line 2 - Welding",
+                                                                                                       "code":  "STN-005",
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0,
+                                                                                                                           "availability":  0,
+                                                                                                                           "performance":  0,
+                                                                                                                           "quality":  0,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   }
+                                                                                               ]
+                                                                              }
+                                                                          ]
+                                                            }
+                                                        ]
+                                          },
+                                          {
+                                              "facilityId":  2,
+                                              "name":  "South Manufacturing Plant",
+                                              "location":  "SMP-002",
+                                              "status":  "active",
+                                              "complianceCoverage":  100,
+                                              "performance":  {
+                                                                  "oee":  0.9298,
+                                                                  "availability":  0.9796,
+                                                                  "performance":  0.96,
+                                                                  "quality":  0.9887,
+                                                                  "downtimeHours":  0
+                                                              },
+                                              "halls":  [
+                                                            {
+                                                                "hallId":  3,
+                                                                "name":  "Hall 1",
+                                                                "status":  "active",
+                                                                "performance":  {
+                                                                                    "oee":  0.9298,
+                                                                                    "availability":  0.9796,
+                                                                                    "performance":  0.96,
+                                                                                    "quality":  0.9887,
+                                                                                    "downtimeHours":  0
+                                                                                },
+                                                                "lines":  [
+                                                                              {
+                                                                                  "productionLineId":  5,
+                                                                                  "name":  "Production Line 1",
+                                                                                  "status":  "active",
+                                                                                  "performance":  {
+                                                                                                      "oee":  0.9298,
+                                                                                                      "availability":  0.9796,
+                                                                                                      "performance":  0.96,
+                                                                                                      "quality":  0.9887,
+                                                                                                      "downtimeHours":  0
+                                                                                                  },
+                                                                                  "stations":  [
+                                                                                                   {
+                                                                                                       "stationId":  6,
+                                                                                                       "name":  "Station 1",
+                                                                                                       "code":  null,
+                                                                                                       "status":  "active",
+                                                                                                       "performance":  {
+                                                                                                                           "oee":  0.9298,
+                                                                                                                           "availability":  0.9796,
+                                                                                                                           "performance":  0.96,
+                                                                                                                           "quality":  0.9887,
+                                                                                                                           "downtimeHours":  0
+                                                                                                                       }
+                                                                                                   }
+                                                                                               ]
+                                                                              }
+                                                                          ]
+                                                            }
+                                                        ]
+                                          },
+                                          {
+                                              "facilityId":  12,
+                                              "name":  "Test Montreal",
+                                              "location":  "MONT112",
+                                              "status":  "active",
+                                              "complianceCoverage":  0,
+                                              "performance":  {
+                                                                  "oee":  0,
+                                                                  "availability":  0,
+                                                                  "performance":  0,
+                                                                  "quality":  0,
+                                                                  "downtimeHours":  0
+                                                              },
+                                              "halls":  [
+
+                                                        ]
+                                          }
+                                      ],
+                       "siteAccess":  [
+                                          {
+                                              "siteAccessAssignmentId":  1,
+                                              "userId":  1,
+                                              "facilityId":  1,
+                                              "accessLevel":  "assigned",
+                                              "createdAt":  "2026-07-22T19:28:35.598757Z"
+                                          },
+                                          {
+                                              "siteAccessAssignmentId":  2,
+                                              "userId":  2,
+                                              "facilityId":  1,
+                                              "accessLevel":  "assigned",
+                                              "createdAt":  "2026-07-22T19:28:35.598757Z"
+                                          },
+                                          {
+                                              "siteAccessAssignmentId":  3,
+                                              "userId":  3,
+                                              "facilityId":  1,
+                                              "accessLevel":  "assigned",
+                                              "createdAt":  "2026-07-22T19:28:35.598757Z"
+                                          },
+                                          {
+                                              "siteAccessAssignmentId":  24,
+                                              "userId":  6,
+                                              "facilityId":  1,
+                                              "accessLevel":  "assigned",
+                                              "createdAt":  "2026-08-01T06:27:29.26679Z"
+                                          },
+                                          {
+                                              "siteAccessAssignmentId":  13,
+                                              "userId":  7,
+                                              "facilityId":  1,
+                                              "accessLevel":  "assigned",
+                                              "createdAt":  "2026-08-01T06:25:38.097164Z"
+                                          },
+                                          {
+                                              "siteAccessAssignmentId":  18,
+                                              "userId":  8,
+                                              "facilityId":  1,
+                                              "accessLevel":  "assigned",
+                                              "createdAt":  "2026-08-01T06:25:59.822913Z"
+                                          },
+                                          {
+                                              "siteAccessAssignmentId":  4,
+                                              "userId":  2,
+                                              "facilityId":  2,
+                                              "accessLevel":  "assigned",
+                                              "createdAt":  "2026-07-27T18:04:43.220235Z"
+                                          },
+                                          {
+                                              "siteAccessAssignmentId":  27,
+                                              "userId":  6,
+                                              "facilityId":  2,
+                                              "accessLevel":  "assigned",
+                                              "createdAt":  "2026-08-01T06:27:29.316388Z"
+                                          },
+                                          {
+                                              "siteAccessAssignmentId":  21,
+                                              "userId":  8,
+                                              "facilityId":  2,
+                                              "accessLevel":  "assigned",
+                                              "createdAt":  "2026-08-01T06:25:59.939528Z"
+                                          },
+                                          {
+                                              "siteAccessAssignmentId":  5,
+                                              "userId":  1,
+                                              "facilityId":  3,
+                                              "accessLevel":  "assigned",
+                                              "createdAt":  "2026-07-27T18:09:07.173868Z"
+                                          },
+                                          {
+                                              "siteAccessAssignmentId":  9,
+                                              "userId":  4,
+                                              "facilityId":  3,
+                                              "accessLevel":  "assigned",
+                                              "createdAt":  "2026-07-27T18:37:36.521336Z"
+                                          },
+                                          {
+                                              "siteAccessAssignmentId":  8,
+                                              "userId":  5,
+                                              "facilityId":  3,
+                                              "accessLevel":  "assigned",
+                                              "createdAt":  "2026-07-27T18:36:10.538571Z"
+                                          },
+                                          {
+                                              "siteAccessAssignmentId":  22,
+                                              "userId":  6,
+                                              "facilityId":  3,
+                                              "accessLevel":  "assigned",
+                                              "createdAt":  "2026-08-01T06:27:29.233453Z"
+                                          },
+                                          {
+                                              "siteAccessAssignmentId":  16,
+                                              "userId":  8,
+                                              "facilityId":  3,
+                                              "accessLevel":  "assigned",
+                                              "createdAt":  "2026-08-01T06:25:59.765723Z"
+                                          },
+                                          {
+                                              "siteAccessAssignmentId":  6,
+                                              "userId":  1,
+                                              "facilityId":  5,
+                                              "accessLevel":  "assigned",
+                                              "createdAt":  "2026-07-27T18:21:00.641821Z"
+                                          },
+                                          {
+                                              "siteAccessAssignmentId":  23,
+                                              "userId":  6,
+                                              "facilityId":  5,
+                                              "accessLevel":  "assigned",
+                                              "createdAt":  "2026-08-01T06:27:29.239573Z"
+                                          },
+                                          {
+                                              "siteAccessAssignmentId":  17,
+                                              "userId":  8,
+                                              "facilityId":  5,
+                                              "accessLevel":  "assigned",
+                                              "createdAt":  "2026-08-01T06:25:59.802896Z"
+                                          },
+                                          {
+                                              "siteAccessAssignmentId":  11,
+                                              "userId":  9,
+                                              "facilityId":  5,
+                                              "accessLevel":  "assigned",
+                                              "createdAt":  "2026-08-01T06:10:01.601584Z"
+                                          }
+                                      ],
+                       "aiInsights":  [
+                                          {
+                                              "alertId":  19836,
+                                              "title":  "Sensor Offline: No data from STN-004 for 2913 min",
+                                              "severity":  "warning",
+                                              "resource":  "STN-004",
+                                              "createdAt":  "2026-08-07T20:44:39.419694Z"
+                                          },
+                                          {
+                                              "alertId":  19835,
+                                              "title":  "Sensor Offline: No data from STN-002 for 3113 min",
+                                              "severity":  "warning",
+                                              "resource":  "STN-002",
+                                              "createdAt":  "2026-08-07T20:44:38.470203Z"
+                                          },
+                                          {
+                                              "alertId":  19834,
+                                              "title":  "Sensor Offline: No data from STN-001 for 3055 min",
+                                              "severity":  "warning",
+                                              "resource":  "STN-001",
+                                              "createdAt":  "2026-08-07T20:44:38.062911Z"
+                                          },
+                                          {
+                                              "alertId":  19833,
+                                              "title":  "Long-Running Production Run at STN-005 (553h)",
+                                              "severity":  "info",
+                                              "resource":  "STN-005",
+                                              "createdAt":  "2026-08-07T20:39:33.72447Z"
+                                          },
+                                          {
+                                              "alertId":  19832,
+                                              "title":  "Long-Running Production Run at STN-003 (553h)",
+                                              "severity":  "info",
+                                              "resource":  "STN-003",
+                                              "createdAt":  "2026-08-07T20:39:31.167527Z"
+                                          },
+                                          {
+                                              "alertId":  19831,
+                                              "title":  "Long-Running Production Run at STN-004 (553h)",
+                                              "severity":  "info",
+                                              "resource":  "STN-004",
+                                              "createdAt":  "2026-08-07T20:39:29.237337Z"
+                                          },
+                                          {
+                                              "alertId":  19830,
+                                              "title":  "Long-Running Production Run at STN-002 (553h)",
+                                              "severity":  "info",
+                                              "resource":  "STN-002",
+                                              "createdAt":  "2026-08-07T20:39:27.203424Z"
+                                          },
+                                          {
+                                              "alertId":  19829,
+                                              "title":  "Long-Running Production Run at STN-001 (555h)",
+                                              "severity":  "info",
+                                              "resource":  "STN-001",
+                                              "createdAt":  "2026-08-07T20:39:25.453727Z"
+                                          },
+                                          {
+                                              "alertId":  19828,
+                                              "title":  "Sensor Offline: No data from STN-004 for 2908 min",
+                                              "severity":  "warning",
+                                              "resource":  "STN-004",
+                                              "createdAt":  "2026-08-07T20:39:23.999002Z"
+                                          },
+                                          {
+                                              "alertId":  19827,
+                                              "title":  "Sensor Offline: No data from STN-002 for 3108 min",
+                                              "severity":  "warning",
+                                              "resource":  "STN-002",
+                                              "createdAt":  "2026-08-07T20:39:21.650161Z"
+                                          },
+                                          {
+                                              "alertId":  19826,
+                                              "title":  "Sensor Offline: No data from STN-001 for 3050 min",
+                                              "severity":  "warning",
+                                              "resource":  "STN-001",
+                                              "createdAt":  "2026-08-07T20:39:21.236662Z"
+                                          },
+                                          {
+                                              "alertId":  19825,
+                                              "title":  "Sensor Offline: No data from STN-004 for 2903 min",
+                                              "severity":  "warning",
+                                              "resource":  "STN-004",
+                                              "createdAt":  "2026-08-07T20:34:15.315061Z"
+                                          },
+                                          {
+                                              "alertId":  19824,
+                                              "title":  "Sensor Offline: No data from STN-002 for 3103 min",
+                                              "severity":  "warning",
+                                              "resource":  "STN-002",
+                                              "createdAt":  "2026-08-07T20:34:12.081353Z"
+                                          },
+                                          {
+                                              "alertId":  19823,
+                                              "title":  "Sensor Offline: No data from STN-001 for 3045 min",
+                                              "severity":  "warning",
+                                              "resource":  "STN-001",
+                                              "createdAt":  "2026-08-07T20:34:10.250724Z"
+                                          },
+                                          {
+                                              "alertId":  19822,
+                                              "title":  "Sensor Offline: No data from STN-004 for 2897 min",
+                                              "severity":  "warning",
+                                              "resource":  "STN-004",
+                                              "createdAt":  "2026-08-07T20:29:00.564824Z"
+                                          },
+                                          {
+                                              "alertId":  19821,
+                                              "title":  "Sensor Offline: No data from STN-002 for 3097 min",
+                                              "severity":  "warning",
+                                              "resource":  "STN-002",
+                                              "createdAt":  "2026-08-07T20:28:59.313205Z"
+                                          },
+                                          {
+                                              "alertId":  19820,
+                                              "title":  "Sensor Offline: No data from STN-001 for 3039 min",
+                                              "severity":  "warning",
+                                              "resource":  "STN-001",
+                                              "createdAt":  "2026-08-07T20:28:59.062724Z"
+                                          },
+                                          {
+                                              "alertId":  19819,
+                                              "title":  "Sensor Offline: No data from STN-004 for 2892 min",
+                                              "severity":  "warning",
+                                              "resource":  "STN-004",
+                                              "createdAt":  "2026-08-07T20:23:49.277826Z"
+                                          },
+                                          {
+                                              "alertId":  19818,
+                                              "title":  "Sensor Offline: No data from STN-002 for 3092 min",
+                                              "severity":  "warning",
+                                              "resource":  "STN-002",
+                                              "createdAt":  "2026-08-07T20:23:47.212442Z"
+                                          },
+                                          {
+                                              "alertId":  19817,
+                                              "title":  "Sensor Offline: No data from STN-001 for 3034 min",
+                                              "severity":  "warning",
+                                              "resource":  "STN-001",
+                                              "createdAt":  "2026-08-07T20:23:46.52559Z"
+                                          }
+                                      ],
+                       "generatedAtUtc":  "2026-08-07T20:47:35.8735176Z"
+                   },
+    "risk":  [
+                 {
+                     "asset_id":  "station:1",
+                     "asset_type":  "station",
+                     "station_id":  1,
+                     "name":  "Hall A - Line 1 - Assembly",
+                     "code":  "STN-001",
+                     "failure_probability":  0.3935,
+                     "risk_level":  "medium",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "5 downtime incidents in 30 days",
+                                     "sensor data is stale"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:2",
+                     "asset_type":  "station",
+                     "station_id":  2,
+                     "name":  "Hall A - Line 1 - Welding",
+                     "code":  "STN-002",
+                     "failure_probability":  0.3297,
+                     "risk_level":  "medium",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "3 downtime incidents in 30 days",
+                                     "sensor data is stale"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:3",
+                     "asset_type":  "station",
+                     "station_id":  3,
+                     "name":  "Hall A - Line 2 - Assembly",
+                     "code":  "STN-003",
+                     "failure_probability":  0.2592,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "5 downtime incidents in 30 days"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:4",
+                     "asset_type":  "station",
+                     "station_id":  4,
+                     "name":  "Hall B - Line 1 - Assembly",
+                     "code":  "STN-004",
+                     "failure_probability":  0.2592,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "1 downtime incidents in 30 days",
+                                     "sensor data is stale"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:5",
+                     "asset_type":  "station",
+                     "station_id":  5,
+                     "name":  "Hall B - Line 2 - Welding",
+                     "code":  "STN-005",
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:6",
+                     "asset_type":  "station",
+                     "station_id":  6,
+                     "name":  "Station 1",
+                     "code":  null,
+                     "failure_probability":  0.2212,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "sensor data is stale"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:7",
+                     "asset_type":  "station",
+                     "station_id":  7,
+                     "name":  "Station 1",
+                     "code":  null,
+                     "failure_probability":  0.2592,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "1 downtime incidents in 30 days",
+                                     "sensor data is stale"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:8",
+                     "asset_type":  "station",
+                     "station_id":  8,
+                     "name":  "Station 2",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:9",
+                     "asset_type":  "station",
+                     "station_id":  9,
+                     "name":  "Station 3",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:10",
+                     "asset_type":  "station",
+                     "station_id":  10,
+                     "name":  "Station 4",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:11",
+                     "asset_type":  "station",
+                     "station_id":  11,
+                     "name":  "Station 1",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:12",
+                     "asset_type":  "station",
+                     "station_id":  12,
+                     "name":  "Station 2",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:13",
+                     "asset_type":  "station",
+                     "station_id":  13,
+                     "name":  "Station 3",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:14",
+                     "asset_type":  "station",
+                     "station_id":  14,
+                     "name":  "Station 4",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:15",
+                     "asset_type":  "station",
+                     "station_id":  15,
+                     "name":  "Station 1",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:16",
+                     "asset_type":  "station",
+                     "station_id":  16,
+                     "name":  "Station 2",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:17",
+                     "asset_type":  "station",
+                     "station_id":  17,
+                     "name":  "Station 3",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:18",
+                     "asset_type":  "station",
+                     "station_id":  18,
+                     "name":  "Station 4",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:19",
+                     "asset_type":  "station",
+                     "station_id":  19,
+                     "name":  "Station 1",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:20",
+                     "asset_type":  "station",
+                     "station_id":  20,
+                     "name":  "Station 2",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:21",
+                     "asset_type":  "station",
+                     "station_id":  21,
+                     "name":  "Station 3",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:22",
+                     "asset_type":  "station",
+                     "station_id":  22,
+                     "name":  "Station 4",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:23",
+                     "asset_type":  "station",
+                     "station_id":  23,
+                     "name":  "Station 1",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:24",
+                     "asset_type":  "station",
+                     "station_id":  24,
+                     "name":  "Station 2",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:25",
+                     "asset_type":  "station",
+                     "station_id":  25,
+                     "name":  "Station 3",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:26",
+                     "asset_type":  "station",
+                     "station_id":  26,
+                     "name":  "Station 4",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:27",
+                     "asset_type":  "station",
+                     "station_id":  27,
+                     "name":  "Station 1",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:28",
+                     "asset_type":  "station",
+                     "station_id":  28,
+                     "name":  "Station 2",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:29",
+                     "asset_type":  "station",
+                     "station_id":  29,
+                     "name":  "Station 3",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:30",
+                     "asset_type":  "station",
+                     "station_id":  30,
+                     "name":  "Station 4",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:31",
+                     "asset_type":  "station",
+                     "station_id":  31,
+                     "name":  "Station 1",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:32",
+                     "asset_type":  "station",
+                     "station_id":  32,
+                     "name":  "Station 2",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:33",
+                     "asset_type":  "station",
+                     "station_id":  33,
+                     "name":  "Station 3",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:34",
+                     "asset_type":  "station",
+                     "station_id":  34,
+                     "name":  "Station 4",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:35",
+                     "asset_type":  "station",
+                     "station_id":  35,
+                     "name":  "Station 1",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:36",
+                     "asset_type":  "station",
+                     "station_id":  36,
+                     "name":  "Station 2",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:37",
+                     "asset_type":  "station",
+                     "station_id":  37,
+                     "name":  "Station 3",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:38",
+                     "asset_type":  "station",
+                     "station_id":  38,
+                     "name":  "Station 4",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:39",
+                     "asset_type":  "station",
+                     "station_id":  39,
+                     "name":  "Station 1",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:40",
+                     "asset_type":  "station",
+                     "station_id":  40,
+                     "name":  "Station 2",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:41",
+                     "asset_type":  "station",
+                     "station_id":  41,
+                     "name":  "Station 3",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:42",
+                     "asset_type":  "station",
+                     "station_id":  42,
+                     "name":  "Station 4",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:43",
+                     "asset_type":  "station",
+                     "station_id":  43,
+                     "name":  "Station 1",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:44",
+                     "asset_type":  "station",
+                     "station_id":  44,
+                     "name":  "Station 2",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:45",
+                     "asset_type":  "station",
+                     "station_id":  45,
+                     "name":  "Station 3",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:46",
+                     "asset_type":  "station",
+                     "station_id":  46,
+                     "name":  "Station 1",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:47",
+                     "asset_type":  "station",
+                     "station_id":  47,
+                     "name":  "Station 2",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:48",
+                     "asset_type":  "station",
+                     "station_id":  48,
+                     "name":  "Station 3",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:49",
+                     "asset_type":  "station",
+                     "station_id":  49,
+                     "name":  "Station 1",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:50",
+                     "asset_type":  "station",
+                     "station_id":  50,
+                     "name":  "Station 2",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:51",
+                     "asset_type":  "station",
+                     "station_id":  51,
+                     "name":  "Station 3",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:52",
+                     "asset_type":  "station",
+                     "station_id":  52,
+                     "name":  "Station 1",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:53",
+                     "asset_type":  "station",
+                     "station_id":  53,
+                     "name":  "Station 2",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 },
+                 {
+                     "asset_id":  "station:54",
+                     "asset_type":  "station",
+                     "station_id":  54,
+                     "name":  "Station 3",
+                     "code":  null,
+                     "failure_probability":  0.0488,
+                     "risk_level":  "low",
+                     "model":  "olive-local-risk-v1",
+                     "factors":  [
+                                     "no elevated operational indicators"
+                                 ],
+                     "recommendation":  "Continue normal monitoring.",
+                     "calculated_at":  "2026-08-07T20:47:37.449425+00:00"
+                 }
+             ],
+    "warnings":  [
+
+                 ]
+}

@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-unused-vars, react-hooks/preserve-manual-memoization */
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -10,18 +11,20 @@ import type {
   AiAlert,
   AiFailureProbability,
   CanonicalAssetDto,
-  DowntimeIncidentDto,
+  CanonicalDowntimeDto,
   GatewaySensorDto,
   PagedEnvelope,
   SensorStreamDto,
 } from "@/lib/backend-dtos";
-import { useFacilityHierarchy } from "@/lib/facility-hierarchy";
 import { useSessionUser } from "@/lib/session-user";
 import { CanonicalAssetForm } from "./canonical-asset-form";
 import { normalizeAssets } from "@/lib/api-normalizers";
-import { timedRequest } from "@/lib/request-timing";
+import { pageRequest } from "@/lib/page-request";
+import type { AssetsPageContract } from "@/lib/page-contracts";
+import type { FacilityWorkspace } from "@/lib/backend-dtos";
 
 type StreamDetail = SensorStreamDto & { sensors: GatewaySensorDto[] };
+type AssetDowntime = CanonicalDowntimeDto & { stationId:number; endTime:string|null };
 const ENABLE_ASSET_SENSOR_STREAMS = process.env.NEXT_PUBLIC_ENABLE_ASSET_SENSOR_STREAMS === "true";
 type Asset = {
   assetId:number;stationId:number; name:string; code:string|null; status:string;machineType:string;firmware:string|null;criticality:string;
@@ -35,11 +38,11 @@ function riskLabel(value?:AiFailureProbability) {
 }
 
 export function AssetsPage() {
-  const hierarchy = useFacilityHierarchy();
+  const [facilityScope,setFacilityScope]=useState<FacilityWorkspace|null>(null);const hierarchy={data:facilityScope,refresh:async()=>undefined};
   const session=useSessionUser();
   const [risks,setRisks] = useState<AiFailureProbability[]>([]);
   const [streams,setStreams] = useState<StreamDetail[]>([]);
-  const [downtime,setDowntime] = useState<DowntimeIncidentDto[]>([]);
+  const [downtime,setDowntime] = useState<AssetDowntime[]>([]);
   const [alerts,setAlerts] = useState<AiAlert[]>([]);
   const [canonicalAssets,setCanonicalAssets]=useState<CanonicalAssetDto[]>([]);
   const [success,setSuccess]=useState("");
@@ -59,27 +62,8 @@ export function AssetsPage() {
   const accessChecks=useMemo(()=>createAccessChecks(session.user),[session.user]);
   const accessibleFacilities=(hierarchy.data?.facilities??[]).filter(item=>accessChecks.hasFacilityAccess(item.facilityId));
 
-  const loadAssets=useCallback(async()=>{setRefreshing(true);try{const value=await timedRequest("assets",()=>apiRequest<unknown>("/api/backend/assets"));setCanonicalAssets(normalizeAssets(value));setAssetFailure(null)}catch(reason){setAssetFailure({status:reason instanceof ApiError?reason.status:0,message:reason instanceof Error?reason.message:"Assets could not be loaded."})}finally{setLoadingAssets(false);setRefreshing(false)}},[]);
-  const loadRelated = useCallback(async()=>{
-    setRelatedError("");
-    const results = await Promise.allSettled([
-      apiRequest<AiFailureProbability[]>("/api/backend/ai/assets/failure-probabilities"),
-      ENABLE_ASSET_SENSOR_STREAMS
-        ? apiRequest<SensorStreamDto[]>("/api/backend/sensors/streams").then(list=>Promise.all(list.map(item=>apiRequest<StreamDetail>(`/api/backend/sensors/streams/${item.strid}`))))
-        : Promise.resolve([] as StreamDetail[]),
-      apiRequest<PagedEnvelope<DowntimeIncidentDto>>("/api/backend/downtime?page=1&pageSize=100&includeSynthetic=true"),
-      apiRequest<AiAlert[]>("/api/backend/ai/alerts"),
-    ]);
-    if(results[0].status==="fulfilled")setRisks(results[0].value);
-    if(results[1].status==="fulfilled")setStreams(results[1].value);
-    if(results[2].status==="fulfilled")setDowntime(results[2].value.items);
-    if(results[3].status==="fulfilled")setAlerts(results[3].value);
-    const failures=results.filter(result=>result.status==="rejected") as PromiseRejectedResult[];
-    if(failures.length) {
-      const denied=failures.some(item=>item.reason instanceof ApiError&&item.reason.status===403);
-      setRelatedError(denied?"Access Denied: Some asset intelligence is hidden because your role lacks permission.":"Some related sensor, AI, or downtime data could not be loaded.");
-    }
-  },[]);
+  const loadAssets=useCallback(async()=>{setRefreshing(true);try{const value=await pageRequest<AssetsPageContract>("assets");const assets=normalizeAssets(value.assets);setCanonicalAssets(assets);setRisks(value.enrichment.risk);setDowntime(value.enrichment.recentDowntime.items.map(item=>({...item,stationId:item.station_id,endTime:item.end_utc})));const facilities=[...new Map(assets.map(item=>[item.facilityid,{facilityId:item.facilityid??0,name:item.facility_name,location:"",status:"active",complianceCoverage:0,performance:{oee:0,availability:0,performance:0,quality:0,downtimeHours:0},halls:[]}])).values()];setFacilityScope({summary:{activeFacilities:facilities.length,totalFacilities:facilities.length,averageOee:0,complianceCoverage:0,recentDowntimeHours:0},facilities,siteAccess:[],aiInsights:[],generatedAtUtc:value.generatedAtUtc});setAssetFailure(null)}catch(reason){setAssetFailure({status:reason instanceof ApiError?reason.status:0,message:reason instanceof Error?reason.message:"Assets could not be loaded."})}finally{setLoadingAssets(false);setRefreshing(false)}},[]);
+  const loadRelated = useCallback(async()=>undefined,[]);
 
   useEffect(()=>{// eslint-disable-next-line react-hooks/set-state-in-effect
     void loadAssets();void loadRelated()
@@ -94,7 +78,7 @@ export function AssetsPage() {
   const alertsFor=(asset:Asset)=>alerts.filter(item=>[asset.name,asset.code,String(asset.stationId)].some(value=>value&&item.resource?.includes(value)));
   const visible=assets.filter(item=>(!facilityId||item.facilityId===Number(facilityId))&&(!hallId||item.hallId===Number(hallId))&&(!lineId||item.lineId===Number(lineId))&&(!status||item.status===status)&&(!risk||riskLabel(riskFor(item.stationId))===risk)&&`${item.name} ${item.code??""} ${item.facility} ${item.hall} ${item.line}`.toLowerCase().includes(query.toLowerCase()));
   const loading=loadingAssets;
-  const error=hierarchy.error||relatedError;
+  const error=relatedError;
 
   return <div className="space-y-5 pb-5">
     <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><p className="font-mono text-xs font-semibold uppercase tracking-[0.14em] text-primary">Operations</p><h1 className="mt-1.5 text-2xl font-bold tracking-tight">Asset Registry</h1><p className="mt-1 text-sm text-muted-foreground">Stations connected to hierarchy, sensors, Olive risk, and downtime</p></div><div className="flex gap-2">{refreshing&&<span role="status" className="self-center text-xs text-muted-foreground">Refreshing…</span>}{canCreate&&<button onClick={()=>setCreateOpen(true)} className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground"><Plus className="size-4"/>Create Asset</button>}<button onClick={()=>void Promise.allSettled([hierarchy.refresh(),loadAssets(),loadRelated()])} className="inline-flex h-10 items-center gap-2 rounded-lg border px-4 text-xs"><RefreshCw className="size-4"/>Refresh</button></div></header>
