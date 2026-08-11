@@ -22,7 +22,8 @@ import {
 import { apiRequest } from "@/lib/api-client";
 import type { PagedEnvelope, SecurityEventDto } from "@/lib/backend-dtos";
 import { useFacilityHierarchy } from "@/lib/facility-hierarchy";
-import { userFacingLabel } from "@/lib/user-facing-text";
+import { pageRequest } from "@/lib/page-request";
+import type { ApiGatewayPageContract } from "@/lib/page-contracts";
 
 type Tab =
   | "overview"
@@ -30,24 +31,21 @@ type Tab =
   | "api-gateway"
   | "authentication"
   | "sessions"
-  | "blocked";
+  | "blocked"
+  | "ingestion";
 const tabs: Array<{ id: Tab; label: string }> = [
   { id: "overview", label: "Overview" },
   { id: "threats", label: "Threats & Alerts" },
   { id: "api-gateway", label: "API Gateway" },
   { id: "authentication", label: "Authentication" },
+  { id: "ingestion", label: "Data Ingestion Security" },
   { id: "sessions", label: "Active Sessions" },
   { id: "blocked", label: "Blocked Clients" },
 ];
 const unsupported: Record<
-  Exclude<Tab, "overview" | "threats" | "authentication">,
+  Exclude<Tab, "overview" | "threats" | "api-gateway" | "authentication" | "ingestion">,
   { title: string; message: string }
 > = {
-  "api-gateway": {
-    title: "API and gateway telemetry unavailable",
-    message:
-      "API health, traffic, failed-request, rate-limit, and service-availability metrics are not currently available.",
-  },
   sessions: {
     title: "Active sessions unavailable",
     message:
@@ -60,7 +58,34 @@ const unsupported: Record<
   },
 };
 
+function GatewayPanel() {
+  const [data,setData]=useState<ApiGatewayPageContract|null>(null);
+  const [loading,setLoading]=useState(true);
+  const [error,setError]=useState("");
+  const load=useCallback(async()=>{setLoading(true);try{setData(await pageRequest<ApiGatewayPageContract>("apiGateway"));setError("")}catch(cause){setData(null);setError(cause instanceof Error?cause.message:"Gateway status could not be loaded.")}finally{setLoading(false)}},[]);
+  useEffect(()=>{// eslint-disable-next-line react-hooks/set-state-in-effect
+    void load()
+  },[load]);
+  if(loading)return <div className="h-52 animate-pulse rounded-xl bg-muted"/>;
+  if(error)return <section className="rounded-xl border border-destructive/30 bg-destructive/10 p-5"><p role="alert" className="text-xs text-destructive">{error}</p><button type="button" onClick={()=>void load()} className="mt-3 h-9 rounded-lg border px-3 text-xs font-semibold">Retry</button></section>;
+  if(!data)return null;
+  const metric=(value:number|null)=>value===null?"Unavailable":value.toLocaleString();
+  return <div className="space-y-4"><section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{[
+    ["Service",data.service.status],
+    ["Environment",data.service.environment??"Not reported"],
+    ["Authentication",data.service.authenticationStatus],
+    ["Rate limiting",data.service.rateLimitStatus??"Unavailable"],
+  ].map(([label,value])=><article key={label} className="rounded-xl border bg-card p-4"><p className="text-xs text-muted-foreground">{label}</p><p className="mt-2 font-mono text-sm font-semibold capitalize">{value}</p></article>)}</section><section className="rounded-xl border bg-card p-5"><h2 className="font-semibold">Routing</h2><p className="mt-2 text-xs leading-5 text-muted-foreground">{data.routing.summary}</p></section><section className="rounded-xl border bg-card p-5"><h2 className="font-semibold">Recent requests</h2><div className="mt-3 grid gap-3 sm:grid-cols-3">{[["Total",data.recentRequests.total],["Successful",data.recentRequests.successful],["Failed",data.recentRequests.failed]].map(([label,value])=><div key={String(label)} className="rounded-lg bg-muted/40 p-3"><p className="text-xs text-muted-foreground">{label}</p><p className="mt-1 text-lg font-bold">{metric(value as number|null)}</p></div>)}</div></section>{data.warnings.map(warning=><p key={warning} className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-700">{warning}</p>)}</div>;
+}
+
 function EventTable({ items }: { items: SecurityEventDto[] }) {
+  function userFacingLabel(status: string): import("react").ReactNode {
+    return status
+      .split(/(?=[A-Z])|_/)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ");
+  }
+
   return (
     <div className="overflow-hidden rounded-xl border bg-card">
       <div className="overflow-x-auto">
@@ -178,6 +203,11 @@ export function SecurityOperationsPage() {
       `${item.eventType} ${item.description}`,
     ),
   );
+  const ingestionEvents = data.items.filter((item) =>
+    /ingest|ingestion|pipeline|kafka|s3|connector/i.test(
+      `${item.eventType} ${item.description} ${item.source}`,
+    ),
+  );
   const threats = data.items.filter((item) =>
     ["critical", "high"].includes(item.severity.toLowerCase()),
   );
@@ -220,6 +250,16 @@ export function SecurityOperationsPage() {
       <EventTable items={threats} />
     ) : tab === "authentication" ? (
       <EventTable items={authEvents} />
+    ) : tab === "ingestion" ? (
+      <div className="space-y-3">
+        <p className="rounded-lg border bg-card px-4 py-3 text-xs text-muted-foreground">
+          Data-ingestion security events recorded by the canonical security
+          event stream.
+        </p>
+        <EventTable items={ingestionEvents} />
+      </div>
+    ) : tab === "api-gateway" ? (
+      <GatewayPanel />
     ) : (
       <section className="rounded-xl border border-dashed bg-muted/20 p-10 text-center">
         <ShieldAlert className="mx-auto size-8 text-muted-foreground" />

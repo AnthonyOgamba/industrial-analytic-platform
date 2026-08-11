@@ -20,10 +20,6 @@ import { pageRequest } from "@/lib/page-request";
 import type { DashboardPageContract } from "@/lib/page-contracts";
 import type { FacilityWorkspace } from "@/lib/backend-dtos";
 
-function DashboardSkeleton({message="Loading dashboard…"}:{message?:string}) {
-  return <div aria-label={message} role="status" className="space-y-5"><p className="text-sm text-muted-foreground">{message}</p><div className="h-16 animate-pulse rounded-xl bg-muted motion-reduce:animate-none"/><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">{Array.from({length:10},(_,i)=><div key={i} className="h-40 animate-pulse rounded-xl bg-muted motion-reduce:animate-none"/>)}</div><div className="h-72 animate-pulse rounded-xl bg-muted motion-reduce:animate-none"/></div>;
-}
-
 function percentage(value: number) {
   return `${(value * 100).toFixed(1)}`;
 }
@@ -69,7 +65,6 @@ export function Dashboard() {
   const [partialWarning, setPartialWarning] = useState("");
   const [refreshWarning, setRefreshWarning] = useState("");
   const [costImpactOpen,setCostImpactOpen]=useState(false);
-  const [loading, setLoading] = useState(true);
   const [loadState,setLoadState]=useState<DashboardLoadState>("bootstrapping");
   const [readiness,setReadiness]=useState<"checking"|"ready"|"exhausted">("ready");
   const costImpactTrigger=useRef<HTMLButtonElement>(null);
@@ -92,7 +87,6 @@ export function Dashboard() {
     requestKeyRef.current=requestKey;
     const isInitialLoad = !hasUsableDataRef.current;
     if (isInitialLoad) {
-      setLoading(true);
       setLoadState("loading-primary");
       setPartialWarning("");
     } else setLoadState("refreshing");
@@ -131,7 +125,7 @@ export function Dashboard() {
       }
     } finally {
       window.clearTimeout(timeout);
-      if(requestId===requestIdRef.current){requestPendingRef.current = false;requestKeyRef.current="";if (isInitialLoad) setLoading(false)}
+      if(requestId===requestIdRef.current){requestPendingRef.current = false;requestKeyRef.current=""}
     }
   }, [facilityId, rangeDays]);
   const loadRef=useRef(load);
@@ -260,7 +254,6 @@ export function Dashboard() {
   const displayedPlatformMetrics=workspace?platformMetrics:fallbackPlatformMetrics;
 
   const fallbackUsable=Boolean(hierarchy.data||fallback&&Object.values(fallback).some(result=>result.status==="success"||result.status==="empty"));
-  if(!workspace&&!fallbackUsable&&(session.loading||readiness==="checking"||loading))return <DashboardSkeleton message="Connecting to operational services…"/>;
   if(readiness==="exhausted"&&!workspace&&!fallbackUsable&&loadState==="fatal")return <div role="alert" className="rounded-xl border bg-card p-6"><h1 className="font-semibold">Operational services are not ready yet. Try again shortly.</h1><button type="button" onClick={()=>void load(true)} className="mt-4 inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-xs font-semibold"><RefreshCw className="size-4"/>Retry</button></div>;
 
   return <div className="space-y-5 pb-4">
