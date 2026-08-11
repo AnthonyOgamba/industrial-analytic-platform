@@ -38,6 +38,7 @@ import { apiRequest } from "@/lib/api-client";
 import { useAccess } from "@/lib/access-control";
 import type { CanonicalNotificationDto } from "@/lib/backend-dtos";
 import { normalizeNotifications } from "@/lib/normalize-notifications";
+import type { PlatformNotificationDetail } from "@/lib/platform-notifications";
 
 type Language = "en"|"fr"|"es"|"pa";
 const languageNames:Record<Language,string>={en:"English",fr:"Français",es:"Español",pa:"ਪੰਜਾਬੀ"};
@@ -204,6 +205,7 @@ function SidebarContent({ onNavigate, user, language }: { onNavigate?: () => voi
                     <Link
                       key={item.href}
                       href={item.href}
+                      prefetch={true}
                       onClick={onNavigate}
                       aria-current={active ? "page" : undefined}
                       className={cn(
@@ -263,6 +265,33 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
     window.addEventListener("divu-open-notifications", openNotifications);
     return () => window.removeEventListener("divu-open-notifications", openNotifications);
   }, []);
+  useEffect(() => {
+    const showNotification = (event: Event) => {
+      const detail = (event as CustomEvent<PlatformNotificationDetail>).detail;
+      if (!detail) return;
+      setNotifications(current => [{
+        notificationId: -Date.now(),
+        notificationType: "warning",
+        title: detail.title,
+        message: detail.message,
+        recipientUserId: sessionUser?.uid ?? 0,
+        actorUserId: null,
+        actorUsername: null,
+        targetType: null,
+        targetId: null,
+        facilityId: null,
+        action: null,
+        severity: "warning",
+        route: pathname,
+        correlationId: null,
+        createdAtUtc: new Date().toISOString(),
+        readAtUtc: null,
+      }, ...current]);
+      setNotificationsOpen(true);
+    };
+    window.addEventListener("divu-platform-notification", showNotification);
+    return () => window.removeEventListener("divu-platform-notification", showNotification);
+  }, [pathname, sessionUser?.uid]);
   useEffect(()=>{
     const stored=(localStorage.getItem("divu-language")||"en") as Language;
     const motion=localStorage.getItem("divu-reduced-motion")==="true";

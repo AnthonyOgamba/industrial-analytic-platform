@@ -16,6 +16,8 @@ import { facilityHierarchyApi, invalidateFacilityHierarchy, refreshFacilityHiera
 import { useSessionUser } from "@/lib/session-user";
 import { pageRequest } from "@/lib/page-request";
 import type { FacilitiesPageContract } from "@/lib/page-contracts";
+import { notifyPlatform } from "@/lib/platform-notifications";
+import { safeOperationalError } from "@/lib/user-facing-text";
 
 type FacilitiesTab = "sites" | "performance" | "access";
 const tabs: { key: FacilitiesTab; label: string; icon: React.ElementType }[] = [
@@ -103,8 +105,8 @@ export function FacilitiesWorkspace() {
       hasFacilities.current=true;
       setAccessRecords(workspace.siteAccess.map((record) => ({ id: String(record.siteAccessAssignmentId), userId: String(record.userId), userName: `User #${record.userId}`, platformRole: "Platform user", operationalRole: accessMap(record.accessLevel), facilityId: String(record.facilityId), hall: "All Halls", productionLine: "All Lines", accessLevel: accessMap(record.accessLevel), effectiveDate: record.createdAt, status: "Active" })));
       setLoading(false);
-      setInsights(response.risk.slice(0,3).map(risk=>({id:risk.asset_id,facility:mappedFacilities.find(facility=>facility.halls.some(hall=>hall.lines.some(line=>line.stations.some(station=>station.id===String(risk.station_id)))))?.name??"Manufacturing network",line:risk.code,message:risk.recommendation,priority:risk.risk_level==="critical"||risk.risk_level==="high"?"High":risk.risk_level==="medium"?"Medium":"Low",confidence:Math.round(risk.failure_probability*100)})));
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Facilities could not be loaded."); }
+      setInsights((response.risk ?? []).slice(0,3).map(risk=>({id:risk.asset_id,facility:mappedFacilities.find(facility=>facility.halls.some(hall=>hall.lines.some(line=>line.stations.some(station=>station.id===String(risk.station_id)))))?.name??"Manufacturing network",line:risk.code??"Station",message:risk.recommendation,priority:risk.risk_level==="critical"||risk.risk_level==="high"?"High":risk.risk_level==="medium"?"Medium":"Low",confidence:Math.round(risk.failure_probability*100)})));
+    } catch (cause) { const message=safeOperationalError("Facilities",hasFacilities.current); setError(hasFacilities.current?"":message); notifyPlatform({title:"Facilities refresh failed",message}); }
     finally { setLoading(false); }
   }, [session.user]);
   useEffect(() => { // eslint-disable-next-line react-hooks/set-state-in-effect

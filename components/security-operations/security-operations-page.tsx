@@ -22,26 +22,25 @@ import {
 import { apiRequest } from "@/lib/api-client";
 import type { PagedEnvelope, SecurityEventDto } from "@/lib/backend-dtos";
 import { useFacilityHierarchy } from "@/lib/facility-hierarchy";
+import { userFacingLabel } from "@/lib/user-facing-text";
 
 type Tab =
   | "overview"
   | "threats"
   | "api-gateway"
   | "authentication"
-  | "ingestion"
   | "sessions"
   | "blocked";
 const tabs: Array<{ id: Tab; label: string }> = [
   { id: "overview", label: "Overview" },
   { id: "threats", label: "Threats & Alerts" },
-  { id: "api-gateway", label: "API & Gateway" },
+  { id: "api-gateway", label: "API Gateway" },
   { id: "authentication", label: "Authentication" },
-  { id: "ingestion", label: "Data Ingestion Security" },
   { id: "sessions", label: "Active Sessions" },
   { id: "blocked", label: "Blocked Clients" },
 ];
 const unsupported: Record<
-  Exclude<Tab, "overview" | "threats" | "authentication" | "ingestion">,
+  Exclude<Tab, "overview" | "threats" | "authentication">,
   { title: string; message: string }
 > = {
   "api-gateway": {
@@ -88,12 +87,12 @@ function EventTable({ items }: { items: SecurityEventDto[] }) {
             {items.map((item) => (
               <tr key={item.securityEventId} className="border-t">
                 <td className="px-4 py-4 font-mono">#{item.securityEventId}</td>
-                <td className="px-4 py-4 font-semibold">{item.eventType}</td>
+                <td className="px-4 py-4 font-semibold">{userFacingLabel(item.eventType)}</td>
                 <td className="max-w-md px-4 py-4 leading-5 text-muted-foreground">
                   {item.description}
                 </td>
-                <td className="px-4 py-4 uppercase">{item.severity}</td>
-                <td className="px-4 py-4">{item.status}</td>
+                <td className="px-4 py-4">{userFacingLabel(item.severity)}</td>
+                <td className="px-4 py-4">{userFacingLabel(item.status)}</td>
                 <td className="px-4 py-4">{item.source}</td>
                 <td className="px-4 py-4">
                   {new Date(item.occurredAtUtc).toLocaleString()}
@@ -182,11 +181,6 @@ export function SecurityOperationsPage() {
   const threats = data.items.filter((item) =>
     ["critical", "high"].includes(item.severity.toLowerCase()),
   );
-  const ingestionEvents = data.items.filter((item) =>
-    /ingest|import|upload|payload|protocol|telemetry|source/i.test(
-      `${item.eventType} ${item.description} ${item.source}`,
-    ),
-  );
   const content =
     tab === "overview" ? (
       <div className="space-y-4">
@@ -226,14 +220,6 @@ export function SecurityOperationsPage() {
       <EventTable items={threats} />
     ) : tab === "authentication" ? (
       <EventTable items={authEvents} />
-    ) : tab === "ingestion" ? (
-      <div className="space-y-3">
-        <p className="rounded-lg border bg-card px-4 py-3 text-xs text-muted-foreground">
-          Data-ingestion security events recorded by the canonical security
-          event stream.
-        </p>
-        <EventTable items={ingestionEvents} />
-      </div>
     ) : (
       <section className="rounded-xl border border-dashed bg-muted/20 p-10 text-center">
         <ShieldAlert className="mx-auto size-8 text-muted-foreground" />
