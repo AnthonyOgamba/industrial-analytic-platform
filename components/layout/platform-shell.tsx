@@ -398,10 +398,6 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
                   <p className="truncate text-xs font-semibold">{sessionUser?.username ?? "Authenticated user"}</p>
                   <p className="truncate text-xs text-muted-foreground">{sessionUser?.displayRole}</p>
                 </div>
-                <button type="button" role="menuitem" onClick={() => { setAccountOpen(false); setNotificationsOpen(true); }} className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs hover:bg-muted">
-                  <Bell className="size-4" /> {translations[language].Notifications}
-                  {unreadCount > 0 && <span className="ml-auto rounded-full bg-primary px-1.5 text-xs text-primary-foreground">{unreadCount}</span>}
-                </button>
                 <Link role="menuitem" href="/profile" onClick={() => setAccountOpen(false)} className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs hover:bg-muted">
                   <CircleUserRound className="size-4" /> {translations[language].Profile}
                 </Link>

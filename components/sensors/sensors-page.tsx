@@ -36,7 +36,9 @@ export function SensorsPage() {
   const canManage=session.user?.capabilities.includes("sensors.create")??false;
   const load=useCallback(async()=>{setRefreshing(true);setError("");try{const response=await pageRequest<SensorsPageContract>("sensors");setSensors(normalizeSensors(response.sensors));setLoading(false)}catch(cause){setError(cause instanceof Error?cause.message:"Sensor catalog could not be loaded.");setLoading(false)}finally{setRefreshing(false)}},[]);
   const openCreate=useCallback(async()=>{try{const value=await apiRequest<unknown>("/api/backend/assets");const accessChecks=createAccessChecks(session.user);setAssets(normalizeAssets(value).filter(item=>typeof item.facilityid==="number"&&accessChecks.hasFacilityAccess(item.facilityid)));setCreateOpen(true)}catch(cause){setError(cause instanceof Error?cause.message:"Asset options could not be loaded.")}},[session.user]);
-  void openCreate;
+  useEffect(()=>{// eslint-disable-next-line react-hooks/set-state-in-effect -- opening the modal hydrates its live asset options
+    if(createOpen)void openCreate()
+  },[createOpen,openCreate]);
   useEffect(()=>{// eslint-disable-next-line react-hooks/set-state-in-effect
     void load()
   },[load]);

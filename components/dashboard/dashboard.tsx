@@ -75,7 +75,7 @@ export function Dashboard() {
   const requestKeyRef=useRef("");
   const controllerRef=useRef<AbortController|null>(null);
   const requestIdRef=useRef(0);
-  const load = useCallback(async (replacePending=false) => {
+  const load = useCallback(async (replacePending=true) => {
     const requestKey=`${facilityId || "all"}:${rangeDays}`;
     if (requestPendingRef.current&&requestKeyRef.current===requestKey) return;
     if (requestPendingRef.current&&!replacePending) return;
@@ -102,7 +102,7 @@ export function Dashboard() {
       from.setUTCDate(from.getUTCDate() - days);
       params.set("fromUtc", from.toISOString());
       params.set("toUtc", to.toISOString());
-      const primary=await pageRequest<DashboardPageContract>("dashboard",{signal:controller.signal,query:params});
+      const primary=await pageRequest<DashboardPageContract>("dashboard",{signal:controller.signal,query:params,cache:"no-store"});
       if(requestId!==requestIdRef.current)return;
       const normalized=primary.workspace;setFacilityScope(primary.facilityScope);
       setWorkspace(normalized);
@@ -199,7 +199,7 @@ export function Dashboard() {
   ] : [], [workspace, latestProduction, latestDowntime]);
 
   const platformMetrics = useMemo<DashboardMetric[]>(() => workspace ? [
-    { label:"Active Facilities", value:String(workspace.summary.activeFacilities), delta:"Within your authorized scope", icon:"shield", href:"/facilities" },
+    { label:"Active Facilities", value:String(workspace.summary.activeFacilities), delta:"Within your authorized scope", icon:"shield", href:"/operations" },
     { label:"Open Olive Alerts", value:String(workspace.summary.openAlerts), delta:`${workspace.recentAlerts.filter(item=>item.severity==="critical").length} recent critical`, severity:workspace.summary.openAlerts ? "critical" : "healthy", icon:"alert", href:"/local-ai" },
     { label:"Operational Cost Impact", value:formatCurrency(workspace.summary.estimatedDowntimeCost,currency), delta:`${formatCurrency(financial?.lost??0,currency)} lost production · ${new Set(workspace.financialImpact.map(item=>item.facilityId)).size} facilities`, detail:currency, severity:workspace.summary.estimatedDowntimeCost > 0 ? "warning" : "healthy", icon:"dollar", onClick:()=>setCostImpactOpen(true) },
     { label:"Active Production Runs", value:String(workspace.summary.activeRuns), delta:`${workspace.summary.totalStations} registered stations`, severity:workspace.summary.activeRuns ? "healthy" : "neutral", icon:"users", href:"/operations" },
@@ -245,7 +245,7 @@ export function Dashboard() {
     {label:"Quality Score",value:"Unavailable",delta:"Not calculated",detail:"Temporarily unavailable",icon:"trend"},
   ];
   const fallbackPlatformMetrics:DashboardMetric[]=[
-    {label:"Active Facilities",value:hierarchy.data?String(scopedFacilities.filter(item=>item.status.toLowerCase()==="active").length):"Unavailable",delta:hierarchy.data?"Latest available":"Temporarily unavailable",icon:"shield",href:"/facilities"},
+    {label:"Active Facilities",value:hierarchy.data?String(scopedFacilities.filter(item=>item.status.toLowerCase()==="active").length):"Unavailable",delta:hierarchy.data?"Latest available":"Temporarily unavailable",icon:"shield",href:"/operations"},
     {label:"Open Olive Alerts",value:fallbackAlerts?.status==="success"?String(fallbackAlerts.data.filter(item=>item.status!=="resolved").length):fallbackAlerts?.status==="empty"?"No data returned":"Unavailable",delta:fallbackAlerts?fallbackLabel(fallbackAlerts.status):"Temporarily unavailable",icon:"alert",href:"/local-ai"},
     {label:"Operational Cost Impact",value:"Unavailable",delta:"Not calculated",detail:"Temporarily unavailable",icon:"dollar"},
     {label:"Active Production Runs",value:fallbackRuns?.status==="success"?String(fallbackRuns.data.filter(item=>item.status==="active").length):fallbackRuns?.status==="empty"?"No data returned":"Unavailable",unit:fallbackRuns?.status==="success"&&fallbackStations.length?`/ ${fallbackStations.length} stations`:undefined,delta:fallbackRuns?fallbackLabel(fallbackRuns.status):"Temporarily unavailable",icon:"users",href:"/operations"},

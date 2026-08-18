@@ -23,7 +23,7 @@ import {
   X,
 } from "lucide-react";
 
-import { apiRequest } from "@/lib/api-client";
+import { apiRequest, ApiError } from "@/lib/api-client";
 import { createAccessChecks } from "@/lib/access-policy";
 import type {
   CanonicalAssetDto,
@@ -138,9 +138,9 @@ function DowntimeForm({
       await onCreated();
       onClose();
     } catch (cause) {
-      setError(
-        cause instanceof Error ? cause.message : "Downtime creation failed.",
-      );
+      setError(cause instanceof ApiError&&cause.status===403
+        ? "The backend denied this downtime event. Your account needs the downtime.create permission, and the selected technician must be assignable for this facility."
+        : cause instanceof Error ? cause.message : "Downtime creation failed.");
     } finally {
       setPending(false);
     }
@@ -426,7 +426,7 @@ export function DowntimePage() {
     setRefreshing(true);
     setError("");
     try {
-      const response=await pageRequest<DowntimePageContract>("downtime");setEvents(normalizeDowntimeEvents(response.events.items));setLoading(false);
+      const response=await pageRequest<DowntimePageContract>("downtime",{cache:"no-store"});setEvents(normalizeDowntimeEvents(response.events.items));setLoading(false);
     } catch (cause) {
       setError(
         cause instanceof Error

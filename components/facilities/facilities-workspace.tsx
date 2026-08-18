@@ -11,13 +11,14 @@ import { ProductionPerformance } from "./production-performance";
 import { SiteAccessPanel } from "./site-access";
 import { FacilityEditModal } from "./facility-edit-modal";
 import { apiRequest } from "@/lib/api-client";
-import type { AiFailureProbability, BackendUserDto, FacilityWorkspaceFacility, Station as BackendStation } from "@/lib/backend-dtos";
+import type { AiFailureProbability, FacilityWorkspaceFacility, Station as BackendStation } from "@/lib/backend-dtos";
 import { facilityHierarchyApi, invalidateFacilityHierarchy, refreshFacilityHierarchy } from "@/lib/facility-hierarchy";
 import { useSessionUser } from "@/lib/session-user";
 import { pageRequest } from "@/lib/page-request";
 import type { FacilitiesPageContract } from "@/lib/page-contracts";
 import { notifyPlatform } from "@/lib/platform-notifications";
 import { safeOperationalError } from "@/lib/user-facing-text";
+import { normalizeUsers } from "@/lib/api-normalizers";
 
 type FacilitiesTab = "sites" | "performance" | "access";
 const tabs: { key: FacilitiesTab; label: string; icon: React.ElementType }[] = [
@@ -92,9 +93,17 @@ export function FacilitiesWorkspace() {
   const load = useCallback(async () => {
     if(!hasFacilities.current)setLoading(true); setError("");
     try {
-      const response=await pageRequest<FacilitiesPageContract>("facilities");const workspace=response.facilities;
+      const response=await pageRequest<FacilitiesPageContract>("facilities",{cache:"no-store"});const workspace=response.facilities;
       setCanManage(session.user?.capabilities.includes("facilities.manage")??false);
-      const managerUsers:SiteManagerOption[]=response.managerOptions;
+      let managerUsers:SiteManagerOption[]=response.managerOptions;
+      if(!managerUsers.length){
+        try{
+          const users=await apiRequest<unknown>("/api/backend/users");
+          managerUsers=normalizeUsers(users)
+            .filter(user=>user.status.toLowerCase()==="active"&&/(manager|admin)/i.test([user.role,...(user.roles??[])].join(" ")))
+            .map(user=>({uid:user.uid,username:user.username,email:user.email,role:user.role}));
+        }catch{/* The page contract remains the authoritative manager source. */}
+      }
       setManagers(managerUsers);
       const mappedFacilities = workspace.facilities.map(item=>{
         const assignment=workspace.siteAccess.find(record=>record.facilityId===item.facilityId&&["manager","manage","admin"].includes(record.accessLevel.toLowerCase()));
@@ -116,7 +125,7 @@ export function FacilitiesWorkspace() {
 
   async function registerFacility(facility: Facility) {
     try {
-      const created = await apiRequest<unknown>("/api/backend/facilities", { method: "POST", body: JSON.stringify({ name: facility.name, code: facility.code, status: facility.status.toLowerCase() }) });
+      const created = await apiRequest<unknown>("/api/backend/facilities", { method: "POST", body: JSON.stringify({ name: facility.name, code: facility.code, status: facility.status.toLowerCase(), city:facility.location.city, country:facility.location.country, location:[facility.location.city,facility.location.country].filter(Boolean).join(", ") }) });
       const facilityId = createdId(created, "facilityId", "facility_id", "Facility");
       await apiRequest("/api/backend/site-access", { method: "POST", body: JSON.stringify({ userId: Number(facility.managerId), facilityId, accessLevel: "manager" }) });
       for (const [hallIndex, hall] of facility.halls.entries()) { const createdHall = await apiRequest<unknown>(`/api/backend/facilities/${facilityId}/halls`, { method: "POST", body: JSON.stringify({ name: hall.name, code: `${facility.code}-H${hallIndex + 1}`, status: "active" }) }); const hallId=createdId(createdHall,"hallId","hall_id","Hall"); for (const [lineIndex, line] of hall.lines.entries()) { const createdLine = await apiRequest<unknown>(`/api/backend/halls/${hallId}/lines`, { method: "POST", body: JSON.stringify({ name: line.name, code: `${facility.code}-H${hallIndex + 1}-L${lineIndex + 1}`, status: "active" }) }); const productionLineId=createdId(createdLine,"productionLineId","production_line_id","Production line"); for (const [stationIndex, station] of line.stations.entries()) await apiRequest<BackendStation>(`/api/backend/lines/${productionLineId}/stations`, { method: "POST", body: JSON.stringify({ name: station.name, stationCode: `${facility.code}-H${hallIndex + 1}-L${lineIndex + 1}-S${stationIndex + 1}`, status: "active" }) }); } }

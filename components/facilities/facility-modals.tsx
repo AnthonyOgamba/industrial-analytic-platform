@@ -27,6 +27,12 @@ export function RegisterSiteModal({ managers, onClose, onSave }: { managers: Sit
 
   function submit(event: FormEvent) {
     event.preventDefault();
+    const textInputs=event.currentTarget.querySelectorAll<HTMLInputElement>('input:not([type="number"])');
+    const cityInput=textInputs[2];const countryInput=textInputs[3];
+    cityInput?.setCustomValidity("");countryInput?.setCustomValidity("");
+    const placePattern=/^[\p{L}][\p{L}\p{M} .'-]*$/u;
+    if(!placePattern.test(city.trim())){cityInput?.setCustomValidity("City must contain letters and may include spaces, periods, apostrophes, or hyphens.");cityInput?.reportValidity();return}
+    if(!placePattern.test(country.trim())){countryInput?.setCustomValidity("Country must contain letters and may include spaces, periods, apostrophes, or hyphens.");countryInput?.reportValidity();return}
     const manager = managers.find((member) => String(member.uid) === managerId);
     if (!manager) return;
     const safeCode = code.trim().toUpperCase() || `SITE-${Date.now().toString().slice(-4)}`;
