@@ -59,6 +59,8 @@ export function Dashboard() {
   const [facilityScope,setFacilityScope]=useState<FacilityWorkspace|null>(null);const hierarchy={data:facilityScope};
   const session=useSessionUser();
   const [workspace, setWorkspace] = useState<DashboardWorkspaceDto | null>(null);
+  const [availability,setAvailability]=useState<DashboardPageContract["availability"]|null>(null);
+  const [completedResponse,setCompletedResponse]=useState<"full"|"partial"|null>(null);
   const [fallback,setFallback]=useState<DashboardFallback|null>(null);
   const [facilityId, setFacilityId] = useState("");
   const [rangeDays, setRangeDays] = useState("30");
@@ -105,13 +107,16 @@ export function Dashboard() {
       const primary=await pageRequest<DashboardPageContract>("dashboard",{signal:controller.signal,query:params,cache:"no-store"});
       if(requestId!==requestIdRef.current)return;
       const normalized=primary.workspace;setFacilityScope(primary.facilityScope);
+      const responseIsPartial=primary.status.toLowerCase().includes("partial")||primary.warnings.length>0||Object.values(primary.availability).some(value=>!value);
       setWorkspace(normalized);
+      setAvailability(primary.availability);
+      setCompletedResponse(responseIsPartial?"partial":"full");
       lastSuccessfulDashboardRef.current=normalized;
       setFallback(null);
       hasLoadedRef.current = true;
       hasUsableDataRef.current=true;
-      setLoadState("ready");
-      setPartialWarning("");
+      setLoadState(responseIsPartial?"partial":"ready");
+      setPartialWarning(responseIsPartial?(primary.warnings[0]??"Some dashboard metrics are unavailable in the completed response."):"");
       setRefreshWarning("");
     } catch {
       if(requestId!==requestIdRef.current)return;
@@ -250,25 +255,32 @@ export function Dashboard() {
     {label:"Operational Cost Impact",value:"Unavailable",delta:"Not calculated",detail:"Temporarily unavailable",icon:"dollar"},
     {label:"Active Production Runs",value:fallbackRuns?.status==="success"?String(fallbackRuns.data.filter(item=>item.status==="active").length):fallbackRuns?.status==="empty"?"No data returned":"Unavailable",unit:fallbackRuns?.status==="success"&&fallbackStations.length?`/ ${fallbackStations.length} stations`:undefined,delta:fallbackRuns?fallbackLabel(fallbackRuns.status):"Temporarily unavailable",icon:"users",href:"/operations"},
   ];
-  const displayedOperationalMetrics=workspace?operationalMetrics:fallbackOperationalMetrics;
-  const displayedPlatformMetrics=workspace?platformMetrics:fallbackPlatformMetrics;
+  const initialLoading=!workspace&&["idle","bootstrapping","checking-readiness","loading-primary","loading-fallback"].includes(loadState);
+  const unavailableMetric=(metric:DashboardMetric):DashboardMetric=>({...metric,value:"Unavailable",unit:undefined,delta:"Not available in the completed response",detail:undefined,severity:"neutral"});
+  const operationalAvailabilityKeys:(keyof DashboardPageContract["availability"])[]=["productionOutput","oee","unplannedDowntime","activeSensors","qualityScore"];
+  const platformAvailabilityKeys:(keyof DashboardPageContract["availability"])[]=["activeFacilities","openOliveAlerts","operationalCostImpact","activeProductionRuns"];
+  const neutralMetrics=(metrics:DashboardMetric[])=>metrics.map(metric=>({...metric,value:"—",unit:undefined,delta:"Loading dashboard data",detail:undefined,severity:"neutral" as DashboardSeverity}));
+  const displayedOperationalMetrics=workspace?operationalMetrics.map((metric,index)=>availability?.[operationalAvailabilityKeys[index]]===false?unavailableMetric(metric):metric):initialLoading?neutralMetrics(fallbackOperationalMetrics):fallbackOperationalMetrics;
+  const displayedPlatformMetrics=workspace?platformMetrics.map((metric,index)=>availability?.[platformAvailabilityKeys[index]]===false?unavailableMetric(metric):metric):initialLoading?neutralMetrics(fallbackPlatformMetrics):fallbackPlatformMetrics;
+  const statusLabel=initialLoading?"Loading…":workspace?(completedResponse==="partial"?"Partial data":`Live · ${new Date(workspace.generatedAtUtc).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}`):"Unavailable";
+  const statusTone=initialLoading?"text-muted-foreground":workspace&&completedResponse!=="partial"?"text-emerald-600":"text-amber-700 dark:text-amber-300";
 
   const fallbackUsable=Boolean(hierarchy.data||fallback&&Object.values(fallback).some(result=>result.status==="success"||result.status==="empty"));
   if(readiness==="exhausted"&&!workspace&&!fallbackUsable&&loadState==="fatal")return <div role="alert" className="rounded-xl border bg-card p-6"><h1 className="font-semibold">Operational services are not ready yet. Try again shortly.</h1><button type="button" onClick={()=>void load(true)} className="mt-4 inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-xs font-semibold"><RefreshCw className="size-4"/>Retry</button></div>;
 
   return <div className="space-y-5 pb-4">
-    <header className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end"><div><h1 className="text-2xl font-bold tracking-tight">Overview</h1><p className="mt-1 text-sm text-muted-foreground">Live industrial analytics dashboard</p></div><div className="flex flex-wrap items-center gap-2"><select aria-label="Dashboard facility" value={facilityId} onChange={(event)=>setFacilityId(event.target.value)} className="h-9 rounded-lg border bg-card px-3 text-xs"><option value="">All authorized facilities</option>{(hierarchy.data?.facilities??[]).map(facility=><option key={facility.facilityId} value={facility.facilityId}>{facility.name}</option>)}</select><select aria-label="Dashboard date range" value={rangeDays} onChange={(event)=>setRangeDays(event.target.value)} className="h-9 rounded-lg border bg-card px-3 text-xs"><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option><option value="365">Last 365 days</option></select><button type="button" onClick={()=>void load()} aria-label="Refresh dashboard" className="grid size-9 place-items-center rounded-lg border bg-card"><RefreshCw className="size-4"/></button><span className={`w-fit rounded-full border bg-card px-3 py-2 font-mono text-xs uppercase ${workspace?"text-emerald-600":"text-amber-700 dark:text-amber-300"}`}>{workspace?`Live · ${new Date(workspace.generatedAtUtc).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}`:"Partial data"}</span></div></header>
+    <header className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end"><div><h1 className="text-2xl font-bold tracking-tight">Overview</h1><p className="mt-1 text-sm text-muted-foreground">Live industrial analytics dashboard</p></div><div className="flex flex-wrap items-center gap-2"><select aria-label="Dashboard facility" value={facilityId} onChange={(event)=>setFacilityId(event.target.value)} className="h-9 rounded-lg border bg-card px-3 text-xs"><option value="">All authorized facilities</option>{(hierarchy.data?.facilities??[]).map(facility=><option key={facility.facilityId} value={facility.facilityId}>{facility.name}</option>)}</select><select aria-label="Dashboard date range" value={rangeDays} onChange={(event)=>setRangeDays(event.target.value)} className="h-9 rounded-lg border bg-card px-3 text-xs"><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option><option value="365">Last 365 days</option></select><button type="button" onClick={()=>void load()} disabled={loadState==="refreshing"} aria-label="Refresh dashboard" className="grid size-9 place-items-center rounded-lg border bg-card disabled:opacity-60"><RefreshCw className={`size-4 ${loadState==="refreshing"?"animate-spin":""}`}/></button><span className={`w-fit rounded-full border bg-card px-3 py-2 font-mono text-xs uppercase ${statusTone}`}>{statusLabel}</span></div></header>
     {partialWarning&&<div role="status" aria-live="polite" className="flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300"><AlertTriangle className="size-4 shrink-0"/><span className="flex-1">{partialWarning}</span><button type="button" onClick={()=>void load()} className="rounded border px-2 py-1 font-semibold">Retry</button></div>}
     {refreshWarning&&<div role="status" aria-live="polite" className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300"><AlertTriangle className="size-4 shrink-0"/><span>{refreshWarning}</span></div>}
     <section><h2 className="mb-2.5 font-mono text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Operational performance</h2><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">{displayedOperationalMetrics.map(metric=><MetricCard key={metric.label} {...metric}/>)}</div></section>
     <section><h2 className="mb-2.5 font-mono text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Platform and operational cost</h2><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{displayedPlatformMetrics.map(metric=><MetricCard key={metric.label} {...metric} buttonRef={metric.label==="Operational Cost Impact"?costImpactTrigger:undefined}/>)}</div></section>
     <div className="grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(20rem,.75fr)]">
-      <SectionCard className="h-[22rem]" title="Production Output Trend" subtitle="Production totals by period" action={<span className="font-mono text-xs text-primary">{workspace?"Live":"Temporarily unavailable"}</span>}>{trend.length?<ProductionChart data={trend}/>:<p className="grid h-[18rem] place-items-center text-sm text-muted-foreground">{workspace?"No production trend points are available.":"Temporarily unavailable"}</p>}</SectionCard>
-      <SectionCard className="h-[22rem]" title="Equipment Health" subtitle="Current OEE by facility">{equipment.length?<EquipmentHealth lines={equipment}/>:<p className="grid h-[18rem] place-items-center text-sm text-muted-foreground">{workspace?"No facility OEE records are available.":"Not calculated"}</p>}</SectionCard>
+      <SectionCard className="h-[22rem]" title="Production Output Trend" subtitle="Production totals by period" action={<span className="font-mono text-xs text-primary">{workspace?"Live":initialLoading?"Loading…":"Temporarily unavailable"}</span>}>{trend.length?<ProductionChart data={trend}/>:<p className="grid h-[18rem] place-items-center text-sm text-muted-foreground">{workspace?"No production trend points are available.":initialLoading?"—":"Temporarily unavailable"}</p>}</SectionCard>
+      <SectionCard className="h-[22rem]" title="Equipment Health" subtitle="Current OEE by facility">{equipment.length?<EquipmentHealth lines={equipment}/>:<p className="grid h-[18rem] place-items-center text-sm text-muted-foreground">{workspace?"No facility OEE records are available.":initialLoading?"—":"Not calculated"}</p>}</SectionCard>
     </div>
     <div className="grid gap-5 xl:grid-cols-2">
-      <SensorStatus sensors={sensors} total={workspace?.sensorHealth.total} active={workspace?.sensorHealth.active} unavailable={fallbackSensors?fallbackLabel(fallbackSensors.status):"Temporarily unavailable"}/>
-      {workspace?<RecentActivity events={activity}/>:<SectionCard title="Recent Activity" subtitle="Latest platform events"><p className="p-8 text-center text-xs text-muted-foreground">Temporarily unavailable</p></SectionCard>}
+      <SensorStatus sensors={sensors} total={workspace?.sensorHealth.total} active={workspace?.sensorHealth.active} unavailable={initialLoading?"—":fallbackSensors?fallbackLabel(fallbackSensors.status):"Temporarily unavailable"}/>
+      {workspace?<RecentActivity events={activity}/>:<SectionCard title="Recent Activity" subtitle="Latest platform events"><p className="p-8 text-center text-xs text-muted-foreground">{initialLoading?"—":"Temporarily unavailable"}</p></SectionCard>}
     </div>
     {workspace&&<OperationalCostDialog open={costImpactOpen} onClose={()=>setCostImpactOpen(false)} hierarchy={hierarchy.data} initialCurrency={currency} trigger={costImpactTrigger}/>} 
   </div>;
