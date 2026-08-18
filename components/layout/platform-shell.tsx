@@ -269,9 +269,11 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
     const showNotification = (event: Event) => {
       const detail = (event as CustomEvent<PlatformNotificationDetail>).detail;
       if (!detail) return;
-      setNotifications(current => [{
+      setNotifications(current => {
+        if(detail.correlationId&&current.some(item=>item.correlationId===detail.correlationId))return current;
+        return [{
         notificationId: -Date.now(),
-        notificationType: "warning",
+        notificationType: detail.notificationType??"warning",
         title: detail.title,
         message: detail.message,
         recipientUserId: sessionUser?.uid ?? 0,
@@ -281,13 +283,13 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
         targetId: null,
         facilityId: null,
         action: null,
-        severity: "warning",
-        route: pathname,
-        correlationId: null,
+        severity: detail.severity??"warning",
+        route: detail.route??pathname,
+        correlationId: detail.correlationId??null,
         createdAtUtc: new Date().toISOString(),
         readAtUtc: null,
-      }, ...current]);
-      setNotificationsOpen(true);
+      }, ...current]});
+      if(detail.openPanel!==false)setNotificationsOpen(true);
     };
     window.addEventListener("divu-platform-notification", showNotification);
     return () => window.removeEventListener("divu-platform-notification", showNotification);
@@ -302,8 +304,8 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
     document.documentElement.classList.toggle("increase-contrast",contrast);
     document.documentElement.classList.toggle("large-interface-text",text);
     apiRequest<unknown>("/api/backend/notifications")
-      .then(payload=>setNotifications(normalizeNotifications(payload)))
-      .catch(cause=>{setNotifications([]);setNotificationError(cause instanceof Error?cause.message:"Notifications are unavailable.")});
+      .then(payload=>setNotifications(current=>{const canonical=normalizeNotifications(payload);const keys=new Set(canonical.map(item=>item.correlationId).filter(Boolean));return[...current.filter(item=>item.notificationId<0&&(!item.correlationId||!keys.has(item.correlationId))),...canonical]}))
+      .catch(cause=>setNotificationError(cause instanceof Error?cause.message:"Notifications are unavailable."));
     return()=>cancelAnimationFrame(frame);
   },[]);
   function chooseLanguage(value:Language){
@@ -420,7 +422,7 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
           <div className="mx-auto w-full max-w-[96rem]">{children}</div>
         </main>
       </div>
-      <NotificationDrawer open={notificationsOpen} onClose={closeNotifications} onChange={setNotifications} />
+      <NotificationDrawer open={notificationsOpen} onClose={closeNotifications} notifications={notifications} onChange={setNotifications} />
     </div>
   );
 }

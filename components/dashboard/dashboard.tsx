@@ -19,6 +19,7 @@ import { OperationalCostDialog } from "./operational-cost-dialog";
 import { pageRequest } from "@/lib/page-request";
 import type { DashboardPageContract } from "@/lib/page-contracts";
 import type { FacilityWorkspace } from "@/lib/backend-dtos";
+import { notifyPlatform } from "@/lib/platform-notifications";
 
 function percentage(value: number) {
   return `${(value * 100).toFixed(1)}`;
@@ -54,17 +55,16 @@ type DashboardFallback = {
 const INITIAL_DASHBOARD_TIMEOUT_MS=15_000;
 const REFRESH_DASHBOARD_TIMEOUT_MS=9_000;
 const fallbackLabel = (status:FallbackStatus) => status === "forbidden" ? "Unavailable for current role" : status === "empty" ? "No data returned" : status === "failed" ? "Temporarily unavailable" : "Partial data";
+const dashboardMetricLabels:Record<keyof DashboardPageContract["availability"],string>={productionOutput:"Production Output",oee:"OEE Efficiency",unplannedDowntime:"Unplanned Downtime",activeSensors:"Active Sensors",qualityScore:"Quality Score",activeFacilities:"Active Facilities",openOliveAlerts:"Open Olive Alerts",operationalCostImpact:"Operational Cost Impact",activeProductionRuns:"Active Production Runs"};
 
 export function Dashboard() {
   const [facilityScope,setFacilityScope]=useState<FacilityWorkspace|null>(null);const hierarchy={data:facilityScope};
   const session=useSessionUser();
   const [workspace, setWorkspace] = useState<DashboardWorkspaceDto | null>(null);
   const [availability,setAvailability]=useState<DashboardPageContract["availability"]|null>(null);
-  const [completedResponse,setCompletedResponse]=useState<"full"|"partial"|null>(null);
   const [fallback,setFallback]=useState<DashboardFallback|null>(null);
   const [facilityId, setFacilityId] = useState("");
   const [rangeDays, setRangeDays] = useState("30");
-  const [partialWarning, setPartialWarning] = useState("");
   const [refreshWarning, setRefreshWarning] = useState("");
   const [costImpactOpen,setCostImpactOpen]=useState(false);
   const [loadState,setLoadState]=useState<DashboardLoadState>("bootstrapping");
@@ -90,7 +90,6 @@ export function Dashboard() {
     const isInitialLoad = !hasUsableDataRef.current;
     if (isInitialLoad) {
       setLoadState("loading-primary");
-      setPartialWarning("");
     } else setLoadState("refreshing");
     // STATE: First-hit Azure responses get 15s; warm/background refreshes remain bounded at 9s.
     const requestTimeout=isInitialLoad?INITIAL_DASHBOARD_TIMEOUT_MS:REFRESH_DASHBOARD_TIMEOUT_MS;
@@ -108,22 +107,25 @@ export function Dashboard() {
       if(requestId!==requestIdRef.current)return;
       const normalized=primary.workspace;setFacilityScope(primary.facilityScope);
       const responseIsPartial=primary.status.toLowerCase().includes("partial")||primary.warnings.length>0||Object.values(primary.availability).some(value=>!value);
+      const unavailableMetrics=(Object.keys(primary.availability) as (keyof DashboardPageContract["availability"])[]).filter(key=>primary.availability[key]===false);
+      if(responseIsPartial){
+        const metricNames=unavailableMetrics.map(key=>dashboardMetricLabels[key]);
+        const message=metricNames.length?`Some dashboard metrics are unavailable for the selected period: ${metricNames.join(", ")}.`:(primary.warnings[0]??"Some dashboard data is unavailable for the selected period.");
+        notifyPlatform({title:"Dashboard data incomplete",message,severity:"warning",notificationType:"dashboard",route:"/",correlationId:`dashboard:${facilityId||"all"}:${rangeDays}:${unavailableMetrics.toSorted().join(",")||"partial"}`,openPanel:false});
+      }
       setWorkspace(normalized);
       setAvailability(primary.availability);
-      setCompletedResponse(responseIsPartial?"partial":"full");
       lastSuccessfulDashboardRef.current=normalized;
       setFallback(null);
       hasLoadedRef.current = true;
       hasUsableDataRef.current=true;
       setLoadState(responseIsPartial?"partial":"ready");
-      setPartialWarning(responseIsPartial?(primary.warnings[0]??"Some dashboard metrics are unavailable in the completed response."):"");
       setRefreshWarning("");
     } catch {
       if(requestId!==requestIdRef.current)return;
       if(controller.signal.aborted&&controller.signal.reason!=="Dashboard request timed out")return;
       if (isInitialLoad) {
         setLoadState("degraded");
-        setPartialWarning("Some dashboard analytics are temporarily unavailable. Showing the latest available platform data.");
       } else {
         setLoadState("degraded");
         setRefreshWarning("Live refresh delayed. Showing the latest available data.");
@@ -262,15 +264,14 @@ export function Dashboard() {
   const neutralMetrics=(metrics:DashboardMetric[])=>metrics.map(metric=>({...metric,value:"—",unit:undefined,delta:"Loading dashboard data",detail:undefined,severity:"neutral" as DashboardSeverity}));
   const displayedOperationalMetrics=workspace?operationalMetrics.map((metric,index)=>availability?.[operationalAvailabilityKeys[index]]===false?unavailableMetric(metric):metric):initialLoading?neutralMetrics(fallbackOperationalMetrics):fallbackOperationalMetrics;
   const displayedPlatformMetrics=workspace?platformMetrics.map((metric,index)=>availability?.[platformAvailabilityKeys[index]]===false?unavailableMetric(metric):metric):initialLoading?neutralMetrics(fallbackPlatformMetrics):fallbackPlatformMetrics;
-  const statusLabel=initialLoading?"Loading…":workspace?(completedResponse==="partial"?"Partial data":`Live · ${new Date(workspace.generatedAtUtc).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}`):"Unavailable";
-  const statusTone=initialLoading?"text-muted-foreground":workspace&&completedResponse!=="partial"?"text-emerald-600":"text-amber-700 dark:text-amber-300";
+  const statusLabel=initialLoading?"Loading…":workspace?`Live · ${new Date(workspace.generatedAtUtc).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}`:"Unavailable";
+  const statusTone=initialLoading?"text-muted-foreground":workspace?"text-emerald-600":"text-amber-700 dark:text-amber-300";
 
   const fallbackUsable=Boolean(hierarchy.data||fallback&&Object.values(fallback).some(result=>result.status==="success"||result.status==="empty"));
   if(readiness==="exhausted"&&!workspace&&!fallbackUsable&&loadState==="fatal")return <div role="alert" className="rounded-xl border bg-card p-6"><h1 className="font-semibold">Operational services are not ready yet. Try again shortly.</h1><button type="button" onClick={()=>void load(true)} className="mt-4 inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-xs font-semibold"><RefreshCw className="size-4"/>Retry</button></div>;
 
   return <div className="space-y-5 pb-4">
     <header className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end"><div><h1 className="text-2xl font-bold tracking-tight">Overview</h1><p className="mt-1 text-sm text-muted-foreground">Live industrial analytics dashboard</p></div><div className="flex flex-wrap items-center gap-2"><select aria-label="Dashboard facility" value={facilityId} onChange={(event)=>setFacilityId(event.target.value)} className="h-9 rounded-lg border bg-card px-3 text-xs"><option value="">All authorized facilities</option>{(hierarchy.data?.facilities??[]).map(facility=><option key={facility.facilityId} value={facility.facilityId}>{facility.name}</option>)}</select><select aria-label="Dashboard date range" value={rangeDays} onChange={(event)=>setRangeDays(event.target.value)} className="h-9 rounded-lg border bg-card px-3 text-xs"><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option><option value="365">Last 365 days</option></select><button type="button" onClick={()=>void load()} disabled={loadState==="refreshing"} aria-label="Refresh dashboard" className="grid size-9 place-items-center rounded-lg border bg-card disabled:opacity-60"><RefreshCw className={`size-4 ${loadState==="refreshing"?"animate-spin":""}`}/></button><span className={`w-fit rounded-full border bg-card px-3 py-2 font-mono text-xs uppercase ${statusTone}`}>{statusLabel}</span></div></header>
-    {partialWarning&&<div role="status" aria-live="polite" className="flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300"><AlertTriangle className="size-4 shrink-0"/><span className="flex-1">{partialWarning}</span><button type="button" onClick={()=>void load()} className="rounded border px-2 py-1 font-semibold">Retry</button></div>}
     {refreshWarning&&<div role="status" aria-live="polite" className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300"><AlertTriangle className="size-4 shrink-0"/><span>{refreshWarning}</span></div>}
     <section><h2 className="mb-2.5 font-mono text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Operational performance</h2><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">{displayedOperationalMetrics.map(metric=><MetricCard key={metric.label} {...metric}/>)}</div></section>
     <section><h2 className="mb-2.5 font-mono text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Platform and operational cost</h2><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{displayedPlatformMetrics.map(metric=><MetricCard key={metric.label} {...metric} buttonRef={metric.label==="Operational Cost Impact"?costImpactTrigger:undefined}/>)}</div></section>
