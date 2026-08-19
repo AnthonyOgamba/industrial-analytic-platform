@@ -20,7 +20,14 @@ const workspace=await readFile(new URL("../components/facilities/facilities-work
 assert.match(modal,/cause instanceof ApiError&&Object\.keys\(cause\.fieldErrors\)\.length/,"400 errors remain in the modal");
 assert.match(modal,/!governancePolicies\.includes\(settings\.governancePolicy\)\|\|pending/,"registration is disabled until an active policy name is selected");
 assert.match(modal,/querySelector<HTMLElement>\(`\[name=/,"first invalid field is focused");
-assert.match(workspace,/catch \(cause\) \{ throw cause; \}/,"failed registration is returned to the open modal");
-assert.match(workspace,/await invalidateFacilityHierarchy\(\); await load\(\); setError\(""\); setRegisterOpen\(false\)/,"successful creation refreshes canonical data before closing");
+assert.match(modal,/setCommittedFacilityId\(result\.facilityId\)/,"partial success stores the committed facility id in the open modal");
+assert.match(workspace,/const recoverable=current\.facilities\.find\(item=>item\.code\?\.toLowerCase\(\)===facility\.code\.toLowerCase\(\).*if\(recoverable\)facilityId=recoverable\.facilityId/,"existing facility recovery resolves the numeric id before creation");
+assert.match(workspace,/else\{const created=await apiRequest<unknown>\("\/api\/backend\/facilities"/,"facility POST runs only when no matching committed facility exists");
+assert.match(workspace,/existing\.halls\.find\(item=>item\.code===hallCode\)/,"recovery reuses existing halls");
+assert.match(workspace,/existingHall\.lines\.find\(item=>item\.code===lineCode\)/,"recovery reuses existing lines");
+assert.match(workspace,/existingLine\.stations\.some\(item=>item\.code===stationCode\)/,"recovery skips existing stations");
+assert.match(workspace,/const verified=await invalidateFacilityHierarchy\(\)/,"successful setup verifies refreshed canonical hierarchy");
+assert.match(modal,/committedFacilityId\?"Continue setup":"Register Site"/,"partial success exposes Continue setup");
+assert.match(modal,/disabled=\{!managers\.length\|\|!governancePolicies\.includes\(settings\.governancePolicy\)\|\|pending\}/,"duplicate clicks are disabled while processing");
 assert.match(workspace,/if\(!hasFacilities\.current\)setLoading\(true\); setError\(""\)/,"refresh clears stale page errors");
 console.log("facility registration tests passed");
