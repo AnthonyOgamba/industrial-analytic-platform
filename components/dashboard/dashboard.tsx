@@ -19,7 +19,7 @@ import { OperationalCostDialog } from "./operational-cost-dialog";
 import { pageRequest } from "@/lib/page-request";
 import type { DashboardPageContract } from "@/lib/page-contracts";
 import type { FacilityWorkspace } from "@/lib/backend-dtos";
-import { notifyPlatform } from "@/lib/platform-notifications";
+import { dashboardNotificationKey, notifyPlatform } from "@/lib/platform-notifications";
 
 function percentage(value: number) {
   return `${(value * 100).toFixed(1)}`;
@@ -60,6 +60,7 @@ const dashboardMetricLabels:Record<keyof DashboardPageContract["availability"],s
 export function Dashboard() {
   const [facilityScope,setFacilityScope]=useState<FacilityWorkspace|null>(null);const hierarchy={data:facilityScope};
   const session=useSessionUser();
+  const sessionUserId=session.user?.uid;
   const [workspace, setWorkspace] = useState<DashboardWorkspaceDto | null>(null);
   const [availability,setAvailability]=useState<DashboardPageContract["availability"]|null>(null);
   const [fallback,setFallback]=useState<DashboardFallback|null>(null);
@@ -111,7 +112,7 @@ export function Dashboard() {
       if(responseIsPartial){
         const metricNames=unavailableMetrics.map(key=>dashboardMetricLabels[key]);
         const message=metricNames.length?`Some dashboard metrics are unavailable for the selected period: ${metricNames.join(", ")}.`:(primary.warnings[0]??"Some dashboard data is unavailable for the selected period.");
-        notifyPlatform({title:"Dashboard data incomplete",message,severity:"warning",notificationType:"dashboard",route:"/",correlationId:`dashboard:${facilityId||"all"}:${rangeDays}:${unavailableMetrics.toSorted().join(",")||"partial"}`,openPanel:false});
+        notifyPlatform({title:"Dashboard data incomplete",message,severity:"warning",notificationType:"dashboard",route:"/",correlationId:dashboardNotificationKey(sessionUserId!,facilityId||"all",rangeDays,unavailableMetrics),openPanel:false});
       }
       setWorkspace(normalized);
       setAvailability(primary.availability);
@@ -134,7 +135,7 @@ export function Dashboard() {
       window.clearTimeout(timeout);
       if(requestId===requestIdRef.current){requestPendingRef.current = false;requestKeyRef.current=""}
     }
-  }, [facilityId, rangeDays]);
+  }, [facilityId, rangeDays, sessionUserId]);
   const loadRef=useRef(load);
   useEffect(()=>{loadRef.current=load},[load]);
 

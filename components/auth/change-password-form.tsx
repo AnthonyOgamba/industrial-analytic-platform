@@ -58,6 +58,7 @@ export function ChangePasswordForm() {
       setCurrentPassword("");
       setNewPassword("");
       setConfirmation("");
+      window.dispatchEvent(new Event("divu-session-cleared"));
       await fetch("/api/auth/logout", {
         method: "POST",
         credentials: "same-origin",

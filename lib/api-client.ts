@@ -1,8 +1,10 @@
 "use client";
 
 export class ApiError extends Error {
-  constructor(message: string, public status: number) {
+  status:number;
+  constructor(message: string, status: number) {
     super(message);
+    this.status=status;
   }
 }
 
@@ -18,12 +20,12 @@ export async function apiRequest<T>(url: string, init: RequestInit = {}): Promis
     });
     let response = await request();
     if (response.status === 401 && url !== "/api/auth/login" && url !== "/api/auth/session") {
-      window.dispatchEvent(new Event("divu-authorization-stale"));
       const session = await fetch("/api/auth/session", { credentials:"same-origin", cache:"no-store" });
       const method = (init.method ?? "GET").toUpperCase();
       if (session.ok && (method === "GET" || method === "HEAD")) response = await request();
       if (session.status === 401) {
         window.dispatchEvent(new Event("divu-session-expired"));
+        window.dispatchEvent(new Event("divu-authorization-stale"));
         window.location.assign("/login?reason=authorization-changed");
       }
     }

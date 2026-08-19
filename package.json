@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test:access": "node scripts/access-policy.test.mjs",
+    "test:security-isolation": "node scripts/security-isolation.test.mjs",
     "test:financial": "node scripts/verify-financial-bff.mjs"
   },
   "dependencies": {

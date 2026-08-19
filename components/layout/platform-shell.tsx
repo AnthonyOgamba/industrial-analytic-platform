@@ -38,7 +38,7 @@ import { apiRequest } from "@/lib/api-client";
 import { useAccess } from "@/lib/access-control";
 import type { CanonicalNotificationDto } from "@/lib/backend-dtos";
 import { normalizeNotifications } from "@/lib/normalize-notifications";
-import type { PlatformNotificationDetail } from "@/lib/platform-notifications";
+import { mergeNotificationsForUser, type PlatformNotificationDetail } from "@/lib/platform-notifications";
 
 type Language = "en"|"fr"|"es"|"pa";
 const languageNames:Record<Language,string>={en:"English",fr:"Français",es:"Español",pa:"ਪੰਜਾਬੀ"};
@@ -268,7 +268,7 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const showNotification = (event: Event) => {
       const detail = (event as CustomEvent<PlatformNotificationDetail>).detail;
-      if (!detail) return;
+      if (!detail||!sessionUser?.uid) return;
       setNotifications(current => {
         if(detail.correlationId&&current.some(item=>item.correlationId===detail.correlationId))return current;
         return [{
@@ -295,6 +295,12 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("divu-platform-notification", showNotification);
   }, [pathname, sessionUser?.uid]);
   useEffect(()=>{
+    const clearNotifications=()=>{setNotifications([]);setNotificationError("");setNotificationsOpen(false)};
+    window.addEventListener("divu-session-expired",clearNotifications);
+    window.addEventListener("divu-session-cleared",clearNotifications);
+    return()=>{window.removeEventListener("divu-session-expired",clearNotifications);window.removeEventListener("divu-session-cleared",clearNotifications)};
+  },[]);
+  useEffect(()=>{
     const stored=(localStorage.getItem("divu-language")||"en") as Language;
     const motion=localStorage.getItem("divu-reduced-motion")==="true";
     const contrast=localStorage.getItem("divu-increased-contrast")==="true";
@@ -303,11 +309,19 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
     document.documentElement.classList.toggle("reduce-motion",motion);
     document.documentElement.classList.toggle("increase-contrast",contrast);
     document.documentElement.classList.toggle("large-interface-text",text);
-    apiRequest<unknown>("/api/backend/notifications")
-      .then(payload=>setNotifications(current=>{const canonical=normalizeNotifications(payload);const keys=new Set(canonical.map(item=>item.correlationId).filter(Boolean));return[...current.filter(item=>item.notificationId<0&&(!item.correlationId||!keys.has(item.correlationId))),...canonical]}))
-      .catch(cause=>setNotificationError(cause instanceof Error?cause.message:"Notifications are unavailable."));
     return()=>cancelAnimationFrame(frame);
   },[]);
+  useEffect(()=>{
+    const userId=sessionUser?.uid;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- identity changes must synchronously discard the previous recipient's state
+    setNotifications([]);setNotificationError("");setNotificationsOpen(false);
+    if(!userId)return;
+    let active=true;
+    apiRequest<unknown>("/api/backend/notifications")
+      .then(payload=>{if(active)setNotifications(current=>mergeNotificationsForUser(current,normalizeNotifications(payload),userId))})
+      .catch(cause=>{if(active)setNotificationError(cause instanceof Error?cause.message:"Notifications are unavailable.")});
+    return()=>{active=false};
+  },[sessionUser?.uid]);
   function chooseLanguage(value:Language){
     setLanguage(value);localStorage.setItem("divu-language",value);document.documentElement.lang=value;
     void apiRequest("/api/backend/profile",{method:"PATCH",body:JSON.stringify({language:value})}).catch(()=>undefined);
@@ -422,7 +436,7 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
           <div className="mx-auto w-full max-w-[96rem]">{children}</div>
         </main>
       </div>
-      <NotificationDrawer open={notificationsOpen} onClose={closeNotifications} notifications={notifications} onChange={setNotifications} />
+      <NotificationDrawer open={notificationsOpen} onClose={closeNotifications} notifications={notifications} recipientUserId={sessionUser?.uid} onChange={setNotifications} />
     </div>
   );
 }
