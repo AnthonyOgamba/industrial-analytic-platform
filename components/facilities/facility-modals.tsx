@@ -18,7 +18,7 @@ const inputClass = "h-10 w-full rounded-lg border bg-background px-3 text-sm out
 const labelClass = "space-y-1.5 text-xs font-medium";
 
 export type RegisteredFacility={facility:Facility;settings:FacilitySettings};
-export type RegistrationResult={facilityId:number;hierarchyComplete:boolean;failedEndpoint?:string;failureMessage?:string};
+export type RegistrationResult={facilityId:number;hierarchyComplete:boolean;failedEndpoint?:string;failureMessage?:string;managerAssignmentWarning?:string};
 export function RegisterSiteModal({ managers, governancePolicies=[], onClose, onSave }: { managers: SiteManagerOption[]; governancePolicies?:string[]; onClose: () => void; onSave: (value:RegisteredFacility,existingFacilityId?:number) => Promise<RegistrationResult> }) {
   const [settings,setSettings]=useState(emptyFacilitySettings);
   const [fieldErrors,setFieldErrors]=useState<FacilityFieldErrors>({});

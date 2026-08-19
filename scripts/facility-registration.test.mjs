@@ -26,6 +26,9 @@ assert.match(workspace,/else\{const created=await apiRequest<unknown>\("\/api\/b
 assert.match(workspace,/existing\.halls\.find\(item=>item\.code===hallCode\)/,"recovery reuses existing halls");
 assert.match(workspace,/existingHall\.lines\.find\(item=>item\.code===lineCode\)/,"recovery reuses existing lines");
 assert.match(workspace,/existingLine\.stations\.some\(item=>item\.code===stationCode\)/,"recovery skips existing stations");
+assert.match(workspace,/accessLevel:\"assigned\"/,"site access always uses the canonical assigned scope value");
+assert.match(workspace,/catch\(cause\)\{managerAssignmentWarning=.*\}\}\n      for\(const\[hallIndex,hall\]of facility\.halls\.entries\(\)\)/,"manager assignment failure does not block hierarchy creation");
+assert.doesNotMatch(workspace,/accessLevel:\"(?:manager|admin|viewer|operator)\"/,"site access never serializes a user role as accessLevel");
 assert.match(workspace,/const verified=await invalidateFacilityHierarchy\(\)/,"successful setup verifies refreshed canonical hierarchy");
 assert.match(modal,/committedFacilityId\?"Continue setup":"Register Site"/,"partial success exposes Continue setup");
 assert.match(modal,/disabled=\{!managers\.length\|\|!governancePolicies\.includes\(settings\.governancePolicy\)\|\|pending\}/,"duplicate clicks are disabled while processing");
