@@ -2,6 +2,7 @@ import "server-only";
 
 import { NextResponse } from "next/server";
 import { AUTH_COOKIE } from "@/lib/auth/constants";
+import { responseErrorMessage, validationErrors } from "@/lib/api-error-utils";
 
 const DEVELOPMENT_BACKEND_URL = "http://localhost:8080";
 const REQUEST_TIMEOUT_MS = 45_000;
@@ -33,15 +34,7 @@ export async function readBackendBody<T>(response: Response): Promise<T | null> 
 }
 
 export function backendError(body: unknown, fallback: string) {
-  if (body && typeof body === "object" && "error" in body) {
-    const error = (body as { error?: unknown }).error;
-    if (typeof error === "string") return error;
-    if (error && typeof error === "object" && "message" in error) {
-      const message = (error as { message?: unknown }).message;
-      if (typeof message === "string") return message;
-    }
-  }
-  return fallback;
+  return responseErrorMessage(body, fallback);
 }
 
 export async function requestBackend<T>(
@@ -92,7 +85,8 @@ export function publicBackendResponse(body: unknown, status: number) {
         : status === 409 ? "The requested action conflicts with the current resource state."
           : status === 503 ? "Olive is temporarily unavailable. Please try again shortly."
             : "The backend could not complete the request.";
-  return NextResponse.json({ error: backendError(body, fallback) }, { status });
+  const errors = validationErrors(body);
+  return NextResponse.json({ error: backendError(body, fallback), ...(Object.keys(errors).length ? { errors } : {}) }, { status });
 }
 
 export function expireAuthentication(response: NextResponse) {

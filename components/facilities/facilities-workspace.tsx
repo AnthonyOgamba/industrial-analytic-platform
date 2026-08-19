@@ -19,7 +19,6 @@ import { pageRequest } from "@/lib/page-request";
 import type { FacilitiesPageContract } from "@/lib/page-contracts";
 import { notifyPlatform } from "@/lib/platform-notifications";
 import { safeOperationalError } from "@/lib/user-facing-text";
-import { normalizeUsers } from "@/lib/api-normalizers";
 
 type FacilitiesTab = "sites" | "performance" | "access";
 const tabs: { key: FacilitiesTab; label: string; icon: React.ElementType }[] = [
@@ -97,15 +96,7 @@ export function FacilitiesWorkspace() {
     try {
       const response=await pageRequest<FacilitiesPageContract>("facilities",{cache:"no-store"});const workspace=response.facilities;
       setCanManage(session.user?.capabilities.includes("facilities.manage")??false);
-      let managerUsers:SiteManagerOption[]=response.managerOptions;
-      if(!managerUsers.length){
-        try{
-          const users=await apiRequest<unknown>("/api/backend/users");
-          managerUsers=normalizeUsers(users)
-            .filter(user=>user.status.toLowerCase()==="active"&&/(manager|admin)/i.test([user.role,...(user.roles??[])].join(" ")))
-            .map(user=>({uid:user.uid,username:user.username,email:user.email,role:user.role}));
-        }catch{/* The page contract remains the authoritative manager source. */}
-      }
+      const managerUsers:SiteManagerOption[]=response.managerOptions;
       setManagers(managerUsers);
       try{const governance=await apiRequest<{items?:GovernanceRecordDto[]} | GovernanceRecordDto[]>("/api/backend/data-governance");const items=Array.isArray(governance)?governance:governance.items??[];setGovernancePolicies(items.filter(item=>item.status.toLowerCase()==="active").map(item=>item.name).sort())}catch{setGovernancePolicies([])}
       const mappedFacilities = workspace.facilities.map(item=>{
@@ -127,13 +118,14 @@ export function FacilitiesWorkspace() {
   const metrics = useMemo(() => { const lines = facilities.flatMap((facility) => facility.halls.flatMap((hall) => hall.lines)); const averageOee = lines.length ? Math.round(lines.reduce((sum, line) => sum + line.oee, 0) / lines.length) : 0; return { active: facilities.filter((facility) => facility.status === "Active").length, averageOee, compliance: facilities.length ? Math.round(facilities.reduce((sum, facility) => sum + facility.complianceScore, 0) / facilities.length) : 0, downtime: lines.reduce((sum, line) => sum + line.downtimeHours, 0) }; }, [facilities]);
 
   async function registerFacility({facility,settings}: RegisteredFacility) {
+    setError("");
     try {
-      const created = await apiRequest<unknown>("/api/backend/facilities", { method: "POST", body: JSON.stringify({...facilitySettingsPayload(settings),location:[facility.location.city,facility.location.country].filter(Boolean).join(", ")}) });
+      const created = await apiRequest<unknown>("/api/backend/facilities", { method: "POST", body: JSON.stringify(facilitySettingsPayload(settings)) });
       const facilityId = createdId(created, "facilityId", "facility_id", "Facility");
       await apiRequest("/api/backend/site-access", { method: "POST", body: JSON.stringify({ userId: Number(facility.managerId), facilityId, accessLevel: "manager" }) });
       for (const [hallIndex, hall] of facility.halls.entries()) { const createdHall = await apiRequest<unknown>(`/api/backend/facilities/${facilityId}/halls`, { method: "POST", body: JSON.stringify({ name: hall.name, code: `${facility.code}-H${hallIndex + 1}`, status: "active" }) }); const hallId=createdId(createdHall,"hallId","hall_id","Hall"); for (const [lineIndex, line] of hall.lines.entries()) { const createdLine = await apiRequest<unknown>(`/api/backend/halls/${hallId}/lines`, { method: "POST", body: JSON.stringify({ name: line.name, code: `${facility.code}-H${hallIndex + 1}-L${lineIndex + 1}`, status: "active" }) }); const productionLineId=createdId(createdLine,"productionLineId","production_line_id","Production line"); for (const [stationIndex, station] of line.stations.entries()) await apiRequest<BackendStation>(`/api/backend/lines/${productionLineId}/stations`, { method: "POST", body: JSON.stringify({ name: station.name, stationCode: `${facility.code}-H${hallIndex + 1}-L${lineIndex + 1}-S${stationIndex + 1}`, status: "active" }) }); } }
-      setRegisterOpen(false); await invalidateFacilityHierarchy(); await load();
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Facility registration failed."); setRegisterOpen(false); }
+      await invalidateFacilityHierarchy(); await load(); setError(""); setRegisterOpen(false);
+    } catch (cause) { throw cause; }
   }
   async function grantAccess(access: SiteAccess) { try { await apiRequest("/api/backend/site-access", { method: "POST", body: JSON.stringify({ userId: Number(access.userId), facilityId: Number(access.facilityId), accessLevel: access.accessLevel.toLowerCase().replace("manage", "manager").replace("operate", "operator").replace("view", "viewer") }) }); setGrantOpen(false); await load(); } catch (cause) { setError(cause instanceof Error ? cause.message : "Access could not be granted."); setGrantOpen(false); } }
   async function retireFacility(facility:Facility){if(!canManage||!confirm(`Delete ${facility.name}? The facility will be retired and its audit history preserved. This can be blocked while active runs or dependent resources exist.`))return;setError("");try{await facilityHierarchyApi.updateFacility(Number(facility.id),{name:facility.name,code:facility.code||null,status:"retired"});await load()}catch(cause){setError(cause instanceof Error?cause.message:"The facility could not be retired.")}}
@@ -144,5 +136,5 @@ export function FacilitiesWorkspace() {
   <section className="rounded-xl border bg-card p-4 shadow-[var(--dv-shadow)]" aria-labelledby="ai-insights-title"><button type="button" onClick={() => setInsightsOpen((open) => !open)} aria-expanded={insightsOpen} aria-controls="ai-insights-content" className="flex w-full items-center gap-2 text-left"><Sparkles className="size-4 text-primary" /><h2 id="ai-insights-title" className="text-sm font-semibold">AI Operational Insights</h2><span className="rounded-full bg-primary/10 px-2 py-0.5 font-mono text-xs uppercase text-primary">Live platform data</span><span className="ml-auto text-muted-foreground" aria-hidden="true">{insightsOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}</span></button>{insightsOpen && <div id="ai-insights-content" className="mt-3 grid gap-3 lg:grid-cols-3">{insights.map((insight) => <article key={insight.id} className="rounded-lg border bg-background/60 p-3"><div className="flex items-center justify-between gap-3"><p className="truncate text-xs font-semibold">{insight.facility}</p><span className="font-mono text-xs uppercase text-primary">{insight.priority}</span></div><p className="mt-1 font-mono text-xs text-muted-foreground">{insight.line} · {insight.confidence}% risk</p><p className="mt-2 text-xs leading-5 text-muted-foreground">{insight.message}</p></article>)}{!loading && !insights.length && <p className="text-xs text-muted-foreground">No AI predictions are currently available.</p>}</div>}</section>
   <div className="overflow-x-auto border-b"><div className="flex min-w-max" role="tablist" aria-label="Facilities sections">{tabs.map((tab) => { const Icon = tab.icon; const active = tab.key === activeTab; return <button key={tab.key} type="button" role="tab" aria-selected={active} onClick={() => setActiveTab(tab.key)} className={`relative inline-flex h-12 items-center gap-2 px-4 text-xs font-medium transition-colors ${active ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}><Icon className={`size-4 ${active ? "text-primary" : ""}`} />{tab.label}{active && <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-primary" />}</button>; })}</div></div>
   {loading ? <div className="grid gap-3 sm:grid-cols-2"><div className="h-40 animate-pulse rounded-xl bg-muted" /><div className="h-40 animate-pulse rounded-xl bg-muted" /></div> : <>{activeTab === "sites" && <FacilitiesOverview facilities={facilities} onRegister={() => setRegisterOpen(true)} onEdit={canManage?(facility)=>setEditingFacilityId(Number(facility.id)):undefined} onDelete={canManage?(facility)=>void retireFacility(facility):undefined} />}{activeTab === "performance" && <ProductionPerformance facilities={facilities} />}{activeTab === "access" && <SiteAccessPanel facilities={facilities} accessRecords={accessRecords} onGrant={() => setGrantOpen(true)} onRevoke={() => setError("Access revocation is not currently available.")} />}</>}
-  {registerOpen && <RegisterSiteModal managers={managers} governancePolicies={governancePolicies} onClose={() => setRegisterOpen(false)} onSave={(value) => void registerFacility(value)} />}{grantOpen && <GrantAccessModal facilities={facilities} onClose={() => setGrantOpen(false)} onSave={(access) => void grantAccess(access)} />}{editingFacilityId!==null&&<FacilityEditModal facilityId={editingFacilityId} managers={managers} governancePolicies={governancePolicies} onClose={()=>setEditingFacilityId(null)} onSaved={load}/>}</div>;
+  {registerOpen && <RegisterSiteModal managers={managers} governancePolicies={governancePolicies} onClose={() => setRegisterOpen(false)} onSave={registerFacility} />}{grantOpen && <GrantAccessModal facilities={facilities} onClose={() => setGrantOpen(false)} onSave={(access) => void grantAccess(access)} />}{editingFacilityId!==null&&<FacilityEditModal facilityId={editingFacilityId} managers={managers} governancePolicies={governancePolicies} onClose={()=>setEditingFacilityId(null)} onSaved={load}/>}</div>;
 }

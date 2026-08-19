@@ -7,13 +7,14 @@
 // PERMISSION: reports.view for the page and reports.export for download.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Download, RefreshCw } from "lucide-react";
+import { Download, FilePlus2, RefreshCw } from "lucide-react";
 
 import type { ReportListItem } from "@/lib/page-api";
 import { useSessionUser } from "@/lib/session-user";
 import { pageRequest } from "@/lib/page-request";
 import type { FacilityWorkspace } from "@/lib/backend-dtos";
 import type { ReportsPageContract } from "@/lib/page-contracts";
+import { apiRequest } from "@/lib/api-client";
 
 export function ReportCenter() {
   const session=useSessionUser();
@@ -32,6 +33,8 @@ export function ReportCenter() {
   const [toUtc, setToUtc] = useState("");
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
   const pageSize = 20;
 
@@ -98,12 +101,23 @@ export function ReportCenter() {
     }
   }
 
+  async function generateReport() {
+    if (fromUtc && toUtc && fromUtc > toUtc) { setError("The start date must be on or before the end date."); return; }
+    setGenerating(true); setError(""); setSuccess("");
+    try {
+      await apiRequest<ReportListItem>("/api/backend/reports", { method:"POST", body:JSON.stringify({ reportType, facilityId:facilityId?Number(facilityId):null, productionLineId:lineId?Number(lineId):null, stationId:stationId?Number(stationId):null, fromUtc:fromUtc?new Date(`${fromUtc}T00:00:00`).toISOString():null, toUtc:toUtc?new Date(`${toUtc}T23:59:59.999`).toISOString():null, includeSynthetic }) });
+      setPage(1); setSuccess("Report generated successfully and added to report history."); await load();
+    } catch (cause) { setError(cause instanceof Error?cause.message:"Report generation failed."); }
+    finally { setGenerating(false); }
+  }
+
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
   const facilities = hierarchy.data?.facilities ?? [];
   const selectedFacility=facilities.find(item=>String(item.facilityId)===facilityId);
   const lines=useMemo(()=>selectedFacility?.halls.flatMap(hall=>hall.lines)??[],[selectedFacility]);
   const stations=lines.find(item=>String(item.productionLineId)===lineId)?.stations??[];
   const canExport = capabilities.includes("reports.export");
+  const canGenerate = capabilities.includes("reports.generate") || canExport;
 
   return (
     <section className="space-y-5 pb-8">
@@ -113,9 +127,7 @@ export function ReportCenter() {
           <h1 className="mt-1 text-2xl font-bold tracking-tight">Report Center</h1>
           <p className="mt-1 text-sm text-muted-foreground">Facility-scoped report exports and server-generated report history</p>
         </div>
-        {canExport&&<div className="flex flex-wrap items-center gap-2"><select aria-label="Export report type" value={reportType} onChange={event=>setReportType(event.target.value)} className="h-10 rounded-lg border bg-card px-3 text-xs"><option value="industrial-analytics">Complete Platform Workbook</option><option value="production">Production</option><option value="downtime">Downtime</option><option value="facilities">Facilities & OEE</option><option value="sensors">Sensor Telemetry</option><option value="financial-impact">Financial Impact</option><option value="alerts">Olive Alerts</option><option value="security">Security Events</option><option value="audit">Audit Log</option></select><button onClick={() => void exportWorkbook()} disabled={exporting} className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-50">
-          <Download className="size-4" />{exporting ? "Generating…" : "Export Excel"}
-        </button></div>}
+        {(canGenerate||canExport)&&<div className="flex flex-wrap items-center gap-2"><select aria-label="Report type" value={reportType} onChange={event=>setReportType(event.target.value)} className="h-10 rounded-lg border bg-card px-3 text-xs"><option value="industrial-analytics">Complete Platform Workbook</option><option value="production">Production</option><option value="downtime">Downtime</option><option value="facilities">Facilities & OEE</option><option value="sensors">Sensor Telemetry</option><option value="financial-impact">Financial Impact</option><option value="alerts">Olive Alerts</option><option value="security">Security Events</option><option value="audit">Audit Log</option></select>{canGenerate&&<button onClick={()=>void generateReport()} disabled={generating||exporting} className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-50"><FilePlus2 className="size-4"/>{generating?"Generating…":"Generate Report"}</button>}{canExport&&<button onClick={()=>void exportWorkbook()} disabled={exporting||generating} className="inline-flex h-10 items-center gap-2 rounded-lg border px-4 text-sm font-semibold disabled:opacity-50"><Download className="size-4"/>{exporting?"Exporting…":"Export Excel"}</button>}</div>}
       </header>
 
       <div className="space-y-4">
@@ -134,6 +146,7 @@ export function ReportCenter() {
           </div>
           {canExport&&<p className="rounded-lg border bg-muted/30 p-3 text-xs text-muted-foreground">Export: <strong className="text-foreground">{reportType==="industrial-analytics"?"Complete platform workbook":reportType.replaceAll("-"," ")}</strong> · Scope: <strong className="text-foreground">{selectedFacility?.name??"All authorized facilities"}</strong>{lineId&&<> · Line: <strong className="text-foreground">{lines.find(item=>String(item.productionLineId)===lineId)?.name}</strong></>}{stationId&&<> · Station: <strong className="text-foreground">{stations.find(item=>String(item.stationId)===stationId)?.name}</strong></>} · Synthetic data: <strong className="text-foreground">{includeSynthetic?"included":"excluded"}</strong> · Format: <strong className="text-foreground">Excel (.xlsx)</strong></p>}
 
+          {success && <p role="status" className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-700">{success}</p>}
           {error && <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">{error}</p>}
           <div className="overflow-x-auto rounded-xl border bg-card">
             <table className="w-full min-w-[50rem] text-left text-xs">

@@ -1,10 +1,13 @@
 "use client";
+import { responseErrorMessage, validationErrors } from "@/lib/api-error-utils";
 
 export class ApiError extends Error {
   status:number;
-  constructor(message: string, status: number) {
+  fieldErrors:Record<string,string>;
+  constructor(message: string, status: number, fieldErrors:Record<string,string>={}) {
     super(message);
     this.status=status;
+    this.fieldErrors=fieldErrors;
   }
 }
 
@@ -43,8 +46,9 @@ export async function apiRequest<T>(url: string, init: RequestInit = {}): Promis
               : response.status >= 500
                 ? "The server could not complete the request."
                 : "The request could not be completed.";
-      const message = typeof data.error === "string" && !data.error.trimStart().startsWith("<") ? data.error : fallback;
-      throw new ApiError(message, response.status);
+      const message = responseErrorMessage(data,fallback);
+      const fieldErrors=validationErrors(data);
+      throw new ApiError(message, response.status, fieldErrors);
     }
     return data as T;
   } catch (error) {

@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test:access": "node scripts/access-policy.test.mjs",
     "test:security-isolation": "node scripts/security-isolation.test.mjs",
-    "test:financial": "node scripts/verify-financial-bff.mjs"
+    "test:financial": "node scripts/verify-financial-bff.mjs",
+    "test:facilities": "node scripts/facility-registration.test.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

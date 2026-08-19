@@ -51,7 +51,7 @@ const allowed = [
   { pattern: /^sensors\/runs\/\d+\/readings$/, methods: ["GET"] },
   { pattern: /^sensors\/analytics$/, methods: ["GET"] },
   { pattern: /^audit$/, methods: ["GET"] },
-  { pattern: /^reports$/, methods: ["GET"] },
+  { pattern: /^reports$/, methods: ["GET", "POST"] },
   { pattern: /^activity$/, methods: ["GET"] },
   { pattern: /^financial$/, methods: ["GET"] },
   { pattern: /^financial\/(?:summary|monthly|facilities|lines)$/, methods: ["GET"] },

@@ -5,6 +5,8 @@ import { Factory, KeyRound, X } from "lucide-react";
 
 import type { AccessLevel, Facility, SiteAccess } from "./facilities-data";
 import { emptyFacilitySettings, FacilitySettingsFields, type FacilitySettings } from "./facility-edit-modal";
+import type { FacilityFieldErrors } from "./facility-edit-modal";
+import { ApiError } from "@/lib/api-client";
 
 export type SiteManagerOption = { uid: number; username: string; email: string; role: string };
 
@@ -16,26 +18,30 @@ const inputClass = "h-10 w-full rounded-lg border bg-background px-3 text-sm out
 const labelClass = "space-y-1.5 text-xs font-medium";
 
 export type RegisteredFacility={facility:Facility;settings:FacilitySettings};
-export function RegisterSiteModal({ managers, governancePolicies=[], onClose, onSave }: { managers: SiteManagerOption[]; governancePolicies?:string[]; onClose: () => void; onSave: (value:RegisteredFacility) => void }) {
+export function RegisterSiteModal({ managers, governancePolicies=[], onClose, onSave }: { managers: SiteManagerOption[]; governancePolicies?:string[]; onClose: () => void; onSave: (value:RegisteredFacility) => Promise<void> }) {
   const [settings,setSettings]=useState(emptyFacilitySettings);
-  const set=<K extends keyof FacilitySettings>(key:K,value:FacilitySettings[K])=>setSettings(current=>({...current,[key]:value}));
+  const [fieldErrors,setFieldErrors]=useState<FacilityFieldErrors>({});
+  const [error,setError]=useState("");
+  const [pending,setPending]=useState(false);
+  const change=<K extends keyof FacilitySettings>(key:K,value:FacilitySettings[K])=>{setSettings(current=>({...current,[key]:value}));setFieldErrors(current=>{const next={...current};delete next[key];return next})};
   const [hallCount, setHallCount] = useState(2);
   const [linesPerHall, setLinesPerHall] = useState(2);
   const [stationsPerLine, setStationsPerLine] = useState(3);
 
-  function submit(event: FormEvent) {
+  async function submit(event: FormEvent) {
     event.preventDefault();
+    setError("");setFieldErrors({});setPending(true);
     const placePattern=/^[\p{L}][\p{L}\p{M} .'-]*$/u;
-    if(!placePattern.test(settings.city.trim())||!placePattern.test(settings.country.trim()))return;
+    if(!placePattern.test(settings.city.trim())||!placePattern.test(settings.country.trim())){setPending(false);return;}
     const manager = managers.find((member) => String(member.uid) === settings.managerUserId);
-    if (!manager) return;
+    if (!manager) {setFieldErrors({managerUserId:"Select a valid manager."});setPending(false);return;}
     const safeCode = settings.code.trim().toUpperCase() || `SITE-${Date.now().toString().slice(-4)}`;
     const halls = Array.from({ length: hallCount }, (_, hallIndex) => ({ id: `${safeCode.toLowerCase()}-hall-${hallIndex + 1}`, name: `Hall ${hallIndex + 1}`, code: `H${hallIndex + 1}`, lines: Array.from({ length: linesPerHall }, (_, lineIndex) => ({ id: `${safeCode.toLowerCase()}-line-${hallIndex + 1}-${lineIndex + 1}`, name: `Production Line ${lineIndex + 1}`, code: `L${hallIndex + 1}${lineIndex + 1}`, oee: 0, availability: 0, performance: 0, quality: 0, outputPerHour: 0, sensorCount: 0, assetCount: 0, downtimeHours: 0, stations: Array.from({ length: stationsPerLine }, (_, stationIndex) => ({ id: `${safeCode.toLowerCase()}-station-${hallIndex + 1}-${lineIndex + 1}-${stationIndex + 1}`, name: `Station ${stationIndex + 1}`, status: "Standby" as const, oee: 0, availability: 0, performance: 0, quality: 0, sensorIds: [], assetIds: [], metricKeys: [], downtimeHours: 0 })) })) }));
     const status=settings.status==="active"?"Active":settings.status==="maintenance"?"Maintenance":settings.status==="inactive"?"Inactive":"Standby";
-    onSave({settings:{...settings,code:safeCode},facility:{ id: `facility-${safeCode.toLowerCase()}-${Date.now()}`, name: settings.name.trim(), code: safeCode, facilityType: "Plant", company: "", managerId: String(manager.uid), manager: manager.username, source: "registered", status, location: { city: settings.city.trim(), region: settings.provinceState.trim(), country: settings.country.trim() }, timezone: settings.timezone, shiftPattern: "", capacityPerDay: "", sensorCount: 0, assetCount: 0, complianceScore: 0, lastActivity: "", halls }});
+    try{await onSave({settings:{...settings,code:safeCode,managerUserId:String(manager.uid)},facility:{ id: `facility-${safeCode.toLowerCase()}-${Date.now()}`, name: settings.name.trim(), code: safeCode, facilityType: "Plant", company: "", managerId: String(manager.uid), manager: manager.username, source: "registered", status, location: { city: settings.city.trim(), region: settings.provinceState.trim(), country: settings.country.trim() }, timezone: settings.timezone, shiftPattern: "", capacityPerDay: "", sensorCount: 0, assetCount: 0, complianceScore: 0, lastActivity: "", halls }});}catch(cause){if(cause instanceof ApiError&&Object.keys(cause.fieldErrors).length){const mapped=Object.fromEntries(Object.entries(cause.fieldErrors).filter(([key])=>key in emptyFacilitySettings)) as FacilityFieldErrors;setFieldErrors(mapped);const first=Object.keys(mapped)[0];if(first)setTimeout(()=>document.querySelector<HTMLElement>(`[name="${first}"]`)?.focus(),0);if(Object.keys(cause.fieldErrors).some(key=>!(key in emptyFacilitySettings)))setError(cause.message)}else setError(cause instanceof Error?cause.message:"Facility registration failed.")}finally{setPending(false)}
   }
 
-  return <ModalFrame title="Register Manufacturing Site" description="Create the facility, hierarchy, manager assignment, governance, and financial settings." icon={<Factory className="size-5" />} onClose={onClose}><form onSubmit={submit} className="space-y-4 p-5"><FacilitySettingsFields form={settings} set={set} managers={managers} policies={governancePolicies}/><fieldset className="rounded-xl border p-4"><legend className="font-mono text-xs font-semibold uppercase text-primary">Factory hierarchy</legend><div className="grid gap-3 sm:grid-cols-3"><label className={labelClass}>Halls<input type="number" min={1} max={20} value={hallCount} onChange={e=>setHallCount(Number(e.target.value))} className={inputClass}/></label><label className={labelClass}>Lines per hall<input type="number" min={1} max={20} value={linesPerHall} onChange={e=>setLinesPerHall(Number(e.target.value))} className={inputClass}/></label><label className={labelClass}>Stations per line<input type="number" min={1} max={50} value={stationsPerLine} onChange={e=>setStationsPerLine(Number(e.target.value))} className={inputClass}/></label></div></fieldset><footer className="flex justify-end gap-2 border-t pt-4"><button type="button" onClick={onClose} className="h-10 rounded-lg border px-4">Cancel</button><button type="submit" disabled={!managers.length} className="h-10 rounded-lg bg-primary px-4 text-primary-foreground disabled:opacity-40">Register Site</button></footer></form></ModalFrame>;
+  return <ModalFrame title="Register Manufacturing Site" description="Create the facility, hierarchy, manager assignment, governance, and financial settings." icon={<Factory className="size-5" />} onClose={onClose}><form onSubmit={submit} className="space-y-4 p-5"><FacilitySettingsFields form={settings} change={change} managers={managers} policies={governancePolicies} errors={fieldErrors}/>{error&&<p role="alert" className="rounded-lg bg-destructive/10 p-3 text-xs text-destructive">{error}</p>}<fieldset className="rounded-xl border p-4"><legend className="font-mono text-xs font-semibold uppercase text-primary">Factory hierarchy</legend><div className="grid gap-3 sm:grid-cols-3"><label className={labelClass}>Halls<input type="number" min={1} max={20} value={hallCount} onChange={e=>setHallCount(Number(e.target.value))} className={inputClass}/></label><label className={labelClass}>Lines per hall<input type="number" min={1} max={20} value={linesPerHall} onChange={e=>setLinesPerHall(Number(e.target.value))} className={inputClass}/></label><label className={labelClass}>Stations per line<input type="number" min={1} max={50} value={stationsPerLine} onChange={e=>setStationsPerLine(Number(e.target.value))} className={inputClass}/></label></div></fieldset><footer className="flex justify-end gap-2 border-t pt-4"><button type="button" onClick={onClose} className="h-10 rounded-lg border px-4">Cancel</button><button type="submit" disabled={!managers.length||pending} className="h-10 rounded-lg bg-primary px-4 text-primary-foreground disabled:opacity-40">{pending?"Registering…":"Register Site"}</button></footer></form></ModalFrame>;
 }
 
 export function GrantAccessModal({ facilities, onClose, onSave }: { facilities: Facility[]; onClose: () => void; onSave: (access: SiteAccess) => void }) {
