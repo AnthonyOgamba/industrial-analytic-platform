@@ -11,7 +11,7 @@ import { ProductionPerformance } from "./production-performance";
 import { SiteAccessPanel } from "./site-access";
 import { FacilityEditModal } from "./facility-edit-modal";
 import { apiRequest } from "@/lib/api-client";
-import type { AiFailureProbability, FacilityWorkspaceFacility, GovernanceRecordDto, Station as BackendStation } from "@/lib/backend-dtos";
+import type { AiFailureProbability, FacilityWorkspaceFacility, Station as BackendStation } from "@/lib/backend-dtos";
 import { facilitySettingsPayload } from "./facility-edit-modal";
 import { facilityHierarchyApi, invalidateFacilityHierarchy, refreshFacilityHierarchy } from "@/lib/facility-hierarchy";
 import { useSessionUser } from "@/lib/session-user";
@@ -19,6 +19,7 @@ import { pageRequest } from "@/lib/page-request";
 import type { FacilitiesPageContract } from "@/lib/page-contracts";
 import { notifyPlatform } from "@/lib/platform-notifications";
 import { safeOperationalError } from "@/lib/user-facing-text";
+import { activeGovernancePolicyNames } from "@/lib/governance-policy-options";
 
 type FacilitiesTab = "sites" | "performance" | "access";
 const tabs: { key: FacilitiesTab; label: string; icon: React.ElementType }[] = [
@@ -98,7 +99,7 @@ export function FacilitiesWorkspace() {
       setCanManage(session.user?.capabilities.includes("facilities.manage")??false);
       const managerUsers:SiteManagerOption[]=response.managerOptions;
       setManagers(managerUsers);
-      try{const governance=await apiRequest<{items?:GovernanceRecordDto[]} | GovernanceRecordDto[]>("/api/backend/data-governance");const items=Array.isArray(governance)?governance:governance.items??[];setGovernancePolicies(items.filter(item=>item.status.toLowerCase()==="active").map(item=>item.name).sort())}catch{setGovernancePolicies([])}
+      try{setGovernancePolicies(activeGovernancePolicyNames(await apiRequest<unknown>("/api/backend/data-governance")))}catch{setGovernancePolicies([])}
       const mappedFacilities = workspace.facilities.map(item=>{
         const assignment=workspace.siteAccess.find(record=>record.facilityId===item.facilityId&&["manager","manage","admin"].includes(record.accessLevel.toLowerCase()));
         return mapFacility(item,managerUsers.find(user=>user.uid===assignment?.userId));
