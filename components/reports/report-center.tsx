@@ -15,6 +15,7 @@ import { pageRequest } from "@/lib/page-request";
 import type { FacilityWorkspace } from "@/lib/backend-dtos";
 import type { ReportsPageContract } from "@/lib/page-contracts";
 import { apiRequest } from "@/lib/api-client";
+import { buildExportQuery, exportFilename, reportTypes, utcDayEnd, utcDayStart, validateExportDates, type ReportType } from "@/lib/report-export";
 
 export function ReportCenter() {
   const session=useSessionUser();
@@ -27,7 +28,7 @@ export function ReportCenter() {
   const [lineId, setLineId] = useState("");
   const [stationId, setStationId] = useState("");
   const [source, setSource] = useState("");
-  const [reportType, setReportType] = useState("industrial-analytics");
+  const [reportType, setReportType] = useState<ReportType>("industrial-analytics");
   const [includeSynthetic, setIncludeSynthetic] = useState(true);
   const [fromUtc, setFromUtc] = useState("");
   const [toUtc, setToUtc] = useState("");
@@ -42,7 +43,7 @@ export function ReportCenter() {
     setLoading(true);
     setError("");
     try {
-      const query=new URLSearchParams({page:String(page),pageSize:String(pageSize)});if(facilityId)query.set("facilityId",facilityId);if(source)query.set("source",source);if(fromUtc)query.set("fromUtc",new Date(`${fromUtc}T00:00:00`).toISOString());if(toUtc)query.set("toUtc",new Date(`${toUtc}T23:59:59.999`).toISOString());
+      const query=new URLSearchParams({page:String(page),pageSize:String(pageSize)});if(facilityId)query.set("facilityId",facilityId);if(source)query.set("source",source);if(fromUtc)query.set("fromUtc",utcDayStart(fromUtc));if(toUtc)query.set("toUtc",utcDayEnd(toUtc));
       const response = await pageRequest<ReportsPageContract>("reports",{query});
       setReports(response.data.items);setTotal(response.data.total);setFacilityScope(response.enrichment);
     } catch (cause) {
@@ -60,19 +61,11 @@ export function ReportCenter() {
   // HANDLER: Export Report
   // API: GET /api/backend/reports/export.xlsx through the binary-preserving BFF route.
   async function exportWorkbook() {
-    if (fromUtc && toUtc && fromUtc > toUtc) {
-      setError("The start date must be on or before the end date.");
-      return;
-    }
+    const dateError=validateExportDates(fromUtc,toUtc);if(dateError){setError(dateError);return}
     setExporting(true);
     setError("");
     try {
-      const params = new URLSearchParams({ reportType, includeSynthetic: String(includeSynthetic) });
-      if (facilityId) params.set("facilityId", facilityId);
-      if (lineId) params.set("lineId", lineId);
-      if (stationId) params.set("stationId", stationId);
-      if (fromUtc) params.set("fromUtc", new Date(`${fromUtc}T00:00:00`).toISOString());
-      if (toUtc) params.set("toUtc", new Date(`${toUtc}T23:59:59.999`).toISOString());
+      const params=buildExportQuery({reportType,includeSynthetic,facilityId,lineId,stationId,fromDate:fromUtc,toDate:toUtc});
       const response = await fetch(`/api/backend/reports/export.xlsx?${params}`, { credentials:"same-origin" });
       if (!response.ok) {
         const body = await response.json().catch(() => null) as { error?: string } | null;
@@ -86,9 +79,7 @@ export function ReportCenter() {
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      const disposition=response.headers.get("content-disposition");
-      const encoded=disposition?.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
-      anchor.download=encoded?decodeURIComponent(encoded):disposition?.match(/filename="?([^";]+)"?/i)?.[1]??`${reportType}.xlsx`;
+      anchor.download=exportFilename(response.headers.get("content-disposition"));
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
@@ -102,10 +93,10 @@ export function ReportCenter() {
   }
 
   async function generateReport() {
-    if (fromUtc && toUtc && fromUtc > toUtc) { setError("The start date must be on or before the end date."); return; }
+    const dateError=validateExportDates(fromUtc,toUtc);if(dateError){setError(dateError);return}
     setGenerating(true); setError(""); setSuccess("");
     try {
-      await apiRequest<ReportListItem>("/api/backend/reports", { method:"POST", body:JSON.stringify({ reportType, facilityId:facilityId?Number(facilityId):null, productionLineId:lineId?Number(lineId):null, stationId:stationId?Number(stationId):null, fromUtc:fromUtc?new Date(`${fromUtc}T00:00:00`).toISOString():null, toUtc:toUtc?new Date(`${toUtc}T23:59:59.999`).toISOString():null, includeSynthetic }) });
+      const hierarchyAllowed=reportType!=="audit"&&reportType!=="security";await apiRequest<ReportListItem>("/api/backend/reports", { method:"POST", body:JSON.stringify({ reportType, facilityId:facilityId?Number(facilityId):null, productionLineId:hierarchyAllowed&&lineId?Number(lineId):null, stationId:hierarchyAllowed&&stationId?Number(stationId):null, fromUtc:fromUtc?utcDayStart(fromUtc):null, toUtc:toUtc?utcDayEnd(toUtc):null, includeSynthetic }) });
       setPage(1); setSuccess("Report generated successfully and added to report history."); await load();
     } catch (cause) { setError(cause instanceof Error?cause.message:"Report generation failed."); }
     finally { setGenerating(false); }
@@ -116,6 +107,7 @@ export function ReportCenter() {
   const selectedFacility=facilities.find(item=>String(item.facilityId)===facilityId);
   const lines=useMemo(()=>selectedFacility?.halls.flatMap(hall=>hall.lines)??[],[selectedFacility]);
   const stations=lines.find(item=>String(item.productionLineId)===lineId)?.stations??[];
+  const hierarchyFiltersAllowed=reportType!=="audit"&&reportType!=="security";
   const canExport = capabilities.includes("reports.export");
   const canGenerate = capabilities.includes("reports.generate") || canExport;
 
@@ -127,7 +119,7 @@ export function ReportCenter() {
           <h1 className="mt-1 text-2xl font-bold tracking-tight">Report Center</h1>
           <p className="mt-1 text-sm text-muted-foreground">Facility-scoped report exports and server-generated report history</p>
         </div>
-        {(canGenerate||canExport)&&<div className="flex flex-wrap items-center gap-2"><select aria-label="Report type" value={reportType} onChange={event=>setReportType(event.target.value)} className="h-10 rounded-lg border bg-card px-3 text-xs"><option value="industrial-analytics">Complete Platform Workbook</option><option value="production">Production</option><option value="downtime">Downtime</option><option value="facilities">Facilities & OEE</option><option value="sensors">Sensor Telemetry</option><option value="financial-impact">Financial Impact</option><option value="alerts">Olive Alerts</option><option value="security">Security Events</option><option value="audit">Audit Log</option></select>{canGenerate&&<button onClick={()=>void generateReport()} disabled={generating||exporting} className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-50"><FilePlus2 className="size-4"/>{generating?"Generating…":"Generate Report"}</button>}{canExport&&<button onClick={()=>void exportWorkbook()} disabled={exporting||generating} className="inline-flex h-10 items-center gap-2 rounded-lg border px-4 text-sm font-semibold disabled:opacity-50"><Download className="size-4"/>{exporting?"Exporting…":"Export Excel"}</button>}</div>}
+        {(canGenerate||canExport)&&<div className="flex flex-wrap items-center gap-2"><select aria-label="Report type" value={reportType} onChange={event=>{const next=event.target.value as ReportType;setReportType(next);if(next==="audit"||next==="security"){setLineId("");setStationId("")}}} className="h-10 rounded-lg border bg-card px-3 text-xs">{reportTypes.map(value=><option key={value} value={value}>{value==="industrial-analytics"?"Complete Platform Workbook":value.replaceAll("-"," ")}</option>)}</select>{canGenerate&&<button onClick={()=>void generateReport()} disabled={generating||exporting} className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-50"><FilePlus2 className="size-4"/>{generating?"Generating…":"Generate Report"}</button>}{canExport&&<button onClick={()=>void exportWorkbook()} disabled={exporting||generating} className="inline-flex h-10 items-center gap-2 rounded-lg border px-4 text-sm font-semibold disabled:opacity-50"><Download className="size-4"/>{exporting?"Exporting…":"Export Excel"}</button>}</div>}
       </header>
 
       <div className="space-y-4">
@@ -136,8 +128,8 @@ export function ReportCenter() {
               <option value="">All authorized facilities</option>
               {facilities.map((facility) => <option key={facility.facilityId} value={facility.facilityId}>{facility.name}</option>)}
             </select>
-            <select value={lineId} disabled={!facilityId} onChange={(event) => { setLineId(event.target.value); setStationId(""); }} className="h-10 rounded-lg border bg-background px-3 text-xs disabled:opacity-50" aria-label="Production line"><option value="">All production lines</option>{lines.map((line) => <option key={line.productionLineId} value={line.productionLineId}>{line.name}</option>)}</select>
-            <select value={stationId} disabled={!lineId} onChange={(event) => setStationId(event.target.value)} className="h-10 rounded-lg border bg-background px-3 text-xs disabled:opacity-50" aria-label="Station"><option value="">All stations</option>{stations.map((station) => <option key={station.stationId} value={station.stationId}>{station.name}</option>)}</select>
+            <select value={lineId} disabled={!facilityId||!hierarchyFiltersAllowed} onChange={(event) => { setLineId(event.target.value); setStationId(""); }} className="h-10 rounded-lg border bg-background px-3 text-xs disabled:opacity-50" aria-label="Production line"><option value="">{hierarchyFiltersAllowed?"All production lines":"Not available for this report type"}</option>{lines.map((line) => <option key={line.productionLineId} value={line.productionLineId}>{line.name}</option>)}</select>
+            <select value={stationId} disabled={!lineId||!hierarchyFiltersAllowed} onChange={(event) => setStationId(event.target.value)} className="h-10 rounded-lg border bg-background px-3 text-xs disabled:opacity-50" aria-label="Station"><option value="">{hierarchyFiltersAllowed?"All stations":"Not available for this report type"}</option>{stations.map((station) => <option key={station.stationId} value={station.stationId}>{station.name}</option>)}</select>
             <input value={source} onChange={(event) => { setSource(event.target.value); setPage(1); }} placeholder="Report source/type" className="h-10 rounded-lg border bg-background px-3 text-xs" />
             <input type="date" value={fromUtc} onChange={(event) => { setFromUtc(event.target.value); setPage(1); }} className="h-10 rounded-lg border bg-background px-3 text-xs" aria-label="From date" />
             <input type="date" value={toUtc} onChange={(event) => { setToUtc(event.target.value); setPage(1); }} className="h-10 rounded-lg border bg-background px-3 text-xs" aria-label="To date" />

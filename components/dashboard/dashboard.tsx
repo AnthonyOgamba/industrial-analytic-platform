@@ -167,11 +167,14 @@ export function Dashboard() {
     const refreshVisible = () => {
       if (document.visibilityState === "visible") void load();
     };
+    const refreshFacilities = () => void load();
     window.addEventListener("focus", refreshVisible);
+    window.addEventListener("divu-facilities-changed",refreshFacilities);
     document.addEventListener("visibilitychange", refreshVisible);
     const refreshTimer = window.setInterval(refreshVisible, 30_000);
     return () => {
       window.removeEventListener("focus", refreshVisible);
+      window.removeEventListener("divu-facilities-changed",refreshFacilities);
       document.removeEventListener("visibilitychange", refreshVisible);
       window.clearInterval(refreshTimer);
     };

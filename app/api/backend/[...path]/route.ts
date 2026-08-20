@@ -25,7 +25,7 @@ const allowed = [
   { pattern: /^facilities$/, methods: ["GET", "POST"] },
   { pattern: /^facilities\/register$/, methods: ["POST"] },
   { pattern: /^facilities\/workspace$/, methods: ["GET"] },
-  { pattern: /^facilities\/\d+$/, methods: ["GET", "PATCH"] },
+  { pattern: /^facilities\/\d+$/, methods: ["GET", "PATCH", "DELETE"] },
   { pattern: /^facilities\/\d+\/access$/, methods: ["GET", "POST"] },
   { pattern: /^facilities\/\d+\/access\/\d+$/, methods: ["PATCH", "DELETE"] },
   { pattern: /^facilities\/\d+\/financial-configuration$/, methods: ["GET", "PATCH"] },
