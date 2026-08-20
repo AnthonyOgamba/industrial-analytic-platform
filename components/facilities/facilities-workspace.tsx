@@ -5,15 +5,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Activity, Building2, ChevronDown, ChevronRight, Factory, Gauge, KeyRound, RefreshCw, ShieldCheck, Sparkles } from "lucide-react";
 
 import { FacilitiesOverview } from "./facilities-overview";
-import { GrantAccessModal, RegisterSiteModal, type RegisteredFacility, type RegistrationResult, type SiteManagerOption } from "./facility-modals";
+import { GrantAccessModal, RegisterSiteModal, type FacilityRegistrationInput, type SiteManagerOption } from "./facility-modals";
 import type { AccessLevel, Facility, FacilityStatus, OperationalInsight, SiteAccess } from "./facilities-data";
 import { ProductionPerformance } from "./production-performance";
 import { SiteAccessPanel } from "./site-access";
 import { FacilityEditModal } from "./facility-edit-modal";
 import { ApiError, apiRequest } from "@/lib/api-client";
-import type { AiFailureProbability, FacilityWorkspaceFacility, Station as BackendStation } from "@/lib/backend-dtos";
+import type { AiFailureProbability, FacilityWorkspaceFacility } from "@/lib/backend-dtos";
 import { facilitySettingsPayload } from "./facility-edit-modal";
-import { facilityHierarchyApi, invalidateFacilityHierarchy, refreshFacilityHierarchy } from "@/lib/facility-hierarchy";
+import { facilityHierarchyApi, invalidateFacilityHierarchy } from "@/lib/facility-hierarchy";
 import { useSessionUser } from "@/lib/session-user";
 import { pageRequest } from "@/lib/page-request";
 import type { FacilitiesPageContract } from "@/lib/page-contracts";
@@ -30,15 +30,6 @@ const tabs: { key: FacilitiesTab; label: string; icon: React.ElementType }[] = [
 
 const statusMap = (status: string): FacilityStatus => status.toLowerCase() === "active" ? "Active" : status.toLowerCase() === "maintenance" ? "Maintenance" : status.toLowerCase() === "inactive" || status.toLowerCase() === "offline" ? "Inactive" : "Standby";
 const accessMap = (level: string): AccessLevel => level.toLowerCase() === "admin" ? "Admin" : level.toLowerCase() === "manager" ? "Manage" : level.toLowerCase() === "operator" ? "Operate" : "View";
-
-function createdId(payload: unknown, camelKey: string, snakeKey: string, label: string) {
-  const record = payload && typeof payload === "object" ? payload as Record<string, unknown> : {};
-  const nested = record.data && typeof record.data === "object" ? record.data as Record<string, unknown> : {};
-  const value = record[camelKey] ?? record[snakeKey] ?? nested[camelKey] ?? nested[snakeKey];
-  const id = Number(value);
-  if (!Number.isInteger(id) || id < 1) throw new Error(`${label} was created without a valid identifier.`);
-  return id;
-}
 
 function mapFacility(item: FacilityWorkspaceFacility, manager?: SiteManagerOption): Facility {
   const halls = item.halls.map((hall) => ({
@@ -119,37 +110,17 @@ export function FacilitiesWorkspace() {
 
   const metrics = useMemo(() => { const lines = facilities.flatMap((facility) => facility.halls.flatMap((hall) => hall.lines)); const averageOee = lines.length ? Math.round(lines.reduce((sum, line) => sum + line.oee, 0) / lines.length) : 0; return { active: facilities.filter((facility) => facility.status === "Active").length, averageOee, compliance: facilities.length ? Math.round(facilities.reduce((sum, facility) => sum + facility.complianceScore, 0) / facilities.length) : 0, downtime: lines.reduce((sum, line) => sum + line.downtimeHours, 0) }; }, [facilities]);
 
-  async function registerFacility({facility,settings}: RegisteredFacility,existingFacilityId?:number):Promise<RegistrationResult> {
+  async function registerFacility({settings,hierarchy}:FacilityRegistrationInput):Promise<void> {
     setError("");setWarning("");
-    let facilityId=existingFacilityId;
-    if(!facilityId){const current=await refreshFacilityHierarchy();const recoverable=current.facilities.find(item=>item.code?.toLowerCase()===facility.code.toLowerCase()&&item.name.trim().toLowerCase()===facility.name.trim().toLowerCase());if(recoverable)facilityId=recoverable.facilityId;else{const created=await apiRequest<unknown>("/api/backend/facilities",{method:"POST",body:JSON.stringify(facilitySettingsPayload(settings))});facilityId=createdId(created,"facilityId","facility_id","Facility")}}
-    let endpoint="/api/backend/facilities/workspace";
-    let managerAssignmentWarning="";
     try{
-      const workspace=await refreshFacilityHierarchy();
-      const existing=workspace.facilities.find(item=>item.facilityId===facilityId);
-      if(!existing)throw new Error(`Facility ${facilityId} was created but is missing from the workspace response.`);
-      if(!workspace.siteAccess.some(item=>item.facilityId===facilityId&&item.userId===Number(facility.managerId))){endpoint="/api/backend/site-access";try{await apiRequest(endpoint,{method:"POST",body:JSON.stringify({userId:Number(facility.managerId),facilityId,accessLevel:"assigned"})})}catch(cause){managerAssignmentWarning=cause instanceof ApiError?`Manager facility-scope assignment failed (${cause.status}): ${cause.message}`:"Manager facility-scope assignment failed."}}
-      for(const[hallIndex,hall]of facility.halls.entries()){
-        const hallCode=`${facility.code}-H${hallIndex+1}`;let existingHall=existing.halls.find(item=>item.code===hallCode);
-        if(!existingHall){endpoint=`/api/backend/facilities/${facilityId}/halls`;const created=await apiRequest<unknown>(endpoint,{method:"POST",body:JSON.stringify({name:hall.name,code:hallCode,status:"active"})});existingHall={hallId:createdId(created,"hallId","hall_id","Hall"),name:hall.name,code:hallCode,status:"active",performance:{oee:0,availability:0,performance:0,quality:0,downtimeHours:0},lines:[]}}
-        for(const[lineIndex,line]of hall.lines.entries()){
-          const lineCode=`${facility.code}-H${hallIndex+1}-L${lineIndex+1}`;let existingLine=existingHall.lines.find(item=>item.code===lineCode);
-          if(!existingLine){endpoint=`/api/backend/halls/${existingHall.hallId}/lines`;const created=await apiRequest<unknown>(endpoint,{method:"POST",body:JSON.stringify({name:line.name,code:lineCode,status:"active"})});existingLine={productionLineId:createdId(created,"productionLineId","production_line_id","Production line"),name:line.name,code:lineCode,status:"active",performance:{oee:0,availability:0,performance:0,quality:0,downtimeHours:0},stations:[]}}
-          for(const[stationIndex,station]of line.stations.entries()){
-            const stationCode=`${facility.code}-H${hallIndex+1}-L${lineIndex+1}-S${stationIndex+1}`;if(existingLine.stations.some(item=>item.code===stationCode))continue;
-            endpoint=`/api/backend/lines/${existingLine.productionLineId}/stations`;await apiRequest<BackendStation>(endpoint,{method:"POST",body:JSON.stringify({name:station.name,stationCode,status:"active"})});
-          }
-        }
-      }
-      const verified=await invalidateFacilityHierarchy();const completed=verified.facilities.find(item=>item.facilityId===facilityId);
-      const expectedHallCount=facility.halls.length;
-      const expectedLineCount=facility.halls.reduce((total,hall)=>total+hall.lines.length,0);
-      const expectedStationCount=facility.halls.reduce((total,hall)=>total+hall.lines.reduce((lineTotal,line)=>lineTotal+line.stations.length,0),0);
-      const actualLineCount=completed?.halls.reduce((total,hall)=>total+hall.lines.length,0)??0;
-      const actualStationCount=completed?.halls.reduce((total,hall)=>total+hall.lines.reduce((lineTotal,line)=>lineTotal+line.stations.length,0),0)??0;
-      if(!completed||completed.halls.length<expectedHallCount||actualLineCount<expectedLineCount||actualStationCount<expectedStationCount)throw new Error(`The refreshed workspace returned an incomplete hierarchy (expected ${expectedHallCount} halls, ${expectedLineCount} lines, and ${expectedStationCount} stations; received ${completed?.halls.length??0}, ${actualLineCount}, and ${actualStationCount}).`);await load();setError("");if(managerAssignmentWarning)setWarning(managerAssignmentWarning);return{facilityId,hierarchyComplete:true,managerAssignmentWarning};
-    }catch(cause){await load();return{facilityId,hierarchyComplete:false,failedEndpoint:endpoint,failureMessage:cause instanceof ApiError?`${cause.status}: ${cause.message}`:cause instanceof Error?cause.message:"Hierarchy setup failed.",managerAssignmentWarning}}
+      await apiRequest("/api/backend/facilities/register",{method:"POST",body:JSON.stringify({facility:facilitySettingsPayload(settings),hierarchy})});
+      await invalidateFacilityHierarchy();
+      await load();
+      notifyPlatform({title:"Facility registered",message:`${settings.name.trim()} and its production hierarchy are ready.`});
+    }catch(cause){
+      if(cause instanceof ApiError&&cause.status>=500)await invalidateFacilityHierarchy().catch(()=>undefined);
+      throw cause;
+    }
   }
   async function grantAccess(access: SiteAccess) { try { await apiRequest("/api/backend/site-access", { method: "POST", body: JSON.stringify({ userId: Number(access.userId), facilityId: Number(access.facilityId), accessLevel: "assigned" }) }); setGrantOpen(false); await load(); } catch (cause) { setError(cause instanceof Error ? cause.message : "Access could not be granted."); setGrantOpen(false); } }
   async function retireFacility(facility:Facility){if(!canManage||!confirm(`Delete ${facility.name}? The facility will be retired and its audit history preserved. This can be blocked while active runs or dependent resources exist.`))return;setError("");try{await facilityHierarchyApi.updateFacility(Number(facility.id),{name:facility.name,code:facility.code||null,status:"retired"});await load()}catch(cause){setError(cause instanceof Error?cause.message:"The facility could not be retired.")}}
