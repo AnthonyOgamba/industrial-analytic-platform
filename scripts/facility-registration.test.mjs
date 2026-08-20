@@ -30,6 +30,7 @@ assert.match(workspace,/accessLevel:\"assigned\"/,"site access always uses the c
 assert.match(workspace,/catch\(cause\)\{managerAssignmentWarning=.*\}\}\n      for\(const\[hallIndex,hall\]of facility\.halls\.entries\(\)\)/,"manager assignment failure does not block hierarchy creation");
 assert.doesNotMatch(workspace,/accessLevel:\"(?:manager|admin|viewer|operator)\"/,"site access never serializes a user role as accessLevel");
 assert.match(workspace,/const verified=await invalidateFacilityHierarchy\(\)/,"successful setup verifies refreshed canonical hierarchy");
+assert.match(workspace,/actualLineCount<expectedLineCount\|\|actualStationCount<expectedStationCount/,"successful setup verifies lines and stations, not only halls");
 assert.match(modal,/committedFacilityId\?"Continue setup":"Register Site"/,"partial success exposes Continue setup");
 assert.match(modal,/disabled=\{!managers\.length\|\|!governancePolicies\.includes\(settings\.governancePolicy\)\|\|pending\}/,"duplicate clicks are disabled while processing");
 assert.match(workspace,/if\(!hasFacilities\.current\)setLoading\(true\); setError\(""\)/,"refresh clears stale page errors");
