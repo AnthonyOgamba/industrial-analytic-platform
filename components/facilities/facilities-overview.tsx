@@ -4,15 +4,14 @@ import { useMemo, useState } from "react";
 import { Building2, CalendarClock, Globe2, Pencil, Plus, Search, Trash2, UserRound } from "lucide-react";
 import Link from "next/link";
 
-import type { Facility, FacilityStatus } from "./facilities-data";
+import type { Facility } from "./facilities-data";
 import { FacilityStatusBadge, MetricTone } from "./facility-status";
 
-export function FacilitiesOverview({ facilities, onRegister, onDelete, onEdit }: { facilities: Facility[]; onRegister: () => void; onDelete?: (facility: Facility) => void; onEdit?: (facility:Facility)=>void }) {
+export function FacilitiesOverview({ facilities, status, onStatusChange, onRegister, onDelete, onEdit }: { facilities: Facility[]; status:"active"|"inactive"|"all"; onStatusChange:(status:"active"|"inactive"|"all")=>void; onRegister: () => void; onDelete?: (facility: Facility) => void; onEdit?: (facility:Facility)=>void }) {
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState<"All" | FacilityStatus>("All");
   const filtered = useMemo(
-    () => facilities.filter((facility) => (status === "All" || facility.status === status) && `${facility.name} ${facility.code} ${facility.location.country}`.toLowerCase().includes(query.toLowerCase())),
-    [facilities, query, status],
+    () => facilities.filter((facility) => `${facility.name} ${facility.code} ${facility.location.country}`.toLowerCase().includes(query.toLowerCase())),
+    [facilities, query],
   );
 
   return (
@@ -20,7 +19,7 @@ export function FacilitiesOverview({ facilities, onRegister, onDelete, onEdit }:
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex w-full flex-col gap-2 sm:max-w-xl sm:flex-row">
           <label className="relative block flex-1"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><span className="sr-only">Search facilities</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search facilities..." className="h-10 w-full rounded-lg border bg-card pl-9 pr-3 text-sm outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring/30" /></label>
-          <select value={status} onChange={(event) => setStatus(event.target.value as "All" | FacilityStatus)} aria-label="Filter by facility status" className="h-10 rounded-lg border bg-card px-3 text-sm outline-none focus:ring-2 focus:ring-ring/30"><option>All</option><option>Active</option><option>Maintenance</option><option>Standby</option><option>Inactive</option></select>
+          <select value={status} onChange={(event) => onStatusChange(event.target.value as "active"|"inactive"|"all")} aria-label="Filter by facility status" className="h-10 rounded-lg border bg-card px-3 text-sm outline-none focus:ring-2 focus:ring-ring/30"><option value="active">Active</option><option value="inactive">Inactive</option><option value="all">All</option></select>
         </div>
         <button type="button" onClick={onRegister} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground hover:bg-primary/80"><Plus className="size-4" />Register Site</button>
       </div>

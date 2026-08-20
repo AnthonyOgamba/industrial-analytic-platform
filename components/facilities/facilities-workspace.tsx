@@ -13,7 +13,7 @@ import { FacilityEditModal } from "./facility-edit-modal";
 import { ApiError, apiRequest } from "@/lib/api-client";
 import type { AiFailureProbability, FacilityWorkspaceFacility } from "@/lib/backend-dtos";
 import { facilitySettingsPayload } from "./facility-edit-modal";
-import { facilityHierarchyApi, invalidateFacilityHierarchy } from "@/lib/facility-hierarchy";
+import { invalidateFacilityHierarchy } from "@/lib/facility-hierarchy";
 import { useSessionUser } from "@/lib/session-user";
 import { pageRequest } from "@/lib/page-request";
 import type { FacilitiesPageContract } from "@/lib/page-contracts";
@@ -79,7 +79,7 @@ export function FacilitiesWorkspace() {
   const [registerOpen, setRegisterOpen] = useState(false);
   const [grantOpen, setGrantOpen] = useState(false);
   const [editingFacilityId,setEditingFacilityId]=useState<number|null>(null);
-  const [canManage,setCanManage]=useState(false);
+  const [statusFilter,setStatusFilter]=useState<"active"|"inactive"|"all">("active");
   const [managers,setManagers]=useState<SiteManagerOption[]>([]);
   const [governancePolicies,setGovernancePolicies]=useState<string[]>([]);
   const hasFacilities=useRef(false);
@@ -87,8 +87,7 @@ export function FacilitiesWorkspace() {
   const load = useCallback(async () => {
     if(!hasFacilities.current)setLoading(true); setError("");
     try {
-      const response=await pageRequest<FacilitiesPageContract>("facilities",{cache:"no-store"});const workspace=response.facilities;
-      setCanManage(session.user?.capabilities.includes("facilities.manage")??false);
+      const [response,workspace]=await Promise.all([pageRequest<FacilitiesPageContract>("facilities",{cache:"no-store"}),apiRequest<import("@/lib/backend-dtos").FacilityWorkspace>(`/api/backend/facilities/workspace?status=${statusFilter}`)]);
       const managerUsers:SiteManagerOption[]=response.managerOptions;
       setManagers(managerUsers);
       try{setGovernancePolicies(activeGovernancePolicyNames(await apiRequest<unknown>("/api/backend/data-governance")))}catch{setGovernancePolicies([])}
@@ -103,7 +102,7 @@ export function FacilitiesWorkspace() {
       setInsights((response.risk ?? []).slice(0,3).map(risk=>({id:risk.asset_id,facility:mappedFacilities.find(facility=>facility.halls.some(hall=>hall.lines.some(line=>line.stations.some(station=>station.id===String(risk.station_id)))))?.name??"Manufacturing network",line:risk.code??"Station",message:risk.recommendation,priority:risk.risk_level==="critical"||risk.risk_level==="high"?"High":risk.risk_level==="medium"?"Medium":"Low",confidence:Math.round(risk.failure_probability*100)})));
     } catch (cause) { const message=safeOperationalError("Facilities",hasFacilities.current); setError(hasFacilities.current?"":message); notifyPlatform({title:"Facilities refresh failed",message}); }
     finally { setLoading(false); }
-  }, [session.user]);
+  }, [statusFilter]);
   useEffect(() => { // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [load]);
@@ -116,6 +115,7 @@ export function FacilitiesWorkspace() {
       await apiRequest("/api/backend/facilities/register",{method:"POST",body:JSON.stringify({facility:facilitySettingsPayload(settings),hierarchy})});
       await invalidateFacilityHierarchy();
       await load();
+      window.dispatchEvent(new Event("divu-facilities-changed"));
       notifyPlatform({title:"Facility registered",message:`${settings.name.trim()} and its production hierarchy are ready.`});
     }catch(cause){
       if(cause instanceof ApiError&&cause.status>=500)await invalidateFacilityHierarchy().catch(()=>undefined);
@@ -123,7 +123,8 @@ export function FacilitiesWorkspace() {
     }
   }
   async function grantAccess(access: SiteAccess) { try { await apiRequest("/api/backend/site-access", { method: "POST", body: JSON.stringify({ userId: Number(access.userId), facilityId: Number(access.facilityId), accessLevel: "assigned" }) }); setGrantOpen(false); await load(); } catch (cause) { setError(cause instanceof Error ? cause.message : "Access could not be granted."); setGrantOpen(false); } }
-  async function retireFacility(facility:Facility){if(!canManage||!confirm(`Delete ${facility.name}? The facility will be retired and its audit history preserved. This can be blocked while active runs or dependent resources exist.`))return;setError("");try{await facilityHierarchyApi.updateFacility(Number(facility.id),{name:facility.name,code:facility.code||null,status:"retired"});await load()}catch(cause){setError(cause instanceof Error?cause.message:"The facility could not be retired.")}}
+  const capabilities=session.user?.capabilities??[];const canUpdate=capabilities.includes("facilities.update")||capabilities.includes("facilities.manage");const canDelete=capabilities.includes("facilities.delete");
+  async function deleteFacility(facility:Facility){if(!canDelete||!confirm(`Delete Facility?\n\n${facility.name} will be removed from active platform use. Historical operational and audit records will be preserved.`))return;setError("");try{await apiRequest(`/api/backend/facilities/${Number(facility.id)}`,{method:"DELETE"});setFacilities(current=>current.filter(item=>item.id!==facility.id));await Promise.all([invalidateFacilityHierarchy(),load()]);window.dispatchEvent(new Event("divu-facilities-changed"));notifyPlatform({title:"Facility deleted",message:`${facility.name} was removed from operational use. Historical records were preserved.`})}catch(cause){if(cause instanceof ApiError&&cause.status===404)await load();setError(cause instanceof Error?cause.message:"The facility could not be deleted.")}}
 
   return <div className="space-y-5 pb-5"><header><p className="font-mono text-xs font-semibold uppercase tracking-[0.14em] text-primary">Manufacturing network</p><div className="flex items-start justify-between gap-3"><div><h1 className="mt-1.5 text-2xl font-bold tracking-tight">Facilities</h1><p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">Live facility structure, performance, compliance, and operational access from the DIVU platform.</p></div><button onClick={() => void load()} disabled={loading} className="inline-flex h-10 items-center gap-2 rounded-lg border px-3 text-xs"><RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />Refresh</button></div></header>
   {error && <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">{error}</div>}
@@ -131,6 +132,6 @@ export function FacilitiesWorkspace() {
   <section className="space-y-3" aria-labelledby="facilities-compliance-title"><div><h2 id="facilities-compliance-title" className="text-base font-semibold">Facilities &amp; Compliance</h2><p className="mt-0.5 text-xs text-muted-foreground">Live operating status and control posture.</p></div><div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{[{ label: "Active Facilities", value: `${metrics.active}/${facilities.length}`, note: "Online sites", icon: Factory }, { label: "Average OEE", value: `${metrics.averageOee}%`, note: "Across production lines", icon: Gauge }, { label: "Compliance Coverage", value: `${metrics.compliance}%`, note: "Site control average", icon: ShieldCheck }, { label: "Recent Downtime", value: `${metrics.downtime.toFixed(1)}h`, note: "Operational performance", icon: Activity }].map((item) => <div key={item.label} className="rounded-xl border bg-card p-4 shadow-[var(--dv-shadow)]"><div className="flex items-start justify-between gap-3"><div><p className="text-2xl font-bold">{item.value}</p><p className="mt-1 text-xs font-medium text-muted-foreground">{item.label}</p></div><div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary"><item.icon className="size-4" /></div></div><p className="mt-3 font-mono text-xs text-muted-foreground">{item.note}</p></div>)}</div></section>
   <section className="rounded-xl border bg-card p-4 shadow-[var(--dv-shadow)]" aria-labelledby="ai-insights-title"><button type="button" onClick={() => setInsightsOpen((open) => !open)} aria-expanded={insightsOpen} aria-controls="ai-insights-content" className="flex w-full items-center gap-2 text-left"><Sparkles className="size-4 text-primary" /><h2 id="ai-insights-title" className="text-sm font-semibold">AI Operational Insights</h2><span className="rounded-full bg-primary/10 px-2 py-0.5 font-mono text-xs uppercase text-primary">Live platform data</span><span className="ml-auto text-muted-foreground" aria-hidden="true">{insightsOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}</span></button>{insightsOpen && <div id="ai-insights-content" className="mt-3 grid gap-3 lg:grid-cols-3">{insights.map((insight) => <article key={insight.id} className="rounded-lg border bg-background/60 p-3"><div className="flex items-center justify-between gap-3"><p className="truncate text-xs font-semibold">{insight.facility}</p><span className="font-mono text-xs uppercase text-primary">{insight.priority}</span></div><p className="mt-1 font-mono text-xs text-muted-foreground">{insight.line} · {insight.confidence}% risk</p><p className="mt-2 text-xs leading-5 text-muted-foreground">{insight.message}</p></article>)}{!loading && !insights.length && <p className="text-xs text-muted-foreground">No AI predictions are currently available.</p>}</div>}</section>
   <div className="overflow-x-auto border-b"><div className="flex min-w-max" role="tablist" aria-label="Facilities sections">{tabs.map((tab) => { const Icon = tab.icon; const active = tab.key === activeTab; return <button key={tab.key} type="button" role="tab" aria-selected={active} onClick={() => setActiveTab(tab.key)} className={`relative inline-flex h-12 items-center gap-2 px-4 text-xs font-medium transition-colors ${active ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}><Icon className={`size-4 ${active ? "text-primary" : ""}`} />{tab.label}{active && <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-primary" />}</button>; })}</div></div>
-  {loading ? <div className="grid gap-3 sm:grid-cols-2"><div className="h-40 animate-pulse rounded-xl bg-muted" /><div className="h-40 animate-pulse rounded-xl bg-muted" /></div> : <>{activeTab === "sites" && <FacilitiesOverview facilities={facilities} onRegister={() => setRegisterOpen(true)} onEdit={canManage?(facility)=>setEditingFacilityId(Number(facility.id)):undefined} onDelete={canManage?(facility)=>void retireFacility(facility):undefined} />}{activeTab === "performance" && <ProductionPerformance facilities={facilities} />}{activeTab === "access" && <SiteAccessPanel facilities={facilities} accessRecords={accessRecords} onGrant={() => setGrantOpen(true)} onRevoke={() => setError("Access revocation is not currently available.")} />}</>}
+  {loading ? <div className="grid gap-3 sm:grid-cols-2"><div className="h-40 animate-pulse rounded-xl bg-muted" /><div className="h-40 animate-pulse rounded-xl bg-muted" /></div> : <>{activeTab === "sites" && <FacilitiesOverview facilities={facilities} status={statusFilter} onStatusChange={setStatusFilter} onRegister={() => setRegisterOpen(true)} onEdit={canUpdate?(facility)=>setEditingFacilityId(Number(facility.id)):undefined} onDelete={canDelete?(facility)=>void deleteFacility(facility):undefined} />}{activeTab === "performance" && <ProductionPerformance facilities={facilities} />}{activeTab === "access" && <SiteAccessPanel facilities={facilities} accessRecords={accessRecords} onGrant={() => setGrantOpen(true)} onRevoke={() => setError("Access revocation is not currently available.")} />}</>}
   {registerOpen && <RegisterSiteModal managers={managers} governancePolicies={governancePolicies} onClose={() => setRegisterOpen(false)} onSave={registerFacility} />}{grantOpen && <GrantAccessModal facilities={facilities} onClose={() => setGrantOpen(false)} onSave={(access) => void grantAccess(access)} />}{editingFacilityId!==null&&<FacilityEditModal facilityId={editingFacilityId} managers={managers} governancePolicies={governancePolicies} onClose={()=>setEditingFacilityId(null)} onSaved={load}/>}</div>;
 }
