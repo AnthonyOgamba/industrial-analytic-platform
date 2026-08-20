@@ -23,6 +23,7 @@ const allowed = [
   { pattern: /^runs\/\d+\/close$/, methods: ["PATCH"] },
   { pattern: /^runs\/\d+\/(?:start|pause|fail)$/, methods: ["PATCH"] },
   { pattern: /^facilities$/, methods: ["GET", "POST"] },
+  { pattern: /^facilities\/register$/, methods: ["POST"] },
   { pattern: /^facilities\/workspace$/, methods: ["GET"] },
   { pattern: /^facilities\/\d+$/, methods: ["GET", "PATCH"] },
   { pattern: /^facilities\/\d+\/access$/, methods: ["GET", "POST"] },
