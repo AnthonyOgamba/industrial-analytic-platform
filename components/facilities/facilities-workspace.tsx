@@ -142,7 +142,13 @@ export function FacilitiesWorkspace() {
           }
         }
       }
-      const verified=await invalidateFacilityHierarchy();const completed=verified.facilities.find(item=>item.facilityId===facilityId);if(!completed||completed.halls.length<facility.halls.length)throw new Error("The refreshed workspace did not return the completed hierarchy.");await load();setError("");if(managerAssignmentWarning)setWarning(managerAssignmentWarning);return{facilityId,hierarchyComplete:true,managerAssignmentWarning};
+      const verified=await invalidateFacilityHierarchy();const completed=verified.facilities.find(item=>item.facilityId===facilityId);
+      const expectedHallCount=facility.halls.length;
+      const expectedLineCount=facility.halls.reduce((total,hall)=>total+hall.lines.length,0);
+      const expectedStationCount=facility.halls.reduce((total,hall)=>total+hall.lines.reduce((lineTotal,line)=>lineTotal+line.stations.length,0),0);
+      const actualLineCount=completed?.halls.reduce((total,hall)=>total+hall.lines.length,0)??0;
+      const actualStationCount=completed?.halls.reduce((total,hall)=>total+hall.lines.reduce((lineTotal,line)=>lineTotal+line.stations.length,0),0)??0;
+      if(!completed||completed.halls.length<expectedHallCount||actualLineCount<expectedLineCount||actualStationCount<expectedStationCount)throw new Error(`The refreshed workspace returned an incomplete hierarchy (expected ${expectedHallCount} halls, ${expectedLineCount} lines, and ${expectedStationCount} stations; received ${completed?.halls.length??0}, ${actualLineCount}, and ${actualStationCount}).`);await load();setError("");if(managerAssignmentWarning)setWarning(managerAssignmentWarning);return{facilityId,hierarchyComplete:true,managerAssignmentWarning};
     }catch(cause){await load();return{facilityId,hierarchyComplete:false,failedEndpoint:endpoint,failureMessage:cause instanceof ApiError?`${cause.status}: ${cause.message}`:cause instanceof Error?cause.message:"Hierarchy setup failed.",managerAssignmentWarning}}
   }
   async function grantAccess(access: SiteAccess) { try { await apiRequest("/api/backend/site-access", { method: "POST", body: JSON.stringify({ userId: Number(access.userId), facilityId: Number(access.facilityId), accessLevel: "assigned" }) }); setGrantOpen(false); await load(); } catch (cause) { setError(cause instanceof Error ? cause.message : "Access could not be granted."); setGrantOpen(false); } }

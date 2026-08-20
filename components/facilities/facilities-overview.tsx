@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Building2, CalendarClock, Globe2, Pencil, Plus, Search, Trash2, UserRound } from "lucide-react";
+import Link from "next/link";
 
 import type { Facility, FacilityStatus } from "./facilities-data";
 import { FacilityStatusBadge, MetricTone } from "./facility-status";
@@ -34,6 +35,7 @@ export function FacilitiesOverview({ facilities, onRegister, onDelete, onEdit }:
               <div className="mt-5 grid grid-cols-4 gap-2">{[["Halls", facility.halls.length], ["Lines", lines.length], ["Sensors", facility.sensorCount], ["OEE", `${averageOee}%`]].map(([label, value]) => <div key={label} className="rounded-lg bg-muted/60 p-2 text-center"><p className="text-sm font-bold">{value}</p><p className="mt-0.5 text-xs text-muted-foreground">{label}</p></div>)}</div>
               <div className="mt-4"><div className="mb-2 flex justify-between text-xs"><span className="text-muted-foreground">Facility OEE</span><span className="font-semibold"><MetricTone value={averageOee} /></span></div><div className="h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${averageOee}%` }} /></div></div>
               <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t pt-3 text-xs text-muted-foreground"><span className="flex items-center gap-1.5"><UserRound className="size-3" />{facility.manager}</span><span className="flex items-center gap-1.5"><CalendarClock className="size-3" />Active {facility.lastActivity}</span></div>
+              <Link href={`/local-ai?tab=generation&facilityId=${facility.id}`} className="mt-3 inline-flex h-9 w-full items-center justify-center rounded-lg border border-primary/30 bg-primary/5 px-3 text-xs font-semibold text-primary hover:bg-primary/10">Open production hierarchy in AI Generators</Link>
             </article>
           );
         })}
